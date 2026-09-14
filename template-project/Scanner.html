@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>📱 班級作業 QR碼 速掃工具</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --accent-orange: #f97316;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    #rotate-hint {
+      display: none;
+      position: fixed; inset: 0; z-index: 9999;
+      background: #0f172a;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      font-size: 1.2rem;
+      color: #38bdf8;
+      font-weight: 700;
+      text-align: center;
+      padding: 24px;
+    }
+    #rotate-hint .hint-icon { font-size: 3rem; animation: spin90 1.2s ease-in-out infinite alternate; }
+    @keyframes spin90 {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(90deg); }
+    }
+    @media (orientation: portrait) {
+      #rotate-hint { display: flex; }
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(30, 41, 59, 0.95);
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      height: 48px;
+      flex-shrink: 0;
+    }
+
+    .header-title-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header-title { font-weight: 700; color: var(--accent-blue); font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
+
+    .nav-btn {
+      background: #334155;
+      color: #f43f5e;
+      border: 1px solid #475569;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .nav-btn:hover { background: #475569; color: #fff; }
+
+    .header-controls { display: flex; align-items: center; gap: 6px; }
+    .btn-icon {
+      background: #334155; color: var(--text-main); border: 1px solid #475569;
+      padding: 4px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .btn-icon:active { background: var(--accent-blue); color: #0f172a; }
+
+    .app-container {
+      flex: 1;
+      display: flex;
+      flex-direction: row !important;
+      overflow: hidden;
+    }
+
+    .camera-panel {
+      flex: 1.1;
+      background: #000;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #reader {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+    }
+    #reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
+    .scanner-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .viewfinder-box {
+      width: 190px;
+      height: 190px;
+      border: 3px solid var(--accent-blue);
+      border-radius: 16px;
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65);
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .viewfinder-box::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; height: 2px;
+      background: var(--accent-blue);
+      box-shadow: 0 0 8px var(--accent-blue);
+      animation: scan-line 2s ease-in-out infinite alternate;
+    }
+    @keyframes scan-line {
+      0%   { top: 5%; }
+      100% { top: 95%; }
+    }
+
+    .viewfinder-box.success {
+      border-color: var(--accent-green) !important;
+      box-shadow: 0 0 0 4000px rgba(34, 197, 94, 0.35), 0 0 30px var(--accent-green) !important;
+      background: rgba(34, 197, 94, 0.25) !important;
+    }
+    .viewfinder-box.duplicate {
+      border-color: var(--accent-orange) !important;
+      box-shadow: 0 0 0 4000px rgba(249, 115, 22, 0.35), 0 0 30px var(--accent-orange) !important;
+      background: rgba(249, 115, 22, 0.25) !important;
+    }
+
+    .viewfinder-tip {
+      margin-top: 14px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid #334155;
+    }
+
+    .info-panel {
+      flex: 0.9;
+      background: var(--card-bg);
+      border-left: 1px solid #334155;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    #section-hw-panel {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .selector-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .assign-select {
+      flex: 1;
+      background: #0f172a;
+      color: #fff;
+      border: 1px solid #475569;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      outline: none;
+    }
+    .assign-summary { font-size: 0.8rem; font-weight: 700; color: var(--accent-green); white-space: nowrap; }
+
+    .toast-banner {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid #334155;
+      padding: 5px 8px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 6px;
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .toast-banner.success { border-color: var(--accent-green); color: var(--accent-green); background: rgba(34, 197, 94, 0.15); }
+    .toast-banner.duplicate { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(249, 115, 22, 0.15); }
+    .toast-banner.error { border-color: var(--accent-red); color: var(--accent-red); background: rgba(239, 68, 68, 0.15); }
+
+    .matrix-title { font-size: 0.78rem; color: var(--text-sub); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+    
+    .seat-grid-scroll-box {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .seat-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+
+    .seat-pill {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 4px 2px;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-sub);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      cursor: pointer;
+    }
+    .seat-pill.checked {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+    }
+    .modal-box {
+      background: var(--card-bg);
+      border: 1px solid #475569;
+      border-radius: 12px;
+      padding: 20px;
+      width: 100%; max-width: 360px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .modal-title { font-weight: 700; color: var(--accent-blue); margin-bottom: 12px; font-size: 1.05rem; }
+    .form-group { margin-bottom: 12px; }
+    .form-label { font-size: 0.85rem; color: var(--text-sub); margin-bottom: 4px; display: block; }
+    .input-txt {
+      background: #0f172a; border: 1px solid #475569; color: #fff;
+      padding: 8px 12px; border-radius: 6px; width: 100%; font-size: 0.9rem;
+    }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .btn-cancel { background: #334155; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+    .btn-save { background: var(--accent-green); color: #000; font-weight: 700; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <div id="rotate-hint">
+    <div class="hint-icon">📱</div>
+    <div>請將手機<strong>旋轉成橫向</strong>使用掃碼器</div>
+    <div style="font-size:0.85rem; color:#94a3b8;">或點擊下方「加入主畫面」鎖定橫向</div>
+  </div>
+
+  <header>
+    <div class="header-title-box">
+      <div class="header-title">📱 班級作業 QR碼 速掃工具</div>
+      <a href="correction.html" class="nav-btn">✏️ 切換至錯題訂正</a>
+    </div>
+    <div class="header-controls">
+      <button class="btn-icon" id="btn-sound" onclick="toggleSound()">🔇 靜音模式</button>
+      <button class="btn-icon" onclick="triggerNativeCamera()">📷 原生拍照</button>
+      <button class="btn-icon" onclick="switchNextCamera()">🔄 切換鏡頭</button>
+      <button class="btn-icon" onclick="openMetaModal()">⚙️ 細節</button>
+    </div>
+  </header>
+
+  <input type="file" id="camera-native-input" accept="image/*" capture="environment" style="display:none;" onchange="onNativeCameraCaptured(this)">
+
+  <div class="app-container">
+    <div class="camera-panel">
+      <div id="reader"></div>
+      <div class="scanner-overlay">
+        <div id="viewfinder" class="viewfinder-box"></div>
+        <div id="viewfinder-tip-txt" class="viewfinder-tip">🎯 請將作業本右上角 QR碼 置於框內</div>
+      </div>
+    </div>
+
+    <div class="info-panel">
+      <!-- 📥 作業收繳面板 -->
+      <div id="section-hw-panel">
+        <div class="selector-bar">
+          <select id="assign-select" class="assign-select" onchange="onAssignmentChanged()">
+            <option value="">(無今日作業，掃碼將自動新增)</option>
+          </select>
+          <div id="assign-summary" class="assign-summary">已交: 0/-- 人</div>
+        </div>
+
+        <div id="toast-banner" class="toast-banner">
+          請將手機鏡頭對準作業本右上角 QR碼...
+        </div>
+
+        <div class="matrix-title">
+          <span>全班 30 人收繳燈號 (🟢已交 / 🔴未交)</span>
+          <span id="assign-subnote" style="color:var(--accent-blue);"></span>
+        </div>
+
+        <div class="seat-grid-scroll-box">
+          <div id="seat-grid" class="seat-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="meta-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-title">⚙️ 編輯作業細部說明</div>
+      <div class="form-group">
+        <label class="form-label">單元</label>
+        <input type="text" id="modal-unit" class="input-txt" placeholder="例：第一課 或 第1單元">
+      </div>
+      <div class="form-group">
+        <label class="form-label">頁數 / 備註</label>
+        <input type="text" id="modal-note" class="input-txt" placeholder="例：P.10~15 或 帶簽名">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeMetaModal()">取消</button>
+        <button class="btn-save" onclick="saveMetaModal()">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+
+    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby2OYGRrTwOm3jvN6qeLZeO6AVFrB9RdqYufffQgDhBBH6vND6x_Xo_P3EuXqrv9yzf/exec';
+
+    function gasApiFetch(url) {
+      return new Promise((resolve, reject) => {
+        const cleanUrl = String(url).replace('/a/macros/gfes.ntpc.edu.tw/', '/');
+        fetch(cleanUrl, { method: 'GET', redirect: 'follow' })
+          .then(res => res.text())
+          .then(text => resolve(JSON.parse(text)))
+          .catch(fetchErr => {
+            console.warn("fetch 失敗，切換至 JSONP 備援模式:", fetchErr);
+            const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+            window[callbackName] = function(data) {
+              delete window[callbackName];
+              if (scriptTag.parentNode) scriptTag.parentNode.removeChild(scriptTag);
+              resolve(data);
+            };
+            const scriptTag = document.createElement('script');
+            const sep = cleanUrl.includes('?') ? '&' : '?';
+            scriptTag.src = cleanUrl + sep + 'callback=' + callbackName;
+            scriptTag.onerror = function() {
+              delete window[callbackName];
+              if (scriptTag.parentNode) scriptTag.parentNode.removeChild(scriptTag);
+              reject(fetchErr);
+            };
+            document.body.appendChild(scriptTag);
+          });
+      });
+    }
+
+    async function gasApi(action, params = {}) {
+      const cleanBase = GAS_API_URL.replace('/a/macros/gfes.ntpc.edu.tw/', '/');
+      const url = new URL(cleanBase);
+      url.searchParams.set('action', action);
+      for (const [k, v] of Object.entries(params)) {
+        url.searchParams.set(k, v);
+      }
+      return await gasApiFetch(url.toString());
+    }
+
+    let isSilent = true;
+    let scanDataCache = { todayStr: "", assignments: [], submissionMatrix: {} };
+    let currentAssignKey = "";
+
+    let html5QrCode = null;
+    let isProcessingScan = false;
+    let lastScannedPayload = "";
+    let lastScanTime = 0;
+    let currentFacingMode = "environment"; // "environment" (rear) vs "user" (front)
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initSeatGrid();
+      fetchTodayData();
+      startCameraWithFacingMode(currentFacingMode);
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (html5QrCode) {
+        html5QrCode.stop().catch(() => {});
+      }
+    });
+
+    function toggleSound() {
+      isSilent = !isSilent;
+      const btn = document.getElementById('btn-sound');
+      btn.innerHTML = isSilent ? '🔇 靜音模式' : '🔊 音效模式';
+      showToast(isSilent ? '已切換為靜音（微震動）' : '已開啟提示音效', 'success');
+    }
+
+    function initSeatGrid() {
+      const grid = document.getElementById('seat-grid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 30; i++) {
+        const div = document.createElement('div');
+        div.id = `seat-pill-${i}`;
+        div.className = 'seat-pill';
+        div.innerHTML = `<span>${String(i).padStart(2, '0')}</span><span>🔴</span>`;
+        grid.appendChild(div);
+      }
+    }
+
+    async function fetchTodayData() {
+      try {
+        showToast('⏳ 正在同步試算表收繳狀態...', 'success');
+        const res = await gasApi('getTodayScanData');
+        if (res && (res.success || res.todayStr)) {
+          scanDataCache = res;
+          renderAssignDropdown();
+          renderSeatGrid();
+          showToast(`🟢 同步成功 (${res.todayStr || '今日'})`, 'success');
+        } else {
+          showToast('❌ 無法取得點收資料', 'error');
+        }
+      } catch (err) {
+        showToast('❌ 連線異常，請稍後重試', 'error');
+      }
+    }
+
+    function renderAssignDropdown() {
+      const select = document.getElementById('assign-select');
+      select.innerHTML = '';
+
+      if (!scanDataCache.assignments || scanDataCache.assignments.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = "";
+        opt.textContent = "(無今日作業，掃碼將自動新增)";
+        select.appendChild(opt);
+        currentAssignKey = "";
+        return;
+      }
+
+      scanDataCache.assignments.forEach(a => {
+        const opt = document.createElement('option');
+        opt.value = a.key;
+        opt.textContent = `${a.subject} - ${a.category} (${a.unit || '全班'})`;
+        select.appendChild(opt);
+      });
+
+      if (!currentAssignKey || !scanDataCache.assignments.some(a => a.key === currentAssignKey)) {
+        currentAssignKey = scanDataCache.assignments[0].key;
+      }
+      select.value = currentAssignKey;
+    }
+
+    function onAssignmentChanged() {
+      const select = document.getElementById('assign-select');
+      currentAssignKey = select.value;
+      renderSeatGrid();
+    }
+
+    function renderSeatGrid() {
+      const matrix = scanDataCache.submissionMatrix || {};
+      const vacantSeats = scanDataCache.vacantSeats || [];
+      const activeTotal = scanDataCache.activeTotal || (30 - vacantSeats.length);
+
+      // Detect API format:
+      // Format A (new/expected): matrix[assignKey] = [1, 3, 5, ...] (array of seat numbers)
+      // Format B (actual returned): matrix[seatNum] = { assignKey: true/false }
+      const firstKey = Object.keys(matrix)[0];
+      const isSeatKeyedFormat = firstKey !== undefined && !isNaN(parseInt(firstKey, 10));
+
+      let submittedCount = 0;
+      for (let i = 1; i <= 30; i++) {
+        const pill = document.getElementById(`seat-pill-${i}`);
+        if (!pill) continue;
+
+        // 空號：隱藏燈號
+        if (vacantSeats.includes(i)) {
+          pill.style.display = 'none';
+          continue;
+        }
+        pill.style.display = '';
+
+        let isSubmitted = false;
+
+        if (isSeatKeyedFormat) {
+          const seatObj = matrix[String(i)] || matrix[i];
+          isSubmitted = seatObj && currentAssignKey ? (seatObj[currentAssignKey] === true) : false;
+        } else {
+          const currentList = currentAssignKey ? (matrix[currentAssignKey] || []) : [];
+          isSubmitted = Array.isArray(currentList) ? currentList.includes(i) : (currentList[i] === true);
+        }
+
+        if (isSubmitted) submittedCount++;
+
+        pill.className = `seat-pill ${isSubmitted ? 'checked' : ''}`;
+        pill.innerHTML = `<span>${String(i).padStart(2, '0')}</span><span>${isSubmitted ? '🟢' : '🔴'}</span>`;
+        pill.onclick = () => toggleSeatSubmission(i);
+      }
+
+      document.getElementById('assign-summary').textContent = `已交: ${submittedCount}/${activeTotal} 人`;
+
+      const currAssignObj = (scanDataCache.assignments || []).find(a => a.key === currentAssignKey);
+      if (currAssignObj) {
+        const detailStr = [currAssignObj.unit, currAssignObj.note].filter(Boolean).join(' | ');
+        document.getElementById('assign-subnote').textContent = detailStr ? `📌 ${detailStr}` : '';
+      } else {
+        document.getElementById('assign-subnote').textContent = '';
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      const banner = document.getElementById('toast-banner');
+      banner.className = `toast-banner ${type}`;
+      banner.textContent = msg;
+    }
+
+    function triggerFeedback(type) {
+      if (navigator.vibrate) {
+        if (type === 'success') navigator.vibrate([100, 50, 100]);
+        else if (type === 'duplicate') navigator.vibrate([200, 100, 200]);
+        else navigator.vibrate(400);
+      }
+      if (!isSilent) {
+        const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/clink_clink.ogg');
+        audio.play().catch(()=>{});
+      }
+    }
+
+    function triggerNativeCamera() {
+      document.getElementById('camera-native-input').click();
+    }
+
+    function onNativeCameraCaptured(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        showToast('📷 正在解析照片中...', 'success');
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.scanFile(file, true)
+          .then(decodedText => {
+            onScanSuccess(decodedText);
+          })
+          .catch(err => {
+            showToast('❌ 照片中無法辨識 QR Code', 'error');
+            triggerFeedback('error');
+          });
+      }
+    }
+
+    let availableCameras = [];   // 所有可用相機清單（枚舉後儲存）
+    let currentCameraIndex = 0; // 目前使用的相機索引
+
+    async function startCameraWithFacingMode(preferRear) {
+      // 先停止現有相機
+      if (html5QrCode) {
+        try { await html5QrCode.stop(); } catch(e) {}
+        html5QrCode = null;
+      }
+      await initAndStartCamera(preferRear !== false);
+    }
+
+    async function initAndStartCamera(preferRear = true) {
+      showToast('⏳ 正在啟動相機...', 'success');
+
+      const config = { fps: 10, qrbox: { width: 180, height: 180 } };
+
+      try {
+        // 枚舉所有相機（最可靠的方式）
+        if (availableCameras.length === 0) {
+          availableCameras = await Html5Qrcode.getCameras();
+        }
+
+        if (!availableCameras || availableCameras.length === 0) {
+          showToast('❌ 找不到任何相機', 'error');
+          return;
+        }
+
+        // 選相機：優先找後置（label 含 back/rear/environment/後/後置）
+        if (preferRear) {
+          const rearIdx = availableCameras.findIndex(c =>
+            /back|rear|environment|後|後置/i.test(c.label)
+          );
+          currentCameraIndex = rearIdx >= 0 ? rearIdx : availableCameras.length - 1;
+        }
+
+        const cameraId = availableCameras[currentCameraIndex].id;
+        html5QrCode = new Html5Qrcode("reader");
+
+        await html5QrCode.start(cameraId, config, onScanSuccess);
+        const label = availableCameras[currentCameraIndex].label || `相機 ${currentCameraIndex + 1}`;
+        showToast(`🟢 掃碼器就緒 (${label})`, 'success');
+
+      } catch (err) {
+        showToast('❌ 相機啟動失敗: ' + err, 'error');
+      }
+    }
+
+    function switchNextCamera() {
+      if (availableCameras.length <= 1) {
+        showToast('⚠️ 本裝置只有一個相機', 'error');
+        return;
+      }
+      currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+      const label = availableCameras[currentCameraIndex].label || `相機 ${currentCameraIndex + 1}`;
+      showToast(`🔄 切換到: ${label}`, 'success');
+      startCameraWithFacingMode(false); // false = 不重設偏好，直接用 currentCameraIndex
+    }
+
+    async function onScanSuccess(decodedText) {
+      const now = Date.now();
+      if (decodedText === lastScannedPayload && (now - lastScanTime) < 3000) return;
+      if (isProcessingScan) return;
+
+      isProcessingScan = true;
+      lastScannedPayload = decodedText;
+      lastScanTime = now;
+
+      showToast(`⏳ 掃描到: "${decodedText}" 處理中...`, 'success');
+
+      try {
+        const res = await gasApi('doScanRecord', { payload: decodedText });
+        const vf = document.getElementById('viewfinder');
+
+        if (res && res.success) {
+          if (res.action === 'recorded' || !res.isDuplicate) {
+            vf.classList.add('success');
+            triggerFeedback('success');
+            showToast(`🟢 ${res.message}`, 'success');
+            // 自動切換到剛掃到的那筆作業燈號
+            if (res.subject && res.category) {
+              currentAssignKey = `${res.subject}_${res.category}`;
+            }
+            fetchTodayData();
+          } else if (res.action === 'duplicate' || res.isDuplicate) {
+            vf.classList.add('duplicate');
+            triggerFeedback('duplicate');
+            showToast(`🟧 ${res.message}`, 'duplicate');
+            // 重複掃碼也切換到該作業，讓教師確認
+            if (res.subject && res.category) {
+              currentAssignKey = `${res.subject}_${res.category}`;
+            }
+            fetchTodayData();
+          } else {
+            showToast(`ℹ️ ${res.message}`, 'success');
+          }
+        } else {
+          triggerFeedback('error');
+          showToast(`❌ 登記失敗: ${res ? res.message : ''}`, 'error');
+        }
+
+        setTimeout(() => {
+          vf.className = 'viewfinder-box';
+        }, 1500);
+
+      } catch (err) {
+        triggerFeedback('error');
+        showToast('❌ 網路請求失敗，請檢查連線', 'error');
+      } finally {
+        setTimeout(() => { isProcessingScan = false; }, 1200);
+      }
+    }
+
+    function openMetaModal() {
+      if (!currentAssignKey) {
+        showToast('⚠️ 目前尚無選取的作業可編輯細節', 'error');
+        return;
+      }
+      const curr = (scanDataCache.assignments || []).find(a => a.key === currentAssignKey);
+      document.getElementById('modal-unit').value = curr ? (curr.unit || '') : '';
+      document.getElementById('modal-note').value = curr ? (curr.note || '') : '';
+      document.getElementById('meta-modal').classList.remove('hidden');
+    }
+
+    function closeMetaModal() {
+      document.getElementById('meta-modal').classList.add('hidden');
+    }
+
+    async function saveMetaModal() {
+      if (!currentAssignKey) return;
+      const curr = (scanDataCache.assignments || []).find(a => a.key === currentAssignKey);
+      if (!curr) return;
+
+      const unitVal = document.getElementById('modal-unit').value.trim();
+      const noteVal = document.getElementById('modal-note').value.trim();
+
+      showToast('⏳ 正在儲存作業說明...', 'success');
+      try {
+        const res = await gasApi('updateHomeworkMetadata', {
+          colIndex: curr.colIndex,
+          unit: unitVal,
+          note: noteVal
+        });
+        if (res && res.success) {
+          showToast('🟢 作業說明更新成功！', 'success');
+          closeMetaModal();
+          fetchTodayData();
+        } else {
+          showToast('❌ 更新失敗: ' + (res ? res.message : ''), 'error');
+        }
+      } catch (err) {
+        showToast('❌ 系統連線異常', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

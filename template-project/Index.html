@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>🎯 班級智慧作業清點與催繳系統</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-red: #ef4444;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: rgba(30, 41, 59, 0.95);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+    }
+    .header-title { font-weight: 700; color: var(--accent-blue); font-size: 1.1rem; }
+    
+    .view-switcher {
+      display: flex;
+      background: #0f172a;
+      padding: 6px;
+      border-bottom: 1px solid #334155;
+      gap: 6px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: #1e293b;
+      color: var(--text-sub);
+      border: 1px solid #334155;
+      padding: 8px 4px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      border-color: var(--accent-blue);
+    }
+    
+    .container { padding: 12px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .view-panel { display: none; flex-direction: column; gap: 10px; }
+    .view-panel.active { display: flex; }
+
+    .form-card {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    @media (min-width: 500px) {
+      .form-card { grid-template-columns: repeat(4, 1fr); }
+    }
+    .form-group { display: flex; flex-direction: column; gap: 3px; }
+    .form-group label { font-size: 0.75rem; color: var(--text-sub); font-weight: 600; }
+    .form-control {
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #fff;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    .seat-grid-container {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .seat-grid-header {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+    }
+    .seat-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    @media (min-width: 500px) {
+      .seat-grid { grid-template-columns: repeat(10, 1fr); }
+    }
+    .seat-btn {
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #fff;
+      padding: 10px 4px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      touch-action: manipulation;
+      transition: all 0.15s;
+    }
+    .seat-btn:active { transform: scale(0.94); }
+    .seat-btn.submitted {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: var(--accent-green);
+      color: #86efac;
+    }
+    .seat-btn.unsubmitted {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: var(--accent-red);
+      color: #fca5a5;
+    }
+    .status-badge { font-size: 0.72rem; padding: 2px 6px; border-radius: 10px; }
+    .status-badge.submitted { background: var(--accent-green); color: #000; }
+    .status-badge.unsubmitted { background: var(--accent-red); color: #fff; }
+
+    /* Sub Tabs for Subject Filter */
+    .sub-tab-btn {
+      background: #1e293b;
+      color: var(--text-sub);
+      border: 1px solid #334155;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .sub-tab-btn:hover { background: #334155; color: #fff; }
+    .sub-tab-btn.active {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #38bdf8;
+    }
+
+    /* Floating Toast */
+    .toast-banner {
+      position: fixed; top: 54px; left: 50%; transform: translateX(-50%);
+      z-index: 99999; background: #1e293b; border: 1px solid #38bdf8;
+      color: #fff; padding: 8px 16px; border-radius: 30px; font-size: 0.88rem;
+      font-weight: 700; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      display: none; align-items: center; gap: 12px;
+      animation: toastIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes toastIn { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+    .toast-undo-btn {
+      background: #ef4444; color: #fff; border: none; padding: 4px 10px;
+      border-radius: 14px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { padding: 8px 10px; border-bottom: 1px solid #334155; text-align: left; }
+    th { background: #1e293b; color: var(--text-sub); }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Toast -->
+  <div class="toast-banner" id="toast-banner">
+    <span id="toast-text"></span>
+    <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩️ 復原按錯</button>
+  </div>
+
+  <header>
+    <div class="header-title">🎯 班級智慧作業清點與催繳系統</div>
+  </header>
+
+  <div class="view-switcher">
+    <button class="tab-btn active" onclick="switchView('check')">1. 🎯 純按鈕作業點收</button>
+    <button class="tab-btn" onclick="switchView('reminder')">2. 📊 缺交催繳矩陣</button>
+  </div>
+
+  <div class="container">
+    
+    <!-- View 1: Button Check-in -->
+    <div class="view-panel active" id="view-check">
+      <div class="form-card">
+        <div class="form-group">
+          <label for="hw-subject">📚 科目</label>
+          <select id="hw-subject" class="form-control" onchange="onSubjectChange()">
+            <option value="國語">國語</option>
+            <option value="數學">數學</option>
+            <option value="社會">社會</option>
+            <option value="自然">自然</option>
+            <option value="英語">英語</option>
+            <option value="聯絡簿">聯絡簿</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="hw-category">📖 作業種類</label>
+          <select id="hw-category" class="form-control" onchange="loadTodayStatus()">
+            <option value="甲本">甲本</option>
+            <option value="乙本">乙本</option>
+            <option value="習作">習作</option>
+            <option value="預習單">預習單</option>
+            <option value="學習單">學習單</option>
+            <option value="國練">國練</option>
+            <option value="數練">數練</option>
+            <option value="數習">數習</option>
+            <option value="數課">數課</option>
+            <option value="評量">評量</option>
+            <option value="考卷">考卷</option>
+            <option value="作業本">作業本</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="hw-unit">📌 單元</label>
+          <input type="text" id="hw-unit" class="form-control" placeholder="例: L3" onchange="saveHomeworkMeta()">
+        </div>
+        <div class="form-group">
+          <label for="hw-note">📝 備註</label>
+          <input type="text" id="hw-note" class="form-control" placeholder="備註說明" onchange="saveHomeworkMeta()">
+        </div>
+      </div>
+
+      <div class="seat-grid-container">
+        <div class="seat-grid-header">
+          <span>點擊座號按鈕切換【🟢 已繳 / 🔴 未繳】：</span>
+          <span id="submitted-summary" style="color:var(--accent-blue); font-weight:700;">載入中...</span>
+        </div>
+        <div class="seat-grid" id="seat-grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- View 2: Unsubmitted Reminder Matrix -->
+    <div class="view-panel" id="view-reminder">
+      <div style="background:var(--card-bg); border-radius:10px; padding:10px; border:1px solid #334155; display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span style="font-weight:700; color:var(--accent-blue);">📊 全班未繳催繳矩陣列表</span>
+          <button onclick="loadReminderData()" style="background:#334155; color:#38bdf8; border:1px solid #475569; padding:4px 10px; border-radius:6px; font-weight:700; cursor:pointer;">🔄 重新整理</button>
+        </div>
+
+        <!-- Subject Filter Bar -->
+        <div class="subject-filter-bar" id="reminder-subject-tabs" style="display:flex; gap:6px; flex-wrap:wrap; background:#0f172a; padding:6px; border-radius:8px; border:1px solid #334155;">
+          <button class="sub-tab-btn active" onclick="filterReminderBySubject('全部')">全部科目</button>
+          <button class="sub-tab-btn" onclick="filterReminderBySubject('國語')">國語</button>
+          <button class="sub-tab-btn" onclick="filterReminderBySubject('數學')">數學</button>
+          <button class="sub-tab-btn" onclick="filterReminderBySubject('社會')">社會</button>
+          <button class="sub-tab-btn" onclick="filterReminderBySubject('自然')">自然</button>
+          <button class="sub-tab-btn" onclick="filterReminderBySubject('英語')">英語</button>
+          <button class="sub-tab-btn" onclick="filterReminderBySubject('聯絡簿')">聯絡簿</button>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:50px;">座號</th>
+                <th style="width:70px;">姓名</th>
+                <th>未繳作業與單元說明</th>
+                <th style="width:85px; text-align:center;">動作</th>
+              </tr>
+            </thead>
+            <tbody id="reminder-table-body">
+              <tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">載入中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let todayData = null;
+    let lastAction = null;
+    let toastTimer = null;
+
+    const subjectCategoryMap = {
+      '國語': ['甲本', '乙本', '習作', '預習單', '學習單', '國練', '評量', '考卷', '作業本'],
+      '數學': ['數習', '數課', '數練', '習作', '評量', '考卷', '作業本'],
+      '社會': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
+      '自然': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
+      '英語': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
+      '聯絡簿': ['聯絡簿', '小日記', '簽名']
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      onSubjectChange();
+      renderEmptySeatButtons();
+    });
+
+    function onSubjectChange() {
+      const subject = document.getElementById('hw-subject').value;
+      const categorySelect = document.getElementById('hw-category');
+      const categories = subjectCategoryMap[subject] || ['習作', '預習單', '學習單', '評量', '考卷', '作業本'];
+
+      const currentVal = categorySelect.value;
+      categorySelect.innerHTML = '';
+      categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = cat;
+        categorySelect.appendChild(opt);
+      });
+
+      if (categories.includes(currentVal)) {
+        categorySelect.value = currentVal;
+      }
+
+      loadTodayStatus();
+    }
+
+    function switchView(viewName) {
+      document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', (viewName === 'check' && idx === 0) || (viewName === 'reminder' && idx === 1));
+      });
+      document.getElementById('view-check').classList.toggle('active', viewName === 'check');
+      document.getElementById('view-reminder').classList.toggle('active', viewName === 'reminder');
+
+      if (viewName === 'reminder') loadReminderData();
+    }
+
+    function renderEmptySeatButtons() {
+      const grid = document.getElementById('seat-grid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 30; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'seat-btn unsubmitted';
+        btn.innerHTML = `<div>${String(i).padStart(2, '0')}號</div><span class="status-badge unsubmitted">🔴 未繳</span>`;
+        grid.appendChild(btn);
+      }
+    }
+
+    function showToast(msg, actionData = null) {
+      lastAction = actionData;
+      const banner = document.getElementById('toast-banner');
+      const textEl = document.getElementById('toast-text');
+      const undoBtn = document.getElementById('toast-undo-btn');
+
+      textEl.textContent = msg;
+      undoBtn.style.display = 'none'; // 隱藏復原按錯按鈕
+      banner.style.display = 'flex';
+
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { banner.style.display = 'none'; }, 7000);
+    }
+
+    async function loadTodayStatus() {
+      const subject = document.getElementById('hw-subject').value;
+      const category = document.getElementById('hw-category').value;
+      const assignKey = `${subject}_${category}`;
+
+      try {
+        google.script.run.withSuccessHandler(res => {
+          if (!res || !res.success) return;
+          todayData = res;
+
+          const assignList = res.assignments || [];
+          const currAssign = assignList.find(a => `${a.subject}_${a.category}` === assignKey);
+
+          if (currAssign) {
+            document.getElementById('hw-unit').value = currAssign.unit || '';
+            document.getElementById('hw-note').value = currAssign.note || '';
+          }
+
+          const matrix = res.submissionMatrix || {};
+          const grid = document.getElementById('seat-grid');
+          grid.innerHTML = '';
+
+          const vacantSeats = res.vacantSeats || [];
+          const activeTotal = res.activeTotal || (30 - vacantSeats.length);
+
+          const firstKey = Object.keys(matrix)[0];
+          const isSeatKeyedFormat = firstKey !== undefined && !isNaN(parseInt(firstKey, 10));
+
+          let submittedCount = 0;
+          for (let i = 1; i <= 30; i++) {
+            // 空號跳過
+            if (vacantSeats.includes(i)) continue;
+
+            let isSubmitted = false;
+            if (isSeatKeyedFormat) {
+              const seatObj = matrix[String(i)] || matrix[i];
+              isSubmitted = seatObj && assignKey ? (seatObj[assignKey] === true) : false;
+            } else {
+              const currentList = matrix[assignKey] || [];
+              isSubmitted = Array.isArray(currentList) && currentList.includes(i);
+            }
+            if (isSubmitted) submittedCount++;
+
+            const btn = document.createElement('button');
+            btn.className = `seat-btn ${isSubmitted ? 'submitted' : 'unsubmitted'}`;
+            btn.innerHTML = `<div>${String(i).padStart(2, '0')}號</div><span class="status-badge ${isSubmitted ? 'submitted' : 'unsubmitted'}">${isSubmitted ? '🟢 已繳' : '🔴 未繳'}</span>`;
+            btn.onclick = () => toggleSeatStatus(i, subject, category, !isSubmitted);
+            grid.appendChild(btn);
+          }
+
+          document.getElementById('submitted-summary').textContent = `已繳 ${submittedCount} / ${activeTotal} 人`;
+        }).getTodayScanData();
+      } catch(e) {
+        console.error(e);
+      }
+    }
+
+    function toggleSeatStatus(seatNo, subject, category, targetState) {
+      const seatStr = String(seatNo).padStart(2, '0');
+      showToast(`⏳ 正在變更 ${seatStr}號 狀態...`, null);
+
+      const unit = document.getElementById('hw-unit') ? document.getElementById('hw-unit').value.trim() : '';
+      const note = document.getElementById('hw-note') ? document.getElementById('hw-note').value.trim() : '';
+
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) {
+          loadTodayStatus();
+          showToast(`已切換 ${seatStr}號【${subject} ${category}】為 ${res.isSubmitted ? '🟢 已繳' : '🔴 未繳'}`, null);
+        } else {
+          showToast(`❌ 切換失敗：${res ? res.message : ''}`, null);
+        }
+      }).toggleManualSubmission({
+        seatNo: seatNo,
+        assignKey: `${subject}_${category}`,
+        unit: unit,
+        note: note
+      });
+    }
+
+    function saveHomeworkMeta() {
+      const subject = document.getElementById('hw-subject').value;
+      const category = document.getElementById('hw-category').value;
+      const assignKey = `${subject}_${category}`;
+      const unit = document.getElementById('hw-unit').value.trim();
+      const note = document.getElementById('hw-note').value.trim();
+
+      if (!todayData || !todayData.assignments) return;
+      const assignObj = todayData.assignments.find(a => `${a.subject}_${a.category}` === assignKey);
+      if (assignObj) {
+        google.script.run.updateHomeworkMetadata(assignObj.colIndex, unit, note);
+      }
+    }
+
+    let cachedReminderRes = null;
+    let currentReminderSubject = '全部';
+
+    function filterReminderBySubject(subject) {
+      currentReminderSubject = subject;
+      document.querySelectorAll('#reminder-subject-tabs .sub-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.trim() === subject);
+      });
+      renderReminderTable();
+    }
+
+    function loadReminderData() {
+      const tbody = document.getElementById('reminder-table-body');
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#64748b;">讀取中...</td></tr>';
+
+      google.script.run.withSuccessHandler(res => {
+        cachedReminderRes = res;
+        renderReminderTable();
+      }).getHomeworkUnsubmittedData();
+    }
+
+    function renderReminderTable() {
+      const tbody = document.getElementById('reminder-table-body');
+      tbody.innerHTML = '';
+
+      if (!cachedReminderRes || !cachedReminderRes.unsubmittedRecords || cachedReminderRes.unsubmittedRecords.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#4ade80;">🎉 太棒了！全班無任何缺交紀錄！</td></tr>';
+        return;
+      }
+
+      let filteredRecords = cachedReminderRes.unsubmittedRecords;
+      if (currentReminderSubject !== '全部') {
+        filteredRecords = filteredRecords.filter(r => r.assignment.subject === currentReminderSubject);
+      }
+
+      if (filteredRecords.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#4ade80;">🎉 讚！【${currentReminderSubject}】全班皆已繳清，無缺交！</td></tr>`;
+        return;
+      }
+
+      // Sort by seat number ascending
+      filteredRecords.sort((a, b) => Number(a.seatNo) - Number(b.seatNo));
+
+      filteredRecords.forEach(r => {
+        const tr = document.createElement('tr');
+        const unitNote = r.assignment.unit ? ` (${r.assignment.unit})` : '';
+        const hwDesc = `${r.assignment.subject} ${r.assignment.type}${unitNote}`;
+        const escapedHwDesc = hwDesc.replace(/'/g, "\\'");
+        const escapedName = r.name.replace(/'/g, "\\'");
+
+        tr.innerHTML = `
+          <td><strong>${String(r.seatNo).padStart(2, '0')}</strong></td>
+          <td>${r.name}</td>
+          <td style="color:#fca5a5; font-weight:600;">${hwDesc}</td>
+          <td style="text-align:center;">
+            <button onclick="quickMakeUpSingleItem(${r.rowIndex}, ${r.colIndex}, '${r.seatNo}', '${escapedName}', '${escapedHwDesc}')" style="background:#22c55e; color:#0f172a; border:none; padding:4px 10px; border-radius:4px; font-weight:700; font-size:0.75rem; cursor:pointer;">✍️ 補登</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function quickMakeUpSeat(seatNo) {
+      if (!cachedReminderRes) return;
+      let itemsToUpdate = cachedReminderRes.unsubmittedRecords.filter(r => String(r.seatNo) === String(seatNo));
+      if (currentReminderSubject !== '全部') {
+        itemsToUpdate = itemsToUpdate.filter(r => r.assignment.subject === currentReminderSubject);
+      }
+      if (itemsToUpdate.length === 0) return;
+
+      const seatStr = String(seatNo).padStart(2, '0');
+      showToast(`⏳ 正在為 ${seatStr}號 進行作業補登...`);
+
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          showToast(`🟢 已成功為 ${seatStr}號 補登完畢！`);
+          loadReminderData();
+          loadTodayStatus();
+        }
+      }).batchSubmitMakeUp(itemsToUpdate.map(i => ({ rowIndex: i.rowIndex, colIndex: i.colIndex })));
+    }
+  </script>
+</body>
+</html>
