@@ -828,8 +828,33 @@
   </div>
 
   <script>
-    // backend GAS URL (Official NTPC Deployment ID)
-    const GAS_API_URL = window.GAS_API_URL || localStorage.getItem('class_management_gas_api_url') || "YOUR_GAS_WEB_APP_URL";
+    function getGasApiUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
+      if (paramGasUrl) {
+        try { localStorage.setItem('class_management_gas_api_url', paramGasUrl); } catch(e){}
+        return paramGasUrl;
+      }
+
+      const stored = localStorage.getItem('class_management_gas_api_url');
+      if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
+        return stored;
+      }
+
+      if (window.GAS_API_URL && window.GAS_API_URL !== 'YOUR_GAS_WEB_APP_URL') {
+        return window.GAS_API_URL;
+      }
+
+      // 若在 Google Apps Script 環境內部，自動抓取當前頁面 URL
+      if (location.hostname.includes('googleusercontent.com') || location.hostname.includes('script.google.com')) {
+        return location.href.split('?')[0];
+      }
+
+      // 預設部署 API 網址 (相容於 Neocities 外部託管頁面)
+      return 'https://script.google.com/macros/s/AKfycby2OYGRrTwOm3jvN6qeLZeO6AVFrB9RdqYufffQgDhBBH6vND6x_Xo_P3EuXqrv9yzf/exec';
+    }
+
+    const GAS_API_URL = getGasApiUrl();
 
     // 統一的 GAS API 呼叫（支援標準 fetch、自動清除 /a/macros/ 與 JSONP 跨域備援）
     function gasApiFetch(url) {

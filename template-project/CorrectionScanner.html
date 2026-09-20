@@ -471,7 +471,31 @@
       screen.orientation.lock('landscape').catch(() => {});
     }
 
-    const GAS_API_URL = window.GAS_API_URL || localStorage.getItem('class_management_gas_api_url') || 'YOUR_GAS_WEB_APP_URL';
+    function getGasApiUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
+      if (paramGasUrl) {
+        try { localStorage.setItem('class_management_gas_api_url', paramGasUrl); } catch(e){}
+        return paramGasUrl;
+      }
+
+      const stored = localStorage.getItem('class_management_gas_api_url');
+      if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
+        return stored;
+      }
+
+      if (window.GAS_API_URL && window.GAS_API_URL !== 'YOUR_GAS_WEB_APP_URL') {
+        return window.GAS_API_URL;
+      }
+
+      if (location.hostname.includes('googleusercontent.com') || location.hostname.includes('script.google.com')) {
+        return location.href.split('?')[0];
+      }
+
+      return 'https://script.google.com/macros/s/AKfycby2OYGRrTwOm3jvN6qeLZeO6AVFrB9RdqYufffQgDhBBH6vND6x_Xo_P3EuXqrv9yzf/exec';
+    }
+
+    const GAS_API_URL = getGasApiUrl();
 
     function gasApiFetch(url) {
       return new Promise((resolve, reject) => {
