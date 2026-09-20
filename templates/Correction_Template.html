@@ -856,8 +856,24 @@
 
     const GAS_API_URL = getGasApiUrl();
 
-    // 統一的 GAS API 呼叫（支援標準 fetch、自動清除 /a/macros/ 與 JSONP 跨域備援）
-    function gasApiFetch(url) {
+    // 增強版超穩定 GAS API 呼叫器（支援 fetch 優先、JSONP 備援、自動重試、與 18 秒冷啟動逾時）
+    async function gasApiFetch(url, retries = 2, timeoutMs = 18000) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          return await singleGasApiFetch(url, timeoutMs);
+        } catch (err) {
+          console.warn(`[GAS API] 第 ${attempt + 1} 次連線失敗: ${err.message}`);
+          if (attempt < retries) {
+            // 重試前等待 1 秒（喚醒 GAS 冷啟動容器）
+            await new Promise(r => setTimeout(r, 1000));
+          } else {
+            throw err;
+          }
+        }
+      }
+    }
+
+    function singleGasApiFetch(url, timeoutMs = 18000) {
       return new Promise((resolve, reject) => {
         const cleanUrl = String(url).replace(/\/a\/macros\/[a-zA-Z0-9.-]+\//, '/');
         const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
@@ -865,13 +881,14 @@
         const finalUrl = cleanUrl + sep + 'callback=' + callbackName + '&_t=' + Date.now();
 
         let isSettled = false;
+        let scriptTag = null;
 
         const timeoutTimer = setTimeout(() => {
           if (isSettled) return;
           isSettled = true;
           cleanup();
-          reject(new Error('連線逾時'));
-        }, 6000);
+          reject(new Error('伺服器回應較慢 (逾時)'));
+        }, timeoutMs);
 
         function cleanup() {
           delete window[callbackName];
@@ -888,17 +905,42 @@
           resolve(data);
         };
 
-        const scriptTag = document.createElement('script');
-        scriptTag.src = finalUrl;
-        scriptTag.onerror = function() {
-          if (isSettled) return;
-          isSettled = true;
-          clearTimeout(timeoutTimer);
-          cleanup();
-          reject(new Error('連線失敗'));
-        };
-
-        document.head.appendChild(scriptTag);
+        // 1. 優先嘗試標準 fetch (跨域處理)
+        fetch(finalUrl, { method: 'GET', redirect: 'follow' })
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.text();
+          })
+          .then(text => {
+            if (isSettled) return;
+            let parsedData = null;
+            if (text.startsWith(callbackName + '(') && text.endsWith(')')) {
+              const jsonStr = text.substring(callbackName.length + 1, text.length - 1);
+              parsedData = JSON.parse(jsonStr);
+            } else if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
+              parsedData = JSON.parse(text);
+            }
+            if (parsedData) {
+              isSettled = true;
+              clearTimeout(timeoutTimer);
+              cleanup();
+              resolve(parsedData);
+            }
+          })
+          .catch(() => {
+            // 2. fetch 被受限時，無縫切換 JSONP 動態 <script> 載入
+            if (isSettled) return;
+            scriptTag = document.createElement('script');
+            scriptTag.src = finalUrl;
+            scriptTag.onerror = function() {
+              if (isSettled) return;
+              isSettled = true;
+              clearTimeout(timeoutTimer);
+              cleanup();
+              reject(new Error('網路連線失敗'));
+            };
+            document.head.appendChild(scriptTag);
+          });
       });
     }
 
