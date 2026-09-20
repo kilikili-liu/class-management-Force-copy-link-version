@@ -30,7 +30,7 @@
 ---
 
 ### 步驟 3：將 `GAS_API_URL` 複製貼至 HTML 檔案程式碼中
-將步驟 2 複製的 **網頁應用程式網址 (Web App URL)**，填入本專案中以下三個 HTML 檔案程式碼的 `GAS_API_URL` 位置：
+將步驟 2 複製的 **網頁應用程式網址 (Web App URL)**，填入本專案中以下 HTML 檔案程式碼的 `GAS_API_URL` 位置：
 
 1. **`correction.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，將預設網址替換為您的 `GAS_API_URL`。
 2. **`correction_scanner.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，替換為您的 `GAS_API_URL`。
@@ -48,18 +48,37 @@
 
 ---
 
-### 步驟 5：上傳 4 個 HTML 檔案至 Neocities 即可開始使用！
-將修改好的以下 **4 個 HTML 檔案** 上傳至 Neocities 空間中：
+### 步驟 5：上傳 HTML 檔案至 Neocities 即可開始使用！
+將修改好的以下 HTML 檔案上傳至 Neocities 空間中：
 
 | 檔案名稱 | 說明 / 功能 |
 |---|---|
+| **`index.html`** | 🎯 班級純按鈕作業點收與全班缺交催繳矩陣主頁 |
 | **`StickerGenerator.html`** | 🏷️ 班級學生作業條碼 / QR Code 貼紙產出工具 |
 | **`correction.html`** | ✏️ 班級作業錯題訂正與銷案矩陣主頁 (純按鈕/矩陣) |
 | **`correction_scanner.html`** | 📱 獨立【訂正掃碼工具】(橫向雙欄，掃碼即銷案/登記) |
 | **`scanner.html`** | 📥 班級作業 QR Code 快速點收與繳交狀態工具 |
 
 🎉 **大功告成！**  
-上傳完成後，直接開啟 Neocities 提供的網頁連結（例：`https://您的帳號.neocities.org/correction.html`），即可在手機、平板或電腦上輕鬆使用本系統！
+上傳完成後，即可在手機、平板或電腦上開啟下方網址輕鬆使用本系統！
+
+---
+
+## 🌐 系統各功能頁面開啟與存取網址說明
+
+本系統支援兩種存取方式（**Neocities 託管網址** 或 **GAS 原生部署網址**）：
+
+| 系統頁面 / 工具名稱 | 方式 A：Neocities 託管網址 | 方式 B：GAS 原生部署網址 |
+|---|---|---|
+| **🎯 純按鈕作業點收與缺交催繳系統** | `https://您的帳號.neocities.org/index.html` | 直接開啟 **`GAS_API_URL`** (預設主頁) |
+| **✏️ 錯題訂正與銷案矩陣系統** | `https://您的帳號.neocities.org/correction.html` | `GAS_API_URL?page=correction` |
+| **📱 獨立訂正條碼速掃工具** | `https://您的帳號.neocities.org/correction_scanner.html` | `GAS_API_URL?page=correction_scanner` |
+| **📥 作業 QR Code 速掃工具** | `https://您的帳號.neocities.org/scanner.html` | `GAS_API_URL?page=scanner` |
+| **🏷️ 條碼與 QR Code 貼紙產生器** | `https://您的帳號.neocities.org/StickerGenerator.html` | 上傳至 Neocities 後直接開啟即可使用 |
+
+> 💡 **小撇步 (🎯 純按鈕作業點收系統網址獲取方式)**：
+> 1. **在 GAS 中獲取**：完成步驟 2 部署後複製的 **`GAS_API_URL`** (網頁應用程式網址)，在瀏覽器中直接開啟，即可直接載入「🎯 純按鈕作業點收與缺交催繳系統」！
+> 2. **在 Neocities 中獲取**：上傳 `index.html` 後，開啟 `https://您的帳號.neocities.org/index.html` 即可使用。
 
 ---
 
@@ -98,7 +117,8 @@
 ## 📁 專案檔案架構
 
 ```text
-├── neocities/                 # 🌐 供上傳至 Neocities 託管空間的 4 個前端頁面
+├── neocities/                 # 🌐 供上傳至 Neocities 託管空間的前端頁面
+│   ├── index.html             # 🎯 純按鈕作業點收與缺交催繳矩陣主頁
 │   ├── StickerGenerator.html  # 🏷️ 條碼與 QR Code 標籤貼紙產生器
 │   ├── correction.html        # ✏️ 錯題訂正與銷案矩陣主頁
 │   ├── correction_scanner.html# 📱 獨立訂正掃碼工具
