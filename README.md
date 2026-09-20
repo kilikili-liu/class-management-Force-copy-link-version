@@ -27,58 +27,52 @@
 5. 點擊 **「部署」** 按鈕，依照畫面指示完成 Google 帳號權限授權。
 6. 部署成功後，畫面會顯示 **「網頁應用程式網址」 (Web App URL)**，請點擊 **「複製」** 備用（格式如：`https://script.google.com/macros/s/AKfycb.../exec`）。
 
----
-
-### 步驟 3：將 `GAS_API_URL` 複製貼至 HTML 檔案程式碼中
-將步驟 2 複製的 **網頁應用程式網址 (Web App URL)**，填入本專案中以下 HTML 檔案程式碼的 `GAS_API_URL` 位置：
-
-1. **`correction.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，將預設網址替換為您的 `GAS_API_URL`。
-2. **`correction_scanner.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，替換為您的 `GAS_API_URL`。
-3. **`scanner.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，替換為您的 `GAS_API_URL`。
-
-*(註：若直接於網址帶入 `?api_url=您的GAS網址`，系統亦會自動記憶於本地瀏覽器中。)*
+> 🎉 **恭喜！您已可以直接開啟並使用「🎯 純按鈕作業點收系統」**：  
+> 直接在瀏覽器開啟剛剛複製的 **網頁應用程式網址 (`GAS_API_URL`)**，即可直接開啟並使用速度最快、免額外設定的 **純按鈕作業點收與缺交催繳矩陣** 主頁！
 
 ---
 
-### 步驟 4：推薦免費 Web 託管空間 (Neocities)
-推薦使用免費且穩定快速的 **[Neocities (neocities.org)](https://neocities.org/)** 靜態網頁託管服務，讓您免伺服器費用、隨時隨地用手機或電腦開啟網頁：
+### 步驟 3：將 `GAS_API_URL` 填入相機/條碼 HTML 檔案
+由於 Google 原生 GAS 的安全政策會阻擋手機相機調用 (`getUserMedia` 封鎖)，因此**凡需使用手機鏡頭掃碼的頁面**，請將步驟 2 複製的 **網頁應用程式網址 (`GAS_API_URL`)**，填入本專案 `neocities/` 資料夾中以下 **3 個 HTML 檔案** 的 `GAS_API_URL` 位置：
+
+1. **`correction.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，將網址替換為您的 `GAS_API_URL`。
+2. **`correction_scanner.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，將網址替換為您的 `GAS_API_URL`。
+3. **`scanner.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，將網址替換為您的 `GAS_API_URL`。
+
+---
+
+### 步驟 4：註冊免費 Neocities 託管空間 (突破相機權限限制)
+為解除 Google Apps Script 原生安全政策對手機相機調用的限制，推薦使用免費的 **[Neocities (neocities.org)](https://neocities.org/)** 靜態網頁託管服務：
 
 1. 前往 [Neocities 官網](https://neocities.org/) 註冊一個免費帳戶（只需填寫帳號與密碼）。
 2. 登入後點擊 **「Edit Sites」 (編輯網站)** 進入檔案管理介面。
 
 ---
 
-### 步驟 5：上傳 HTML 檔案至 Neocities 即可開始使用！
-將修改好的以下 HTML 檔案上傳至 Neocities 空間中：
+### 步驟 5：上傳 4 個相機與貼紙 HTML 檔案至 Neocities 空間
+將修改好的以下 **4 個 HTML 檔案** 上傳至 Neocities 空間中：
 
 | 檔案名稱 | 說明 / 功能 |
 |---|---|
-| **`index.html`** | 🎯 班級純按鈕作業點收與全班缺交催繳矩陣主頁 |
 | **`StickerGenerator.html`** | 🏷️ 班級學生作業條碼 / QR Code 貼紙產出工具 |
-| **`correction.html`** | ✏️ 班級作業錯題訂正與銷案矩陣主頁 (純按鈕/矩陣) |
-| **`correction_scanner.html`** | 📱 獨立【訂正掃碼工具】(橫向雙欄，掃碼即銷案/登記) |
-| **`scanner.html`** | 📥 班級作業 QR Code 快速點收與繳交狀態工具 |
+| **`correction.html`** | ✏️ 班級作業錯題訂正與銷案矩陣主頁 (可順暢調用手機相機) |
+| **`correction_scanner.html`** | 📱 獨立【訂正掃碼工具】(橫向雙欄，手機相機速掃) |
+| **`scanner.html`** | 📥 班級作業 QR Code 快速點收工具 (手機相機速掃) |
 
 🎉 **大功告成！**  
-上傳完成後，即可在手機、平板或電腦上開啟下方網址輕鬆使用本系統！
+上傳完成後，直接開啟 Neocities 網頁連結（例：`https://您的帳號.neocities.org/correction.html`），即可順暢呼叫手機相機進行條碼掃描與點收銷案！
 
 ---
 
-## 🌐 系統各功能頁面開啟與存取網址說明
+## 🌐 系統頁面開啟與存取對照表
 
-本系統支援兩種存取方式（**Neocities 託管網址** 或 **GAS 原生部署網址**）：
-
-| 系統頁面 / 工具名稱 | 方式 A：Neocities 託管網址 | 方式 B：GAS 原生部署網址 |
+| 系統頁面 / 工具名稱 | 推薦存取方式與網址 | 運作說明 |
 |---|---|---|
-| **🎯 純按鈕作業點收與缺交催繳系統** | `https://您的帳號.neocities.org/index.html` | 直接開啟 **`GAS_API_URL`** (預設主頁) |
-| **✏️ 錯題訂正與銷案矩陣系統** | `https://您的帳號.neocities.org/correction.html` | `GAS_API_URL?page=correction` |
-| **📱 獨立訂正條碼速掃工具** | `https://您的帳號.neocities.org/correction_scanner.html` | `GAS_API_URL?page=correction_scanner` |
-| **📥 作業 QR Code 速掃工具** | `https://您的帳號.neocities.org/scanner.html` | `GAS_API_URL?page=scanner` |
-| **🏷️ 條碼與 QR Code 貼紙產生器** | `https://您的帳號.neocities.org/StickerGenerator.html` | 上傳至 Neocities 後直接開啟即可使用 |
-
-> 💡 **小撇步 (🎯 純按鈕作業點收系統網址獲取方式)**：
-> 1. **在 GAS 中獲取**：完成步驟 2 部署後複製的 **`GAS_API_URL`** (網頁應用程式網址)，在瀏覽器中直接開啟，即可直接載入「🎯 純按鈕作業點收與缺交催繳系統」！
-> 2. **在 Neocities 中獲取**：上傳 `index.html` 後，開啟 `https://您的帳號.neocities.org/index.html` 即可使用。
+| **🎯 純按鈕作業點收與缺交催繳系統** | 直接開啟 **`GAS_API_URL`** (GAS 原生部署網址) | 速度最快！直接原生支援，無需設定 Neocities |
+| **✏️ 錯題訂正與銷案矩陣系統** | `https://您的帳號.neocities.org/correction.html` | 需使用手機相機掃碼，上傳至 Neocities 後使用 |
+| **📱 獨立訂正條碼速掃工具** | `https://您的帳號.neocities.org/correction_scanner.html` | 需使用手機相機掃碼，上傳至 Neocities 後使用 |
+| **📥 作業 QR Code 速掃工具** | `https://您的帳號.neocities.org/scanner.html` | 需使用手機相機掃碼，上傳至 Neocities 後使用 |
+| **🏷️ 條碼與 QR Code 貼紙產生器** | `https://您的帳號.neocities.org/StickerGenerator.html` | 工具頁面，上傳至 Neocities 後開啟即可使用 |
 
 ---
 
@@ -117,16 +111,15 @@
 ## 📁 專案檔案架構
 
 ```text
-├── neocities/                 # 🌐 供上傳至 Neocities 託管空間的前端頁面
-│   ├── index.html             # 🎯 純按鈕作業點收與缺交催繳矩陣主頁
+├── neocities/                 # 🌐 上傳至 Neocities 的 4 個相機/條碼工具頁面
 │   ├── StickerGenerator.html  # 🏷️ 條碼與 QR Code 標籤貼紙產生器
-│   ├── correction.html        # ✏️ 錯題訂正與銷案矩陣主頁
-│   ├── correction_scanner.html# 📱 獨立訂正掃碼工具
-│   └── scanner.html           # 📥 作業速掃點收工具
+│   ├── correction.html        # ✏️ 錯題訂正與銷案矩陣 (手機相機/按鈕)
+│   ├── correction_scanner.html# 📱 獨立訂正掃碼工具 (手機相機)
+│   └── scanner.html           # 📥 作業速掃點收工具 (手機相機)
 ├── template-project/           # 💻 Google Apps Script 專案核心程式碼
 │   ├── appsscript.json        # Apps Script 專案組態檔
 │   ├── Code.gs                # 後端 API 與試算表讀寫邏輯
-│   ├── Index.html             # 🎯 純按鈕作業點收與催繳矩陣主頁
+│   ├── Index.html             # 🎯 純按鈕作業點收與催繳矩陣主頁 (GAS 原生直接開啟)
 │   ├── Scanner.html           # 📱 作業速掃頁面
 │   ├── Correction.html        # ✏️ 錯題訂正矩陣頁面
 │   └── CorrectionScanner.html # 📷 訂正條碼速掃頁面
