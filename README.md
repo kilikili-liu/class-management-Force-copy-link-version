@@ -75,7 +75,7 @@
 1. **標籤列印與裁切**：使用 `StickerGenerator.html` 產生全班條碼/QR Code 貼紙後，以 **A4 紙張** 列印，再以 **鋼尺與美工刀** 快速裁切標籤。
 2. **標籤張貼位置**：將裁切好的 QR Code 貼紙統一黏貼於作業本的 **右上角**。
 3. **雙手流順暢掃描操作**：
-   * **右手**：橫向握持手機並將鏡頭對準作業本右上角。
+   * **右手**：橫向握持手機將鏡頭對準作業本右上角。
    * **左手**：順手快速翻頁或替換下一本作業本。
    * 如此雙手分工流暢搭配，即可達到秒速點收與錯題銷案的最佳效率！
 
@@ -128,19 +128,19 @@
 ## 📁 專案檔案架構
 
 ```text
+├── gas-project/               # 💻 Google Apps Script 後端專案核心 (clasp 部署用)
+│   ├── appsscript.json        # GAS 專案組態檔
+│   ├── Code.gs                # 後端 API 與試算表讀寫邏輯
+│   ├── Index.html             # 🎯 純按鈕作業點收與催繳矩陣主頁 (GAS 原生直接開啟)
+│   ├── Scanner.html           # 📱 作業速掃頁面
+│   ├── Correction.html        # ✏️ 錯題訂正矩陣頁面
+│   ├── CorrectionScanner.html # 📷 訂正條碼速掃頁面
+│   └── StickerGenerator.html  # 🏷️ 標籤貼紙產生器
 ├── neocities/                 # 🌐 上傳至 Neocities 的 4 個相機/條碼工具頁面
 │   ├── StickerGenerator.html  # 🏷️ 條碼與 QR Code 標籤貼紙產生器
 │   ├── correction.html        # ✏️ 錯題訂正與銷案矩陣 (手機相機/按鈕)
 │   ├── correction_scanner.html# 📱 獨立訂正掃碼工具 (手機相機)
 │   └── scanner.html           # 📥 作業速掃點收工具 (手機相機)
-├── template-project/           # 💻 Google Apps Script 專案核心程式碼
-│   ├── appsscript.json        # Apps Script 專案組態檔
-│   ├── Code.gs                # 後端 API 與試算表讀寫邏輯
-│   ├── Index.html             # 🎯 純按鈕作業點收與催繳矩陣主頁 (GAS 原生直接開啟)
-│   ├── Scanner.html           # 📱 作業速掃頁面
-│   ├── Correction.html        # ✏️ 錯題訂正矩陣頁面
-│   └── CorrectionScanner.html # 📷 訂正條碼速掃頁面
-├── templates/                 # 📦 開源範本備份目錄
 └── README.md                  # 📖 專案安裝與說明文件
 ```
 
