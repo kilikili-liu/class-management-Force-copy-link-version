@@ -403,6 +403,29 @@
     .btn-action-correct:hover { background: linear-gradient(135deg, #38bdf8, #0284c7); color: #0f172a; transform: scale(1.05); }
 
     /* Modal Dialog */
+    .prompt-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      padding: 16px;
+    }
+    .prompt-modal-overlay.hidden { display: none !important; }
+    .prompt-modal-card {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 12px;
+      padding: 20px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
     .modal-backdrop {
       display: none;
       position: fixed; inset: 0; z-index: 10000;
@@ -579,6 +602,20 @@
 </head>
 <body>
 
+  <!-- Select Subject Prompt Modal -->
+  <div id="select-prompt-modal" class="prompt-modal-overlay hidden">
+    <div class="prompt-modal-card">
+      <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
+      <h3 style="color:#f8fafc; font-size:1.15rem; margin-bottom:10px; font-weight:700;">請先選擇作業項目</h3>
+      <p style="color:#cbd5e1; font-size:0.95rem; line-height:1.6; margin-bottom:20px;">
+        請先選擇 <strong style="color:#38bdf8;">【科目 | 種類】</strong><br>再按號碼按鈕進行登記！
+      </p>
+      <button onclick="closeSelectPromptModal()" style="width:100%; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:10px; border-radius:8px; font-weight:700; font-size:0.95rem; cursor:pointer;">
+        👌 我知道了
+      </button>
+    </div>
+  </div>
+
   <!-- Floating Toast Banner with Undo Button -->
   <div class="toast-banner" id="toast-banner">
     <span id="toast-text"></span>
@@ -618,6 +655,7 @@
           <div class="form-group">
             <label for="reg-subject">📚 科目</label>
             <select id="reg-subject" class="form-control" onchange="onSubjectChange()">
+              <option value="" disabled selected>-- 請選擇科目 --</option>
               <option value="國語">國語</option>
               <option value="數學">數學</option>
               <option value="社會">社會</option>
@@ -629,8 +667,8 @@
           </div>
           <div class="form-group">
             <label for="reg-category">📖 作業種類</label>
-            <select id="reg-category" class="form-control" onchange="renderSeatButtons()">
-              <!-- 由 onSubjectChange() 動態填入 -->
+            <select id="reg-category" class="form-control" onchange="onCategoryChange()">
+              <option value="" disabled selected>-- 請先選科目 --</option>
             </select>
           </div>
           <div class="form-group">
@@ -847,10 +885,21 @@
     let isProcessingScan = false;
     let audioSuccess = new Audio('https://actions.google.com/sounds/v1/cartoon/clink_clink.ogg');
 
+    let hasUserSelectedSubjectCategory = false;
+
     window.addEventListener('DOMContentLoaded', () => {
+      hasUserSelectedSubjectCategory = false;
       onSubjectChange();   // 初始化種類選單
       fetchCorrectionMatrixData();
     });
+
+    function openSelectPromptModal() {
+      document.getElementById('select-prompt-modal').classList.remove('hidden');
+    }
+
+    function closeSelectPromptModal() {
+      document.getElementById('select-prompt-modal').classList.add('hidden');
+    }
 
     function switchMainView(viewName) {
       currentMainView = viewName;
@@ -932,23 +981,49 @@
     };
 
     function onSubjectChange() {
-      const subject = document.getElementById('reg-subject').value;
+      const subjectSelect = document.getElementById('reg-subject');
       const categorySelect = document.getElementById('reg-category');
+      const subject = subjectSelect ? subjectSelect.value : '';
+
+      if (!subject) {
+        categorySelect.innerHTML = '<option value="" disabled selected>-- 請先選科目 --</option>';
+        hasUserSelectedSubjectCategory = false;
+        renderSeatButtons();
+        return;
+      }
+
       const categories = subjectCategoryMap[subject] || ['習作', '預習單', '學習單', '評量', '考卷', '作業本'];
 
       const currentVal = categorySelect.value;
-      categorySelect.innerHTML = '';
+      categorySelect.innerHTML = '<option value="" disabled selected>-- 請選擇種類 --</option>';
       categories.forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat;
         opt.textContent = cat;
         categorySelect.appendChild(opt);
       });
-      // 若原本選的值在新清單中仍存在，保留選擇
-      if (categories.includes(currentVal)) {
+
+      if (currentVal && categories.includes(currentVal)) {
         categorySelect.value = currentVal;
+        hasUserSelectedSubjectCategory = true;
+      } else {
+        hasUserSelectedSubjectCategory = false;
       }
 
+      renderSeatButtons();
+    }
+
+    function onCategoryChange() {
+      const subjectEl = document.getElementById('reg-subject');
+      const categoryEl = document.getElementById('reg-category');
+      const subject = subjectEl ? subjectEl.value : '';
+      const category = categoryEl ? categoryEl.value : '';
+
+      if (subject && category) {
+        hasUserSelectedSubjectCategory = true;
+      } else {
+        hasUserSelectedSubjectCategory = false;
+      }
       renderSeatButtons();
     }
 
@@ -977,7 +1052,19 @@
             <div>${seatStr}號</div>
             <div class="badge-count ${count > 0 ? 'badge-has-error' : 'badge-clean'}">${count > 0 ? '🟧 ' + count : '⚪ 0'}</div>
           `;
-          btn1.onclick = () => hasErrorInCurrent ? unregisterLatestErrorForSeat(seatStr) : registerErrorForSeat(seatStr);
+          btn1.onclick = () => {
+            const subject = document.getElementById('reg-subject').value;
+            const category = document.getElementById('reg-category').value;
+            if (!hasUserSelectedSubjectCategory || !subject || !category) {
+              openSelectPromptModal();
+              return;
+            }
+            if (hasErrorInCurrent) {
+              unregisterLatestErrorForSeat(seatStr);
+            } else {
+              registerErrorForSeat(seatStr);
+            }
+          };
           regGrid.appendChild(btn1);
         }
 
@@ -1065,6 +1152,10 @@
     async function unregisterLatestErrorForSeat(seatStr) {
       const subject = document.getElementById('reg-subject').value;
       const category = document.getElementById('reg-category').value;
+      if (!hasUserSelectedSubjectCategory || !subject || !category) {
+        openSelectPromptModal();
+        return;
+      }
       const unit = document.getElementById('reg-unit').value.trim();
       const page = document.getElementById('reg-page').value.trim();
 
@@ -1106,6 +1197,10 @@
     async function registerErrorForSeat(seatStr) {
       const subject = document.getElementById('reg-subject').value;
       const category = document.getElementById('reg-category').value;
+      if (!hasUserSelectedSubjectCategory || !subject || !category) {
+        openSelectPromptModal();
+        return;
+      }
       const unit = document.getElementById('reg-unit').value.trim();
       const page = document.getElementById('reg-page').value.trim();
 
