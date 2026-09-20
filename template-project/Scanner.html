@@ -386,11 +386,11 @@
       screen.orientation.lock('landscape').catch(() => {});
     }
 
-    const GAS_API_URL = 'https://script.google.com/macros/s/AKfycby2OYGRrTwOm3jvN6qeLZeO6AVFrB9RdqYufffQgDhBBH6vND6x_Xo_P3EuXqrv9yzf/exec';
+    const GAS_API_URL = window.GAS_API_URL || localStorage.getItem('class_management_gas_api_url') || 'https://script.google.com/macros/s/AKfycby2OYGRrTwOm3jvN6qeLZeO6AVFrB9RdqYufffQgDhBBH6vND6x_Xo_P3EuXqrv9yzf/exec';
 
     function gasApiFetch(url) {
       return new Promise((resolve, reject) => {
-        const cleanUrl = String(url).replace('/a/macros/gfes.ntpc.edu.tw/', '/');
+        const cleanUrl = String(url).replace(/\/a\/macros\/[a-zA-Z0-9.-]+\//, '/');
         fetch(cleanUrl, { method: 'GET', redirect: 'follow' })
           .then(res => res.text())
           .then(text => resolve(JSON.parse(text)))
@@ -416,7 +416,7 @@
     }
 
     async function gasApi(action, params = {}) {
-      const cleanBase = GAS_API_URL.replace('/a/macros/gfes.ntpc.edu.tw/', '/');
+      const cleanBase = GAS_API_URL.replace(/\/a\/macros\/[a-zA-Z0-9.-]+\//, '/');
       const url = new URL(cleanBase);
       url.searchParams.set('action', action);
       for (const [k, v] of Object.entries(params)) {
@@ -497,14 +497,16 @@
       }
 
       scanDataCache.assignments.forEach(a => {
+        const key = a.key || `${a.subject}_${a.category}`;
         const opt = document.createElement('option');
-        opt.value = a.key;
+        opt.value = key;
         opt.textContent = `${a.subject} - ${a.category} (${a.unit || '全班'})`;
         select.appendChild(opt);
       });
 
-      if (!currentAssignKey || !scanDataCache.assignments.some(a => a.key === currentAssignKey)) {
-        currentAssignKey = scanDataCache.assignments[0].key;
+      if (!currentAssignKey || !scanDataCache.assignments.some(a => (a.key || `${a.subject}_${a.category}`) === currentAssignKey)) {
+        const latest = scanDataCache.assignments[scanDataCache.assignments.length - 1];
+        currentAssignKey = latest.key || `${latest.subject}_${latest.category}`;
       }
       select.value = currentAssignKey;
     }
@@ -557,12 +559,37 @@
 
       document.getElementById('assign-summary').textContent = `已交: ${submittedCount}/${activeTotal} 人`;
 
-      const currAssignObj = (scanDataCache.assignments || []).find(a => a.key === currentAssignKey);
+      const currAssignObj = (scanDataCache.assignments || []).find(a => (a.key || `${a.subject}_${a.category}`) === currentAssignKey);
       if (currAssignObj) {
         const detailStr = [currAssignObj.unit, currAssignObj.note].filter(Boolean).join(' | ');
         document.getElementById('assign-subnote').textContent = detailStr ? `📌 ${detailStr}` : '';
       } else {
         document.getElementById('assign-subnote').textContent = '';
+      }
+    }
+
+    async function toggleSeatSubmission(seatNo) {
+      if (!currentAssignKey) {
+        showToast('⚠️ 請先選擇作業項目', 'error');
+        return;
+      }
+      const curr = (scanDataCache.assignments || []).find(a => (a.key || `${a.subject}_${a.category}`) === currentAssignKey);
+      showToast(`⏳ 正在切換 ${seatNo}號 的繳交狀態...`, 'success');
+      try {
+        const res = await gasApi('toggleManualSubmission', {
+          seatNo: seatNo,
+          assignKey: currentAssignKey,
+          colIndex: curr ? curr.colIndex : ''
+        });
+        if (res && res.success) {
+          triggerFeedback('success');
+          showToast(res.message || `🟢 已更新 ${seatNo}號 狀態`, 'success');
+          fetchTodayData();
+        } else {
+          showToast(`❌ 更新失敗: ${res ? res.message : ''}`, 'error');
+        }
+      } catch (err) {
+        showToast('❌ 網絡連線異常', 'error');
       }
     }
 

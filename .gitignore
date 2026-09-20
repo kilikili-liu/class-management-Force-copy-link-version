@@ -1,0 +1,10 @@
+# Apps Script / Clasp local config & credentials
+.clasp.json
+.clasprc.json
+clasprc.json
+
+# OS & Environment files
+.DS_Store
+Thumbs.db
+*.log
+node_modules/

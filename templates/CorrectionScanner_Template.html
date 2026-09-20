@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>✏️ 班級作業【訂正掃碼與銷案】工具</title>
+  <!-- Html5Qrcode Library -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --panel-dark: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent-orange: #f97316;
+      --accent-blue: #38bdf8;
+      --accent-gray: #475569;
+      --status-clean-bg: #0f172a;
+      --status-clean-border: #1e293b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    /* 橫向旋轉提示 Overlay */
+    #rotate-hint {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.98);
+      z-index: 9999;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #f8fafc;
+      text-align: center;
+      padding: 20px;
+    }
+    #rotate-hint .hint-icon { font-size: 3.5rem; animation: spin90 1.2s ease-in-out infinite alternate; }
+    @keyframes spin90 {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(90deg); }
+    }
+    @media (orientation: portrait) {
+      #rotate-hint { display: flex; }
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      height: 100dvh;
+      max-height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 6px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+      height: 48px;
+      flex-shrink: 0;
+    }
+
+    .header-title-box { display: flex; align-items: center; gap: 10px; }
+    .header-title { font-weight: 700; color: #fb923c; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
+
+    .nav-btn {
+      background: #334155;
+      color: #f43f5e;
+      border: 1px solid #475569;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .app-body {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+    }
+
+    /* 左欄：相機與模式控制 */
+    .left-panel {
+      width: 42%;
+      max-width: 360px;
+      min-width: 260px;
+      background: #0f172a;
+      border-right: 1px solid #334155;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      height: 100%;
+    }
+
+    .viewfinder-box {
+      width: 100%;
+      flex: 1;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      border: 2px solid #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #reader { width: 100% !important; height: 100% !important; object-fit: cover; }
+    #reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+
+    /* 相機效果邊框 */
+    .viewfinder-box.status-register-effect { border-color: #f97316; box-shadow: 0 0 16px rgba(249, 115, 22, 0.6); }
+    .viewfinder-box.status-clear-effect { border-color: #38bdf8; box-shadow: 0 0 16px rgba(56, 189, 248, 0.6); }
+
+    /* 模式切換按鈕區 */
+    .mode-switch-box {
+      display: flex;
+      background: #1e293b;
+      padding: 4px;
+      border-radius: 8px;
+      gap: 4px;
+      border: 1px solid #334155;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 6px 4px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #94a3b8;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .mode-btn.active-register { background: rgba(249, 115, 22, 0.25); color: #fb923c; border: 1px solid #f97316; }
+    .mode-btn.active-clear { background: rgba(56, 189, 248, 0.25); color: #38bdf8; border: 1px solid #38bdf8; }
+
+    .cam-controls { display: flex; gap: 6px; }
+    .btn-action {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: var(--text-main);
+      padding: 6px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    /* 右欄：燈號矩陣與作業控制 */
+    .right-panel {
+      flex: 1;
+      background: #0f172a;
+      display: flex;
+      flex-direction: column;
+      padding: 8px 12px;
+      overflow: hidden;
+    }
+
+    .assign-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1e293b;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      margin-bottom: 6px;
+    }
+
+    .assign-select {
+      flex: 1;
+      background: #0f172a;
+      color: var(--text-main);
+      border: 1px solid #475569;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      outline: none;
+    }
+
+    .btn-edit-meta {
+      background: #334155;
+      color: #38bdf8;
+      border: 1px solid #0284c7;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .summary-info-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 6px;
+      margin-bottom: 6px;
+      font-size: 0.78rem;
+    }
+    .summary-badges { display: flex; gap: 8px; font-weight: 700; }
+    .badge-orange { color: #fb923c; }
+    .badge-blue { color: #38bdf8; }
+    .badge-gray { color: #64748b; }
+
+    /* 01~30 座號矩陣 */
+    .seat-grid-container {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .seat-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+
+    .seat-pill {
+      background: var(--status-clean-bg);
+      border: 1px solid var(--status-clean-border);
+      border-radius: 6px;
+      padding: 6px 2px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      opacity: 0.45; /* 無錯題：融入背景低調 */
+      color: #475569;
+    }
+    .seat-pill .pill-seat { font-size: 0.85rem; }
+    .seat-pill .pill-icon { font-size: 0.75rem; margin-top: 2px; }
+
+    /* 🟧 待訂正 (X) — 核心亮點 */
+    .seat-pill.status-error {
+      background: rgba(249, 115, 22, 0.22);
+      border: 1.5px solid #f97316;
+      color: #fb923c;
+      opacity: 1;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+    }
+
+    /* 🟦 已訂正 (O) — 完成天藍 */
+    .seat-pill.status-corrected {
+      background: rgba(56, 189, 248, 0.18);
+      border: 1.5px solid #38bdf8;
+      color: #38bdf8;
+      opacity: 1;
+    }
+
+    /* Toast Banner */
+    .toast-banner {
+      position: fixed;
+      top: 54px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .toast-banner.success { background: #38bdf8; color: #0f172a; }
+    .toast-banner.orange { background: #f97316; color: #fff; }
+    .toast-banner.error { background: #ef4444; color: #fff; }
+
+    /* Modal 彈窗通用 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-box {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 440px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal-header { font-weight: 700; font-size: 1rem; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+    .modal-item-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-modal-clear {
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid #38bdf8;
+      color: #38bdf8;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+    .btn-modal-close {
+      background: #334155;
+      color: #94a3b8;
+      border: 1px solid #475569;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 橫向旋轉提示 -->
+  <div id="rotate-hint">
+    <div class="hint-icon">📱</div>
+    <div style="font-size: 1.2rem; font-weight: 700; margin-top: 12px;">請將手機旋轉為「橫向」</div>
+    <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 6px;">訂正掃碼工具專為橫向雙欄最佳體驗設計</div>
+  </div>
+
+  <!-- 頂部 Header -->
+  <header>
+    <div class="header-title-box">
+      <div class="header-title">✏️ 班級作業【訂正掃碼】工具</div>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="nav-btn" style="color:#38bdf8;" id="btn-sound" onclick="toggleSound()">🔇 靜音模式</button>
+      <a href="correction.html" class="nav-btn">🔙 返回訂正主頁</a>
+    </div>
+  </header>
+
+  <!-- 主體左右雙欄 -->
+  <div class="app-body">
+
+    <!-- 左欄：相機與模式控制 -->
+    <div class="left-panel">
+      <!-- 模式切換 -->
+      <div class="mode-switch-box">
+        <button id="btn-mode-reg" class="mode-btn active-register" onclick="setScanMode('register')">
+          🟧 登記錯題 (X)
+        </button>
+        <button id="btn-mode-clear" class="mode-btn" onclick="setScanMode('clear')">
+          🟦 錯題銷案 (O)
+        </button>
+      </div>
+
+      <!-- 相機畫框 -->
+      <div id="viewfinder" class="viewfinder-box status-register-effect">
+        <div id="reader"></div>
+      </div>
+
+      <!-- 相機按鈕 -->
+      <div class="cam-controls">
+        <button class="btn-action" onclick="switchNextCamera()">🔄 切換鏡頭</button>
+        <button class="btn-action" onclick="triggerNativeCamera()">📷 照片辨識</button>
+        <input type="file" id="camera-native-input" accept="image/*" capture="environment" style="display:none;" onchange="onNativeCameraCaptured(this)">
+      </div>
+    </div>
+
+    <!-- 右欄：作業與號碼燈號區 -->
+    <div class="right-panel">
+      <!-- 作業選擇列 -->
+      <div class="assign-bar">
+        <select id="assign-select" class="assign-select" onchange="onAssignmentChanged()"></select>
+        <button class="btn-edit-meta" onclick="openMetaModal()">📌 補填細節</button>
+      </div>
+
+      <!-- 說明與人數統計列 -->
+      <div class="summary-info-bar">
+        <div id="assign-subnote" style="color:#94a3b8; font-weight:600;"></div>
+        <div class="summary-badges">
+          <span class="badge-orange" id="stat-error">待訂正 🟧 0</span>
+          <span class="badge-blue" id="stat-corrected">已訂正 🟦 0</span>
+          <span class="badge-gray" id="stat-clean">無錯題 0</span>
+        </div>
+      </div>
+
+      <!-- 01~30 座號矩陣 -->
+      <div class="seat-grid-container">
+        <div id="seat-grid" class="seat-grid"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast Banner -->
+  <div id="toast-banner" class="toast-banner"></div>
+
+  <!-- 📌 補填單元與頁碼 Modal -->
+  <div id="meta-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span>📌 編輯作業單元與頁碼說明</span>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label style="font-size:0.8rem; color:#94a3b8; display:block; margin-bottom:4px;">單元說明 (例如：L3 或 第三單元)：</label>
+          <input type="text" id="modal-unit" style="width:100%; background:#0f172a; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px; outline:none;">
+        </div>
+        <div>
+          <label style="font-size:0.8rem; color:#94a3b8; display:block; margin-bottom:4px;">頁碼與備註 (例如：P.15~16)：</label>
+          <input type="text" id="modal-note" style="width:100%; background:#0f172a; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px; outline:none;">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-close" onclick="closeMetaModal()">取消</button>
+        <button class="btn-modal-clear" onclick="saveMetaModal()">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 多筆待訂正銷案 Modal -->
+  <div id="duplicate-modal" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="dup-modal-title">🎯 請選擇要銷案的項目</span>
+      </div>
+      <div id="dup-modal-list" class="modal-body">
+        <!-- 動態帶入待訂正項目 -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-close" onclick="closeDuplicateModal()">關閉選單</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 橫向鎖定
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').catch(() => {});
+    }
+
+    const GAS_API_URL = window.GAS_API_URL || localStorage.getItem('class_management_gas_api_url') || 'https://script.google.com/macros/s/AKfycby2OYGRrTwOm3jvN6qeLZeO6AVFrB9RdqYufffQgDhBBH6vND6x_Xo_P3EuXqrv9yzf/exec';
+
+    function gasApiFetch(url) {
+      return new Promise((resolve, reject) => {
+        const cleanUrl = String(url).replace(/\/a\/macros\/[a-zA-Z0-9.-]+\//, '/');
+        const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+        const sep = cleanUrl.includes('?') ? '&' : '?';
+        const finalUrl = cleanUrl + sep + 'callback=' + callbackName + '&_t=' + Date.now();
+
+        let isSettled = false;
+
+        const timeoutTimer = setTimeout(() => {
+          if (isSettled) return;
+          isSettled = true;
+          cleanup();
+          reject(new Error('連線逾時'));
+        }, 6000);
+
+        function cleanup() {
+          delete window[callbackName];
+          if (scriptTag && scriptTag.parentNode) {
+            scriptTag.parentNode.removeChild(scriptTag);
+          }
+        }
+
+        window[callbackName] = function(data) {
+          if (isSettled) return;
+          isSettled = true;
+          clearTimeout(timeoutTimer);
+          cleanup();
+          resolve(data);
+        };
+
+        const scriptTag = document.createElement('script');
+        scriptTag.src = finalUrl;
+        scriptTag.onerror = function() {
+          if (isSettled) return;
+          isSettled = true;
+          clearTimeout(timeoutTimer);
+          cleanup();
+          reject(new Error('連線失敗'));
+        };
+
+        document.head.appendChild(scriptTag);
+      });
+    }
+
+    async function gasApi(action, params = {}) {
+      const cleanBase = GAS_API_URL.replace(/\/a\/macros\/[a-zA-Z0-9.-]+\//, '/');
+      const url = new URL(cleanBase);
+      url.searchParams.set('action', action);
+      for (const [k, v] of Object.entries(params)) {
+        url.searchParams.set(k, v);
+      }
+      return await gasApiFetch(url.toString());
+    }
+
+    let isSilent = true;
+    let scanMode = 'register'; // 'register' (🟧 登記) vs 'clear' (🟦 銷案)
+    let matrixDataCache = { assignments: [], seatSummary: {}, records: [], vacantSeats: [] };
+    let currentAssignKey = "";
+    let html5QrCode = null;
+    let isProcessingScan = false;
+    let lastScannedPayload = "";
+    let lastScanTime = 0;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initSeatGrid();
+      fetchMatrixData();
+      startCameraWithFacingMode(true);
+    });
+
+    function getCurrAssign() {
+      const assignments = matrixDataCache.assignments || [];
+      if (!assignments.length) return null;
+
+      if (currentAssignKey) {
+        // 1. 精準比對 Key 或 colIndex
+        const found = assignments.find(a => {
+          const aKey = a.key || `${a.subject}_${a.category}_${a.colIndex}`;
+          return aKey === currentAssignKey || String(a.colIndex) === String(currentAssignKey);
+        });
+        if (found) return found;
+
+        // 2. 彈性比對：若 Key 包含科目與種類，優先比對同科目與種類的最新欄位
+        const keyParts = String(currentAssignKey).split('_');
+        if (keyParts.length >= 2) {
+          const sub = keyParts[0];
+          const cat = keyParts[1];
+          const matchedSubCat = assignments.filter(a => a.subject === sub && a.category === cat);
+          if (matchedSubCat.length > 0) {
+            const bestMatch = matchedSubCat[matchedSubCat.length - 1];
+            currentAssignKey = bestMatch.key || `${bestMatch.subject}_${bestMatch.category}_${bestMatch.colIndex}`;
+            return bestMatch;
+          }
+        }
+      }
+
+      // 3. 若完全未指定或無匹配，預設取最新（最後）一筆作業
+      const newest = assignments[assignments.length - 1];
+      if (newest) {
+        currentAssignKey = newest.key || `${newest.subject}_${newest.category}_${newest.colIndex}`;
+      }
+      return newest;
+    }
+
+    function setScanMode(mode) {
+      scanMode = mode;
+      const btnReg = document.getElementById('btn-mode-reg');
+      const btnClear = document.getElementById('btn-mode-clear');
+      const vf = document.getElementById('viewfinder');
+
+      if (mode === 'register') {
+        btnReg.className = 'mode-btn active-register';
+        btnClear.className = 'mode-btn';
+        vf.className = 'viewfinder-box status-register-effect';
+        showToast('已切換為：🟧 登記錯題模式 (標為 X)', 'orange');
+      } else {
+        btnReg.className = 'mode-btn';
+        btnClear.className = 'mode-btn active-clear';
+        vf.className = 'viewfinder-box status-clear-effect';
+        showToast('已切換為：🟦 錯題銷案模式 (標為 O)', 'success');
+      }
+    }
+
+    function toggleSound() {
+      isSilent = !isSilent;
+      const btn = document.getElementById('btn-sound');
+      btn.innerHTML = isSilent ? '🔇 靜音模式' : '🔊 音效模式';
+      showToast(isSilent ? '已切換為靜音（微震動）' : '已開啟提示音效', 'success');
+    }
+
+    function initSeatGrid() {
+      const grid = document.getElementById('seat-grid');
+      grid.innerHTML = '';
+      for (let i = 1; i <= 30; i++) {
+        const div = document.createElement('div');
+        div.id = `seat-pill-${i}`;
+        div.className = 'seat-pill';
+        div.innerHTML = `<span class="pill-seat">${String(i).padStart(2, '0')}</span><span class="pill-icon">⚪</span>`;
+        grid.appendChild(div);
+      }
+    }
+
+    async function fetchMatrixData(isSilentSync = false, isRetry = false) {
+      try {
+        if (!isSilentSync) {
+          showToast('⏳ 正在同步訂正矩陣...', 'success');
+        }
+        const res = await gasApi('getCorrectionMatrixData');
+        if (res && res.success) {
+          matrixDataCache = res;
+
+          if (!currentAssignKey) {
+            try {
+              const savedKey = localStorage.getItem('class_management_last_assign_key');
+              if (savedKey) currentAssignKey = savedKey;
+            } catch(e){}
+          }
+
+          renderAssignDropdown();
+          renderSeatGrid();
+
+          if (!isSilentSync) {
+            showToast(`🟢 同步成功 (${res.assignments ? res.assignments.length : 0} 項作業)`, 'success');
+          }
+        } else {
+          showToast('❌ 無法取得訂正矩陣資料', 'error');
+        }
+      } catch (err) {
+        if (!isRetry) {
+          console.warn("第一次同步失敗，自動發起第二次重試...", err);
+          setTimeout(() => { fetchMatrixData(isSilentSync, true); }, 1200);
+        } else {
+          showToast('❌ 連線異常，請稍後重試', 'error');
+        }
+      }
+    }
+
+    function renderAssignDropdown() {
+      const select = document.getElementById('assign-select');
+      select.innerHTML = '';
+
+      const assignments = matrixDataCache.assignments || [];
+      if (assignments.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = "";
+        opt.textContent = "(尚無錯題作業，掃碼將自動新增)";
+        select.appendChild(opt);
+        currentAssignKey = "";
+        return;
+      }
+
+      assignments.forEach(a => {
+        const key = a.key || `${a.subject}_${a.category}_${a.colIndex}`;
+        const opt = document.createElement('option');
+        opt.value = key;
+        const detailStr = [a.unit, a.page].filter(Boolean).join(' ');
+        opt.textContent = `${a.date ? '[' + a.date + '] ' : ''}${a.subject} - ${a.category} ${detailStr ? '(' + detailStr + ')' : ''}`;
+        select.appendChild(opt);
+      });
+
+      const curr = getCurrAssign();
+      if (curr) {
+        currentAssignKey = curr.key || `${curr.subject}_${curr.category}_${curr.colIndex}`;
+        select.value = currentAssignKey;
+
+        if (select.value !== currentAssignKey && select.options.length > 0) {
+          select.selectedIndex = select.options.length - 1;
+          currentAssignKey = select.value;
+        }
+      }
+    }
+
+    function onAssignmentChanged() {
+      const select = document.getElementById('assign-select');
+      currentAssignKey = select.value;
+      if (currentAssignKey) {
+        try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+      }
+      renderSeatGrid();
+    }
+
+    function renderSeatGrid() {
+      const vacantSeats = matrixDataCache.vacantSeats || [];
+      const records = matrixDataCache.records || [];
+      const currAssign = getCurrAssign();
+
+      let statError = 0;
+      let statCorrected = 0;
+      let statClean = 0;
+
+      for (let i = 1; i <= 30; i++) {
+        const pill = document.getElementById(`seat-pill-${i}`);
+        if (!pill) continue;
+
+        if (vacantSeats.includes(i)) {
+          pill.style.display = 'none';
+          continue;
+        }
+        pill.style.display = '';
+
+        const seatStr = String(i).padStart(2, '0');
+        let status = 'clean'; // 'clean', 'error', 'corrected'
+
+        if (currAssign) {
+          const rec = records.find(r => Number(r.colIndex) === Number(currAssign.colIndex) && r.seat === seatStr);
+          if (rec) {
+            if (rec.status === 'X') status = 'error';
+            else if (rec.status === 'O') status = 'corrected';
+          }
+        }
+
+        if (status === 'error') {
+          statError++;
+          pill.className = 'seat-pill status-error';
+          pill.innerHTML = `<span class="pill-seat">${seatStr}</span><span class="pill-icon">🟧</span>`;
+        } else if (status === 'corrected') {
+          statCorrected++;
+          pill.className = 'seat-pill status-corrected';
+          pill.innerHTML = `<span class="pill-seat">${seatStr}</span><span class="pill-icon">🟦</span>`;
+        } else {
+          statClean++;
+          pill.className = 'seat-pill'; // 預設暗灰
+          pill.innerHTML = `<span class="pill-seat">${seatStr}</span><span class="pill-icon">⚪</span>`;
+        }
+
+        pill.onclick = () => toggleSeatCorrectionStatus(i);
+      }
+
+      document.getElementById('stat-error').textContent = `待訂正 🟧 ${statError}`;
+      document.getElementById('stat-corrected').textContent = `已訂正 🟦 ${statCorrected}`;
+      document.getElementById('stat-clean').textContent = `無錯題 ${statClean}`;
+
+      if (currAssign) {
+        const detailStr = [currAssign.unit, currAssign.page].filter(Boolean).join(' | ');
+        document.getElementById('assign-subnote').textContent = detailStr ? `📌 ${detailStr}` : '';
+      } else {
+        document.getElementById('assign-subnote').textContent = '';
+      }
+    }
+
+    async function toggleSeatCorrectionStatus(seatNo) {
+      const seatStr = String(seatNo).padStart(2, '0');
+      const currAssign = getCurrAssign();
+
+      if (!currAssign) {
+        showToast('⚠️ 請先選擇作業項目或新增作業', 'error');
+        return;
+      }
+
+      const rec = (matrixDataCache.records || []).find(r => Number(r.colIndex) === Number(currAssign.colIndex) && r.seat === seatStr);
+      let nextStatus = 'X';
+      if (rec) {
+        if (rec.status === 'X') nextStatus = 'O';
+        else if (rec.status === 'O') nextStatus = '';
+        else nextStatus = 'X';
+      }
+
+      showToast(`⏳ 正在切換 ${seatStr}號 的訂正狀態...`, 'success');
+      try {
+        const res = await gasApi('updateCorrectionMatrixCell', {
+          colIndex: currAssign.colIndex,
+          seat: seatStr,
+          status: nextStatus
+        });
+        if (res && res.success) {
+          triggerFeedback('success');
+          showToast(`🟢 已更新 ${seatStr}號 狀態為【${nextStatus || '無錯題'}】`, 'success');
+          await fetchMatrixData();
+        } else {
+          showToast(`❌ 更新失敗: ${res ? res.message : ''}`, 'error');
+        }
+      } catch (err) {
+        showToast('❌ 網路連線異常', 'error');
+      }
+    }
+
+    async function onScanSuccess(decodedText) {
+      const now = Date.now();
+      if (decodedText === lastScannedPayload && (now - lastScanTime) < 3000) return;
+      if (isProcessingScan) return;
+
+      isProcessingScan = true;
+      lastScannedPayload = decodedText;
+      lastScanTime = now;
+
+      // 解析條碼
+      let seatNo = -1;
+      let rawSubject = '';
+      let rawCategory = '';
+
+      const parts = String(decodedText).trim().split('|');
+      if (parts[0] === 'CMS' && parts.length >= 2) {
+        seatNo = parseInt(parts[1], 10);
+        if (parts[2]) rawSubject = parts[2].trim();
+        if (parts[3]) rawCategory = parts[3].trim();
+      } else if (!isNaN(parseInt(parts[0], 10))) {
+        seatNo = parseInt(parts[0], 10);
+        if (parts[1]) rawSubject = parts[1].trim();
+        if (parts[2]) rawCategory = parts[2].trim();
+      }
+
+      if (isNaN(seatNo) || seatNo < 1 || seatNo > 30) {
+        triggerFeedback('error');
+        showToast('❌ 無法辨識的條碼格式: ' + decodedText, 'error');
+        isProcessingScan = false;
+        return;
+      }
+
+      const seatStr = String(seatNo).padStart(2, '0');
+      const currAssign = getCurrAssign();
+
+      const hasQrSubject = !!rawSubject;
+      const hasQrCategory = !!rawCategory;
+
+      const subject = hasQrSubject ? rawSubject : (currAssign ? currAssign.subject : '國語');
+      const category = hasQrCategory ? rawCategory : (currAssign ? currAssign.category : '甲本');
+
+      // 只有在【條碼未指定科目】或【條碼科目與當前選取作業一致】時，才承接當前單元頁數與欄位
+      const isMatchingCurrent = currAssign && (currAssign.subject === subject && currAssign.category === category);
+      
+      // 根據使用者要求，掃碼登記時絕對不改動/帶入任何「單元」與「頁數」資料，只針對該欄位紀錄錯題！
+      // 「單元」與「頁數」資料只能透過點擊「補填細節」並按下「儲存設定」時修改！
+      try {
+        if (scanMode === 'register') {
+          // 🟧 登記模式
+          showToast(`⏳ 正在為 ${seatStr}號 登錄【${subject} ${category}】需訂正...`, 'orange');
+          const apiParams = {
+            seat: seatStr,
+            subject: subject,
+            category: category,
+            unit: '',
+            page: ''
+          };
+
+          if (isMatchingCurrent && currAssign.colIndex) {
+            apiParams.colIndex = currAssign.colIndex;
+          }
+
+          const res = await gasApi('addCorrectionRecordMatrix', apiParams);
+          if (res && res.success) {
+            triggerFeedback('success');
+            showToast(`🟧 已登錄 ${seatStr}號【${subject} ${category}】需訂正 (X)`, 'orange');
+            // 即時將焦點鎖定並切換至所掃描/產生的作業欄位 Key
+            currentAssignKey = res.key || `${subject}_${category}_${res.colIndex || ''}`;
+            try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+            await fetchMatrixData(true);
+          } else {
+            triggerFeedback('error');
+            showToast(`❌ 登記失敗: ${res ? res.message : ''}`, 'error');
+          }
+        } else {
+          // 🟦 銷案模式
+          showToast(`⏳ 正在為 ${seatStr}號 尋找待訂正項目...`, 'success');
+
+          const records = matrixDataCache.records || [];
+          const matchRecords = records.filter(r =>
+            r.seat === seatStr && r.status === 'X' &&
+            (!hasQrSubject || r.subject === subject) &&
+            (!hasQrCategory || r.category === category)
+          );
+
+          if (matchRecords.length === 1) {
+            const rec = matchRecords[0];
+            const res = await gasApi('updateCorrectionMatrixCell', { colIndex: rec.colIndex, seat: seatStr, status: 'O' });
+            if (res && res.success) {
+              triggerFeedback('success');
+              showToast(`🟦 已完成 ${seatStr}號【${rec.subject} ${rec.category}】錯題銷案 (O)`, 'success');
+              currentAssignKey = rec.key || `${rec.subject}_${rec.category}_${rec.colIndex}`;
+              try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+              await fetchMatrixData(true);
+            } else {
+              triggerFeedback('error');
+              showToast(`❌ 銷案失敗: ${res ? res.message : ''}`, 'error');
+            }
+          } else if (matchRecords.length > 1) {
+            triggerFeedback('duplicate');
+            showUncorrectedSelectModal(seatStr, matchRecords);
+          } else {
+            const allUncorrected = records.filter(r => r.seat === seatStr && r.status === 'X');
+            if (allUncorrected.length === 0) {
+              triggerFeedback('error');
+              showToast(`ℹ️ 座號 ${seatStr} 號目前無待訂正項目`, 'error');
+            } else if (allUncorrected.length === 1) {
+              const rec = allUncorrected[0];
+              const res = await gasApi('updateCorrectionMatrixCell', { colIndex: rec.colIndex, seat: seatStr, status: 'O' });
+              if (res && res.success) {
+                triggerFeedback('success');
+                showToast(`🟦 已完成 ${seatStr}號【${rec.subject} ${rec.category}】錯題銷案 (O)`, 'success');
+                currentAssignKey = rec.key || `${rec.subject}_${rec.category}_${rec.colIndex}`;
+                try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+                await fetchMatrixData(true);
+              } else {
+                triggerFeedback('error');
+                showToast(`❌ 銷案失敗: ${res ? res.message : ''}`, 'error');
+              }
+            } else {
+              triggerFeedback('duplicate');
+              showUncorrectedSelectModal(seatStr, allUncorrected);
+            }
+          }
+        }
+      } catch (err) {
+        triggerFeedback('error');
+        showToast('⚠️ 回應解析失敗，正在重新同步確認...', 'error');
+        await fetchMatrixData();
+      } finally {
+        setTimeout(() => { isProcessingScan = false; }, 1200);
+      }
+    }
+
+    function showUncorrectedSelectModal(seatStr, records) {
+      const modal = document.getElementById('duplicate-modal');
+      const title = document.getElementById('dup-modal-title');
+      const listContainer = document.getElementById('dup-modal-list');
+
+      title.textContent = `🎯 ${seatStr}號 有多筆待訂正項目，請選擇銷案章節：`;
+      listContainer.innerHTML = '';
+
+      records.forEach(rec => {
+        const itemCard = document.createElement('div');
+        itemCard.className = 'modal-item-card';
+        const detailStr = [rec.unit, rec.page].filter(Boolean).join(' ');
+        itemCard.innerHTML = `
+          <div>
+            <div style="font-weight:700; color:#fff;">📚 ${rec.subject} ${rec.category}</div>
+            <div style="font-size:0.8rem; color:#38bdf8; margin-top:2px;">📌 ${detailStr || '一般登記'} (📅 ${rec.date || ''})</div>
+          </div>
+          <button class="btn-modal-clear" onclick="executeModalClear('${rec.colIndex}', '${seatStr}')">
+            ✅ 銷案 (標為O)
+          </button>
+        `;
+        listContainer.appendChild(itemCard);
+      });
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeDuplicateModal() {
+      document.getElementById('duplicate-modal').classList.add('hidden');
+    }
+
+    async function executeModalClear(colIndex, seatStr) {
+      closeDuplicateModal();
+      showToast(`⏳ 正在辦理 ${seatStr}號 銷案...`, 'success');
+      try {
+        const res = await gasApi('updateCorrectionMatrixCell', {
+          colIndex: colIndex,
+          seat: seatStr,
+          status: 'O'
+        });
+        if (res && res.success) {
+          triggerFeedback('success');
+          showToast(`🟦 已完成 ${seatStr}號 錯題銷案 (O)`, 'success');
+          const curr = (matrixDataCache.assignments || []).find(a => Number(a.colIndex) === Number(colIndex));
+          if (curr) {
+            currentAssignKey = curr.key || `${curr.subject}_${curr.category}_${colIndex}`;
+          }
+          await fetchMatrixData();
+        } else {
+          showToast(`❌ 銷案失敗: ${res ? res.message : ''}`, 'error');
+        }
+      } catch (err) {
+        showToast('❌ 網路請求失敗', 'error');
+      }
+    }
+
+    function openMetaModal() {
+      const curr = getCurrAssign();
+      if (!curr) {
+        showToast('⚠️ 目前尚無選取的作業可編輯細節', 'error');
+        return;
+      }
+      // 讀取當前作業原有的單元與頁數作為預設值
+      document.getElementById('modal-unit').value = curr.unit || '';
+      document.getElementById('modal-note').value = curr.page || '';
+      document.getElementById('meta-modal').classList.remove('hidden');
+    }
+
+    function closeMetaModal() {
+      // 關閉 Modal 時即刻清空暫存輸入框
+      document.getElementById('modal-unit').value = '';
+      document.getElementById('modal-note').value = '';
+      document.getElementById('meta-modal').classList.add('hidden');
+    }
+
+    async function saveMetaModal() {
+      const curr = getCurrAssign();
+      if (!curr) return;
+
+      const unitVal = document.getElementById('modal-unit').value.trim();
+      const pageVal = document.getElementById('modal-note').value.trim();
+
+      showToast('⏳ 正在儲存作業說明...', 'success');
+      try {
+        const res = await gasApi('updateHomeworkMetadata', {
+          colIndex: curr.colIndex,
+          unit: unitVal,
+          note: pageVal,
+          targetSheet: 'matrix'
+        });
+        if (res && res.success) {
+          showToast('🟢 作業說明更新成功！', 'success');
+          closeMetaModal();
+          await fetchMatrixData();
+        } else {
+          showToast('❌ 更新失敗: ' + (res ? res.message : ''), 'error');
+        }
+      } catch (err) {
+        showToast('❌ 系統連線異常', 'error');
+      }
+    }
+
+    let availableCameras = [];
+    let currentCameraIndex = 0;
+
+    async function stopAllMediaTracks() {
+      try {
+        if (html5QrCode) {
+          await html5QrCode.stop().catch(() => {});
+          html5QrCode = null;
+        }
+      } catch (e) {}
+
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true }).catch(() => null);
+          if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function startCameraWithFacingMode(preferRear) {
+      await stopAllMediaTracks();
+      await initAndStartCamera(preferRear !== false);
+    }
+
+    async function initAndStartCamera(preferRear = true) {
+      showToast('⏳ 正在啟動相機...', 'success');
+      const config = { fps: 10, qrbox: { width: 180, height: 180 } };
+
+      await stopAllMediaTracks();
+
+      try {
+        if (availableCameras.length === 0) {
+          availableCameras = await Html5Qrcode.getCameras().catch(() => []);
+        }
+
+        if (availableCameras && availableCameras.length > 0) {
+          if (preferRear) {
+            const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|後置/i.test(c.label));
+            currentCameraIndex = rearIdx >= 0 ? rearIdx : availableCameras.length - 1;
+          }
+
+          const cameraId = availableCameras[currentCameraIndex].id;
+          html5QrCode = new Html5Qrcode("reader");
+
+          try {
+            await html5QrCode.start(cameraId, config, onScanSuccess);
+            const label = availableCameras[currentCameraIndex].label || `相機 ${currentCameraIndex + 1}`;
+            showToast(`🟢 訂正掃碼器就緒 (${label})`, 'success');
+            return;
+          } catch (camIdErr) {
+            console.warn("使用 cameraId 啟動失敗，嘗試 facingMode 備援...", camIdErr);
+          }
+        }
+
+        // 備援 1: { facingMode: "environment" }
+        html5QrCode = new Html5Qrcode("reader");
+        try {
+          await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
+          showToast('🟢 訂正掃碼器就緒 (後置相機)', 'success');
+          return;
+        } catch (envErr) {
+          console.warn("後置相機備援失敗，嘗試前置/預設相機...", envErr);
+        }
+
+        // 備援 2: { facingMode: "user" }
+        html5QrCode = new Html5Qrcode("reader");
+        await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess);
+        showToast('🟢 訂正掃碼器就緒 (前置相機)', 'success');
+
+      } catch (err) {
+        showToast('❌ 相機啟動失敗: ' + (err.message || err), 'error');
+      }
+    }
+
+    function switchNextCamera() {
+      if (availableCameras.length <= 1) {
+        showToast('⚠️ 本裝置只有一個相機', 'error');
+        return;
+      }
+      currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+      const label = availableCameras[currentCameraIndex].label || `相機 ${currentCameraIndex + 1}`;
+      showToast(`🔄 切換到: ${label}`, 'success');
+      startCameraWithFacingMode(false);
+    }
+
+    function triggerNativeCamera() {
+      document.getElementById('camera-native-input').click();
+    }
+
+    function onNativeCameraCaptured(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        showToast('📷 正在解析照片中...', 'success');
+        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.scanFile(file, true)
+          .then(decodedText => { onScanSuccess(decodedText); })
+          .catch(err => {
+            showToast('❌ 照片中無法辨識 QR Code', 'error');
+            triggerFeedback('error');
+          });
+      }
+    }
+
+    function showToast(msg, type = 'success') {
+      const banner = document.getElementById('toast-banner');
+      banner.className = `toast-banner ${type}`;
+      banner.textContent = msg;
+      banner.style.display = 'block';
+      setTimeout(() => { banner.style.display = 'none'; }, 3000);
+    }
+
+    function triggerFeedback(type) {
+      if (navigator.vibrate) {
+        if (type === 'success') navigator.vibrate([100, 50, 100]);
+        else if (type === 'duplicate') navigator.vibrate([200, 100, 200]);
+        else navigator.vibrate(400);
+      }
+      if (!isSilent) {
+        const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/clink_clink.ogg');
+        audio.play().catch(()=>{});
+      }
+    }
+  </script>
+</body>
+</html>

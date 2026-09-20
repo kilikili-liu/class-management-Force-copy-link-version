@@ -176,6 +176,30 @@
     table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
     th, td { padding: 8px 10px; border-bottom: 1px solid #334155; text-align: left; }
     th { background: #1e293b; color: var(--text-sub); }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .modal-overlay.hidden { display: none !important; }
+    .modal-card {
+      background: #1e293b;
+      border: 1px solid #475569;
+      border-radius: 12px;
+      padding: 20px;
+      width: 100%;
+      max-width: 320px;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
   </style>
 </head>
 <body>
@@ -184,6 +208,20 @@
   <div class="toast-banner" id="toast-banner">
     <span id="toast-text"></span>
     <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩️ 復原按錯</button>
+  </div>
+
+  <!-- Select Subject Prompt Modal -->
+  <div id="select-prompt-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
+      <h3 style="color:#f8fafc; font-size:1.15rem; margin-bottom:10px; font-weight:700;">請先選擇作業項目</h3>
+      <p style="color:#cbd5e1; font-size:0.95rem; line-height:1.6; margin-bottom:20px;">
+        請先選擇 <strong style="color:#38bdf8;">【科目 | 種類】</strong><br>再按號碼按鈕進行點收！
+      </p>
+      <button onclick="closeSelectPromptModal()" style="width:100%; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:10px; border-radius:8px; font-weight:700; font-size:0.95rem; cursor:pointer;">
+        👌 我知道了
+      </button>
+    </div>
   </div>
 
   <header>
@@ -203,29 +241,20 @@
         <div class="form-group">
           <label for="hw-subject">📚 科目</label>
           <select id="hw-subject" class="form-control" onchange="onSubjectChange()">
+            <option value="" disabled selected>-- 請選擇科目 --</option>
             <option value="國語">國語</option>
             <option value="數學">數學</option>
             <option value="社會">社會</option>
             <option value="自然">自然</option>
             <option value="英語">英語</option>
             <option value="聯絡簿">聯絡簿</option>
+            <option value="日記">日記</option>
           </select>
         </div>
         <div class="form-group">
           <label for="hw-category">📖 作業種類</label>
-          <select id="hw-category" class="form-control" onchange="loadTodayStatus()">
-            <option value="甲本">甲本</option>
-            <option value="乙本">乙本</option>
-            <option value="習作">習作</option>
-            <option value="預習單">預習單</option>
-            <option value="學習單">學習單</option>
-            <option value="國練">國練</option>
-            <option value="數練">數練</option>
-            <option value="數習">數習</option>
-            <option value="數課">數課</option>
-            <option value="評量">評量</option>
-            <option value="考卷">考卷</option>
-            <option value="作業本">作業本</option>
+          <select id="hw-category" class="form-control" onchange="onCategoryChange()">
+            <option value="" disabled selected>-- 請先選科目 --</option>
           </select>
         </div>
         <div class="form-group">
@@ -266,6 +295,7 @@
           <button class="sub-tab-btn" onclick="filterReminderBySubject('自然')">自然</button>
           <button class="sub-tab-btn" onclick="filterReminderBySubject('英語')">英語</button>
           <button class="sub-tab-btn" onclick="filterReminderBySubject('聯絡簿')">聯絡簿</button>
+          <button class="sub-tab-btn" onclick="filterReminderBySubject('日記')">日記</button>
         </div>
 
         <div style="overflow-x:auto;">
@@ -292,28 +322,48 @@
     let todayData = null;
     let lastAction = null;
     let toastTimer = null;
+    let hasUserSelectedSubjectCategory = false;
 
     const subjectCategoryMap = {
-      '國語': ['甲本', '乙本', '習作', '預習單', '學習單', '國練', '評量', '考卷', '作業本'],
-      '數學': ['數習', '數課', '數練', '習作', '評量', '考卷', '作業本'],
+      '國語': ['甲本', '乙本', '習作', '圈詞', '預習單', '學習單', '國練', '評量', '考卷', '作業本'],
+      '數學': ['數習', '數課', '數練', '學習單', '評量', '考卷', '作業本'],
       '社會': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
       '自然': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
       '英語': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
-      '聯絡簿': ['聯絡簿', '小日記', '簽名']
+      '聯絡簿': ['聯絡簿'],
+      '日記': ['日記']
     };
 
     window.addEventListener('DOMContentLoaded', () => {
-      onSubjectChange();
+      hasUserSelectedSubjectCategory = false;
       renderEmptySeatButtons();
+      document.getElementById('submitted-summary').textContent = '⚠️ 請先選擇上方【科目 | 種類】';
     });
 
+    function openSelectPromptModal() {
+      document.getElementById('select-prompt-modal').classList.remove('hidden');
+    }
+
+    function closeSelectPromptModal() {
+      document.getElementById('select-prompt-modal').classList.add('hidden');
+    }
+
     function onSubjectChange() {
-      const subject = document.getElementById('hw-subject').value;
+      const subjectSelect = document.getElementById('hw-subject');
       const categorySelect = document.getElementById('hw-category');
+      const subject = subjectSelect.value;
+
+      if (!subject) {
+        categorySelect.innerHTML = '<option value="" disabled selected>-- 請先選科目 --</option>';
+        hasUserSelectedSubjectCategory = false;
+        renderEmptySeatButtons();
+        document.getElementById('submitted-summary').textContent = '⚠️ 請先選擇上方【科目 | 種類】';
+        return;
+      }
+
       const categories = subjectCategoryMap[subject] || ['習作', '預習單', '學習單', '評量', '考卷', '作業本'];
 
-      const currentVal = categorySelect.value;
-      categorySelect.innerHTML = '';
+      categorySelect.innerHTML = '<option value="" disabled selected>-- 請選擇種類 --</option>';
       categories.forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat;
@@ -321,11 +371,19 @@
         categorySelect.appendChild(opt);
       });
 
-      if (categories.includes(currentVal)) {
-        categorySelect.value = currentVal;
-      }
+      hasUserSelectedSubjectCategory = false;
+      renderEmptySeatButtons();
+      document.getElementById('submitted-summary').textContent = '請選擇作業種類';
+    }
 
-      loadTodayStatus();
+    function onCategoryChange() {
+      const subject = document.getElementById('hw-subject').value;
+      const category = document.getElementById('hw-category').value;
+
+      if (subject && category) {
+        hasUserSelectedSubjectCategory = true;
+        loadTodayStatus();
+      }
     }
 
     function switchView(viewName) {
@@ -345,8 +403,35 @@
         const btn = document.createElement('button');
         btn.className = 'seat-btn unsubmitted';
         btn.innerHTML = `<div>${String(i).padStart(2, '0')}號</div><span class="status-badge unsubmitted">🔴 未繳</span>`;
+        btn.onclick = () => onSeatButtonClick(i);
         grid.appendChild(btn);
       }
+    }
+
+    function onSeatButtonClick(seatNo) {
+      const subject = document.getElementById('hw-subject').value;
+      const category = document.getElementById('hw-category').value;
+
+      if (!hasUserSelectedSubjectCategory || !subject || !category) {
+        openSelectPromptModal();
+        return;
+      }
+
+      const matrix = (todayData && todayData.submissionMatrix) ? todayData.submissionMatrix : {};
+      const assignKey = `${subject}_${category}`;
+      const firstKey = Object.keys(matrix)[0];
+      const isSeatKeyedFormat = firstKey !== undefined && !isNaN(parseInt(firstKey, 10));
+
+      let isSubmitted = false;
+      if (isSeatKeyedFormat) {
+        const seatObj = matrix[String(seatNo)] || matrix[seatNo];
+        isSubmitted = seatObj && assignKey ? (seatObj[assignKey] === true) : false;
+      } else {
+        const currentList = matrix[assignKey] || [];
+        isSubmitted = Array.isArray(currentList) && currentList.includes(seatNo);
+      }
+
+      toggleSeatStatus(seatNo, subject, category, !isSubmitted);
     }
 
     function showToast(msg, actionData = null) {

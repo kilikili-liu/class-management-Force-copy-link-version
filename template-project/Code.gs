@@ -45,9 +45,16 @@ function doGet(e) {
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
   }
 
-  if (params.page === 'correction') {
+  if (params.page === 'correction' || params.page === 'correction_matrix') {
     return HtmlService.createHtmlOutputFromFile('Correction')
         .setTitle('✏️ 班級作業錯題訂正與銷案系統')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+  }
+
+  if (params.page === 'correction_scanner' || params.page === 'correctionScanner') {
+    return HtmlService.createHtmlOutputFromFile('CorrectionScanner')
+        .setTitle('✏️ 班級作業【訂正掃碼與銷案】工具')
         .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
   }
@@ -78,8 +85,9 @@ function handleScannerApiAction(action, params) {
     if (action === 'updateHomeworkMetadata') {
       const colIndex = parseInt(params.colIndex, 10);
       const unit = String(params.unit || '');
-      const note = String(params.note || '');
-      return updateHomeworkMetadata(colIndex, unit, note);
+      const note = String(params.note || params.page || '');
+      const targetSheet = String(params.targetSheet || params.sheet || '').trim();
+      return updateHomeworkMetadata(colIndex, unit, note, targetSheet);
     }
     if (action === 'addNewHomeworkRecord') {
       return addNewHomeworkRecord(params);
@@ -92,6 +100,9 @@ function handleScannerApiAction(action, params) {
     }
 
     // ── 2. 錯題訂正與催繳矩陣 API ──
+    if (action === 'doScanRecordCorrection') {
+      return doScanRecordCorrection(params);
+    }
     if (action === 'addCorrectionRecordMatrix' || action === 'addErrorRecord') {
       return addCorrectionRecordMatrix(params);
     }
@@ -275,7 +286,9 @@ function getTodayScanData() {
 
     const normDate = normalizeDateString(rawDate);
     if (normDate === todayStr || (!rawDate && subject)) {
+      const assignKey = `${subject}_${category}`;
       assignments.push({
+        key: assignKey,
         colIndex: c + 3,
         date: normDate || todayStr,
         subject: subject,
@@ -393,11 +406,46 @@ function doScanRecord(payload) {
   };
 }
 
-function updateHomeworkMetadata(colIndex, unit, note) {
-  const sheet = getHwSheet();
-  if (colIndex < 3) return { success: false, message: '無效欄位' };
+function updateHomeworkMetadata(colIndex, unit, note, targetSheetName) {
+  let sheet;
+  let minCol = 3;
+  if (targetSheetName === 'matrix' || targetSheetName === 'correction' || targetSheetName === CORRECTION_MATRIX_TAB || colIndex === 2) {
+    sheet = getCorrectionMatrixSheet();
+    minCol = 2;
+  } else {
+    sheet = getHwSheet();
+    minCol = 3;
+  }
+
+  if (isNaN(colIndex) || colIndex < minCol) return { success: false, message: '無效欄位' };
   sheet.getRange(4, colIndex).setValue(unit);
   sheet.getRange(5, colIndex).setValue(note);
+
+  if (sheet.getName() === CORRECTION_MATRIX_TAB) {
+    try {
+      const subject = String(sheet.getRange(2, colIndex).getValue() || '').trim();
+      const category = String(sheet.getRange(3, colIndex).getValue() || '').trim();
+      if (subject && category) {
+        const hwSheet = getHwSheet();
+        const lastCol = hwSheet.getLastColumn();
+        if (lastCol >= 3) {
+          const headers = hwSheet.getRange(1, 3, 5, lastCol - 2).getDisplayValues();
+          for (let c = headers[0].length - 1; c >= 0; c--) {
+            let hSub = String(headers[1][c] || '').trim();
+            let hCat = String(headers[2][c] || '').trim();
+            if (hSub === subject && hCat === category) {
+              hwSheet.getRange(4, c + 3).setValue(unit);
+              hwSheet.getRange(5, c + 3).setValue(note);
+              break;
+            }
+          }
+        }
+      }
+    } catch(e) {
+      // 忽略非必要同步錯誤
+    }
+  }
+
   return { success: true };
 }
 
@@ -494,25 +542,55 @@ function getCorrectionMatrixSheet() {
 
 function findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page) {
   const lastCol = Math.max(sheet.getLastColumn(), 1);
+  const todayStr = normalizeDateString(date || getTodayString());
 
+  const matchedCols = [];
   if (lastCol > 1) {
     const headerValues = sheet.getRange(1, 2, 5, lastCol - 1).getDisplayValues();
     for (let c = 0; c < headerValues[0].length; c++) {
-      const hSub = headerValues[1][c];
-      const hCat = headerValues[2][c];
-      const hUnit = headerValues[3][c];
-      const hPage = headerValues[4][c];
+      const hDate = normalizeDateString(headerValues[0][c]);
+      const hSub = String(headerValues[1][c] || '').trim();
+      const hCat = String(headerValues[2][c] || '').trim();
 
-      if (hSub === subject && hCat === category && hUnit === unit && hPage === page) {
-        return c + 2;
+      if (hSub === subject && hCat === category && (hDate === todayStr || !hDate)) {
+        matchedCols.push(c + 2);
       }
     }
   }
 
+  if (matchedCols.length > 0) {
+    const mainCol = matchedCols[0];
+
+    // 若存在重複新增的同作業欄位，自動合併座號狀態資料並清空重複欄
+    if (matchedCols.length > 1) {
+      for (let m = 1; m < matchedCols.length; m++) {
+        const dupCol = matchedCols[m];
+        const dupVals = sheet.getRange(6, dupCol, CLASS_SIZE, 1).getValues();
+        const mainVals = sheet.getRange(6, mainCol, CLASS_SIZE, 1).getValues();
+        const mergedVals = [];
+        for (let r = 0; r < CLASS_SIZE; r++) {
+          const mainV = String(mainVals[r][0] || '').trim().toUpperCase();
+          const dupV = String(dupVals[r][0] || '').trim().toUpperCase();
+          if (mainV === 'X' || dupV === 'X') {
+            mergedVals.push(['X']);
+          } else if (mainV === 'O' || dupV === 'O') {
+            mergedVals.push(['O']);
+          } else {
+            mergedVals.push(['']);
+          }
+        }
+        sheet.getRange(6, mainCol, CLASS_SIZE, 1).setValues(mergedVals);
+        sheet.getRange(1, dupCol, CLASS_SIZE + 5, 1).clearContent().clearFormat();
+      }
+    }
+
+    return mainCol;
+  }
+
+  // 若找不到當日同 科目|種類 的資料，則新開一欄（單元與頁數設為空，僅「補填細節」可改動）
   const newCol = lastCol + 1;
-  const todayStr = date || getTodayString();
   sheet.getRange(1, newCol, 5, 1).setValues([
-    [todayStr], [subject], [category], [unit], [page]
+    [todayStr], [subject], [category], [''], ['']
   ]).setFontWeight("bold").setHorizontalAlignment("center").setBackground("#f1f5f9");
 
   return newCol;
@@ -527,20 +605,24 @@ function addCorrectionRecordMatrix(params) {
   const seatStr = String(seatNum).padStart(2, '0');
   const subject = String(params.subject || '國語').trim();
   const category = String(params.category || '甲本').trim();
-  const unit = String(params.unit || '').trim();
-  const page = String(params.page || '').trim();
   const date = String(params.date || '').trim() || getTodayString();
 
   const sheet = getCorrectionMatrixSheet();
-  const colIndex = findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page);
-  const row = 5 + seatNum;
+  let colIndex = parseInt(params.colIndex, 10);
+  if (isNaN(colIndex) || colIndex < 2) {
+    colIndex = findOrCreateAssignmentColumn(sheet, date, subject, category, '', '');
+  }
 
+  const row = 5 + seatNum;
   sheet.getRange(row, colIndex).setValue('X').setHorizontalAlignment("center").setFontWeight("bold");
 
   return {
     success: true,
-    message: `已標記 ${seatStr}號 在【${subject}${category} ${unit} (P.${page})】需訂正 (X)`,
+    message: `已標記 ${seatStr}號 在【${subject}${category}】需訂正 (X)`,
     colIndex: colIndex,
+    key: `${subject}_${category}_${colIndex}`,
+    subject: subject,
+    category: category,
     seat: seatStr,
     status: 'X'
   };
@@ -549,7 +631,7 @@ function addCorrectionRecordMatrix(params) {
 function updateCorrectionMatrixCell(params) {
   const seatNum = parseInt(params.seat, 10);
   const colIndex = parseInt(params.colIndex, 10);
-  const status = String(params.status || 'O').trim().toUpperCase();
+  const status = (params.status !== undefined && params.status !== null) ? String(params.status).trim().toUpperCase() : 'O';
 
   if (isNaN(seatNum) || seatNum < 1 || seatNum > 30) {
     return { success: false, message: '無效座號: ' + params.seat };
@@ -584,11 +666,15 @@ function getCorrectionMatrixData(params = {}) {
   const assignments = [];
 
   for (let c = 1; c < lastCol; c++) {
+    const sub = gridValues[1][c] || '';
+    const cat = gridValues[2][c] || '';
+    if (!sub && !cat) continue;
     assignments.push({
       colIndex: c + 1,
+      key: `${sub}_${cat}_${c + 1}`,
       date: gridValues[0][c] || '',
-      subject: gridValues[1][c] || '',
-      category: gridValues[2][c] || '',
+      subject: sub,
+      category: cat,
       unit: gridValues[3][c] || '',
       page: gridValues[4][c] || ''
     });
@@ -653,4 +739,106 @@ function getStudentUncorrectedMatrix(seat) {
   const studentRecords = (matrixData.records || []).filter(r => r.seat === seatStr && r.status === 'X');
 
   return { success: true, seat: seatStr, records: studentRecords };
+}
+
+function doScanRecordCorrection(params) {
+  const payload = String(params.payload || '').trim();
+  const mode = String(params.mode || 'register').trim(); // 'register' or 'clear'
+
+  let seatNo = -1;
+  let subject = String(params.subject || '通用').trim();
+  let category = String(params.category || '作業').trim();
+
+  const parts = payload.split('|');
+  if (parts[0] === 'CMS' && parts.length >= 2) {
+    seatNo = parseInt(parts[1], 10);
+    if (parts[2]) subject = parts[2].trim();
+    if (parts[3]) category = parts[3].trim();
+  } else if (!isNaN(parseInt(parts[0], 10))) {
+    seatNo = parseInt(parts[0], 10);
+    if (parts[1]) subject = parts[1].trim();
+    if (parts[2]) category = parts[2].trim();
+  }
+
+  if (isNaN(seatNo) || seatNo < 1 || seatNo > CLASS_SIZE) {
+    return { success: false, message: '無效條碼或座號: ' + payload };
+  }
+
+  const seatStr = String(seatNo).padStart(2, '0');
+  const unit = String(params.unit || '').trim();
+  const page = String(params.page || '').trim();
+
+  // 1. 登記模式 (標為 X)
+  if (mode === 'register') {
+    const res = addCorrectionRecordMatrix({
+      seat: seatStr,
+      subject: subject,
+      category: category,
+      unit: unit,
+      page: page
+    });
+    if (res.success) {
+      res.action = 'registered';
+      res.seat = seatStr;
+      res.subject = subject;
+      res.category = category;
+      res.message = `🟧 ${seatStr}號【${subject} ${category}】已登錄需訂正 (X)`;
+    }
+    return res;
+  }
+
+  // 2. 銷案模式 (標為 O)
+  const matrixData = getCorrectionMatrixData();
+  const seatRecords = (matrixData.records || []).filter(r =>
+    r.seat === seatStr && r.status === 'X' &&
+    (!subject || r.subject === subject) &&
+    (!category || r.category === category)
+  );
+
+  if (seatRecords.length === 0) {
+    const allSeatUncorrected = (matrixData.records || []).filter(r => r.seat === seatStr && r.status === 'X');
+    if (allSeatUncorrected.length === 0) {
+      return { success: false, message: `座號 ${seatStr} 號目前沒有任何待訂正項目` };
+    }
+    if (allSeatUncorrected.length === 1) {
+      const rec = allSeatUncorrected[0];
+      updateCorrectionMatrixCell({ colIndex: rec.colIndex, seat: seatStr, status: 'O' });
+      return {
+        success: true,
+        action: 'cleared',
+        seat: seatStr,
+        subject: rec.subject,
+        category: rec.category,
+        message: `🟦 ${seatStr}號【${rec.subject} ${rec.category}】銷案成功！`
+      };
+    }
+    return {
+      success: true,
+      action: 'select_required',
+      seat: seatStr,
+      records: allSeatUncorrected,
+      message: `🎯 ${seatStr}號 有 ${allSeatUncorrected.length} 筆待訂正，請選擇銷案項目`
+    };
+  }
+
+  if (seatRecords.length === 1) {
+    const rec = seatRecords[0];
+    updateCorrectionMatrixCell({ colIndex: rec.colIndex, seat: seatStr, status: 'O' });
+    return {
+      success: true,
+      action: 'cleared',
+      seat: seatStr,
+      subject: rec.subject,
+      category: rec.category,
+      message: `🟦 ${seatStr}號【${rec.subject} ${rec.category}】銷案成功！`
+    };
+  }
+
+  return {
+    success: true,
+    action: 'select_required',
+    seat: seatStr,
+    records: seatRecords,
+    message: `🎯 ${seatStr}號【${subject} ${category}】有 ${seatRecords.length} 筆待訂正，請選擇銷案章節`
+  };
 }
