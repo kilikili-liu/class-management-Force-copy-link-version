@@ -36,25 +36,15 @@
 
 ---
 
-### 步驟 3：將 `GAS_API_URL` 填入相機/條碼 HTML 檔案
-由於 Google 原生 GAS 的安全政策會阻擋手機相機調用 (`getUserMedia` 封鎖)，因此**凡需使用手機鏡頭掃碼的頁面**，請將步驟 2 複製的 **網頁應用程式網址 (`GAS_API_URL`)**，填入本專案 `neocities/` 資料夾中以下 **3 個 HTML 檔案** 的 `GAS_API_URL` 位置：
+### 步驟 3：上傳 HTML 檔案至 Neocities 空間（無需手動修改程式碼！）
+由於 Google 原生 GAS 的安全政策會阻擋手機相機調用 (`getUserMedia` 封鎖)，凡需使用手機鏡頭掃碼的頁面，請改用 **[Neocities (neocities.org)](https://neocities.org/)** 免費靜態網頁託管服務。
 
-1. **`correction.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，將網址替換為您的 `GAS_API_URL`。
-2. **`correction_scanner.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，將網址替換為您的 `GAS_API_URL`。
-3. **`scanner.html`**：搜尋 `GAS_API_URL` 或 `getGasApiUrl()`，將網址替換為您的 `GAS_API_URL`。
+#### 3-1. 註冊 Neocities 帳戶
+1. 前往 [Neocities 官網](https://neocities.org/) 免費註冊（只需帳號與密碼）。
+2. 登入後點擊 **「Edit Sites」** 進入檔案管理介面。
 
----
-
-### 步驟 4：註冊免費 Neocities 託管空間 (突破相機權限限制)
-為解除 Google Apps Script 原生安全政策對手機相機調用的限制，推薦使用免費的 **[Neocities (neocities.org)](https://neocities.org/)** 靜態網頁託管服務：
-
-1. 前往 [Neocities 官網](https://neocities.org/) 註冊一個免費帳戶（只需填寫帳號與密碼）。
-2. 登入後點擊 **「Edit Sites」 (編輯網站)** 進入檔案管理介面。
-
----
-
-### 步驟 5：上傳 4 個相機與貼紙 HTML 檔案至 Neocities 空間
-將修改好的以下 **4 個 HTML 檔案** 上傳至 Neocities 空間中：
+#### 3-2. 直接上傳 HTML 檔案（**不需要修改程式碼**）
+直接將 `neocities/` 資料夾中的以下 **4 個 HTML 檔案**，原封不動上傳至 Neocities 空間中：
 
 | 檔案名稱 | 說明 / 功能 |
 |---|---|
@@ -63,8 +53,17 @@
 | **`correction_scanner.html`** | 📱 獨立【訂正掃碼工具】(橫向雙欄，手機相機速掃) |
 | **`scanner.html`** | 📥 班級作業 QR Code 快速點收工具 (手機相機速掃) |
 
-🎉 **大功告成！**  
-上傳完成後，開啟 Neocities 網頁連結（例：`https://您的帳號.neocities.org/correction.html`），即可順暢呼叫手機相機進行條碼掃描與點收銷案！
+#### 3-3. 首次開啟頁面時設定 GAS 網址（**只需設定一次**）
+> 💡 **程式碼中不會寫入任何機敏網址。** 各頁面首次開啟時，會自動彈出提示視窗：
+
+1. 開啟 Neocities 上的任意一個 HTML 頁面（如 `scanner.html`）。
+2. 畫面會彈出 **「⚙️ 首次設定」** 提示框，要求輸入 GAS 網址。
+3. 貼入步驟 2 複製的 **`GAS_API_URL`**（格式：`https://script.google.com/macros/s/.../exec`）。
+4. 點擊確認後，網址會自動儲存在瀏覽器的 **`localStorage`** 中。
+5. **之後再次開啟同一裝置上的頁面，不會再詢問**（直接讀取已儲存的設定）。
+6. 每個 HTML 頁面皆需在首次開啟時各設定一次（共 3 個掃碼頁面）。
+
+> ⚠️ **換裝置或清除瀏覽器資料後**，重新開啟頁面時會再次詢問，重新貼入 GAS 網址即可。
 
 ---
 

@@ -492,7 +492,14 @@
         return location.href.split('?')[0];
       }
 
-      return 'https://script.google.com/macros/s/AKfycby2OYGRrTwOm3jvN6qeLZeO6AVFrB9RdqYufffQgDhBBH6vND6x_Xo_P3EuXqrv9yzf/exec';
+      // 首次使用：提示輸入 GAS 網址並儲存，避免在程式碼中寫入機敏部署網址
+      const entered = prompt('⚙️ 首次設定\n請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
+      if (entered && entered.trim().startsWith('https://script.google.com')) {
+        localStorage.setItem('class_management_gas_api_url', entered.trim());
+        return entered.trim();
+      }
+      alert('❌ 網址格式不正確，請重新整理頁面並輸入正確的 GAS 網址。');
+      return '';
     }
 
     const GAS_API_URL = getGasApiUrl();
