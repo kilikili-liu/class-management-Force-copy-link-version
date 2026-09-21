@@ -587,14 +587,19 @@
       filteredRecords.forEach(r => {
         const tr = document.createElement('tr');
         const unitNote = r.assignment.unit ? ` (${r.assignment.unit})` : '';
-        const hwDesc = `${r.assignment.subject} ${r.assignment.type}${unitNote}`;
+        const pageNote = r.assignment.note ? ` p.${r.assignment.note}` : '';
+        const hwDesc = `${r.assignment.subject} ${r.assignment.type}${unitNote}${pageNote}`;
         const escapedHwDesc = hwDesc.replace(/'/g, "\\'");
         const escapedName = r.name.replace(/'/g, "\\'");
+
+        // 組合顯示用的說明文字（主說明 + 頁數備註分開顯示）
+        const hwMain = `${r.assignment.subject} ${r.assignment.type}${unitNote}`;
+        const hwPage = r.assignment.note ? `<span style="color:#94a3b8; font-size:0.8em; margin-left:6px;">p.${r.assignment.note}</span>` : '';
 
         tr.innerHTML = `
           <td><strong>${String(r.seatNo).padStart(2, '0')}</strong></td>
           <td>${r.name}</td>
-          <td style="color:#fca5a5; font-weight:600;">${hwDesc}</td>
+          <td style="color:#fca5a5; font-weight:600;">${hwMain}${hwPage}</td>
           <td style="text-align:center;">
             <button onclick="quickMakeUpSingleItem(${r.rowIndex}, ${r.colIndex}, '${r.seatNo}', '${escapedName}', '${escapedHwDesc}')" style="background:#22c55e; color:#0f172a; border:none; padding:4px 10px; border-radius:4px; font-weight:700; font-size:0.75rem; cursor:pointer;">✍️ 補登</button>
           </td>
