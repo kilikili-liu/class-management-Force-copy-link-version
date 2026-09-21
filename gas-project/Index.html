@@ -298,14 +298,26 @@
           <button class="sub-tab-btn" onclick="filterReminderBySubject('日記')">日記</button>
         </div>
 
+        <!-- 批量補登送出列 -->
+        <div id="makeup-submit-bar" style="display:flex; align-items:center; gap:10px; padding:6px 4px; border-top:1px solid #334155; min-height:36px;">
+          <span id="makeup-count-label" style="color:#94a3b8; font-size:0.85rem;">請勾選要補登的項目</span>
+          <button id="makeup-submit-btn" onclick="submitMakeUpChecked()" disabled
+            style="background:#22c55e; color:#0f172a; border:none; padding:5px 16px; border-radius:6px; font-weight:700; font-size:0.85rem; cursor:not-allowed; opacity:0.4; transition:opacity 0.2s;">
+            ✅ 送出補登 (0)
+          </button>
+        </div>
+
         <div style="overflow-x:auto;">
           <table>
             <thead>
               <tr>
+                <th style="width:36px; text-align:center;">
+                  <input type="checkbox" id="makeup-select-all" onchange="toggleSelectAll(this.checked)"
+                    title="全選 / 全不選" style="width:16px; height:16px; cursor:pointer;">
+                </th>
                 <th style="width:50px;">座號</th>
                 <th style="width:70px;">姓名</th>
                 <th>未繳作業與單元說明</th>
-                <th style="width:85px; text-align:center;">動作</th>
               </tr>
             </thead>
             <tbody id="reminder-table-body">
@@ -566,6 +578,11 @@
       const tbody = document.getElementById('reminder-table-body');
       tbody.innerHTML = '';
 
+      // 清除全選狀態與送出按鈕計數
+      const selectAll = document.getElementById('makeup-select-all');
+      if (selectAll) selectAll.checked = false;
+      updateMakeUpSubmitBtn();
+
       if (!cachedReminderRes || !cachedReminderRes.unsubmittedRecords || cachedReminderRes.unsubmittedRecords.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#4ade80;">🎉 太棒了！全班無任何缺交紀錄！</td></tr>';
         return;
@@ -581,72 +598,112 @@
         return;
       }
 
-      // Sort by seat number ascending
       filteredRecords.sort((a, b) => Number(a.seatNo) - Number(b.seatNo));
 
-      filteredRecords.forEach(r => {
+      filteredRecords.forEach((r, idx) => {
         const tr = document.createElement('tr');
         const unitNote = r.assignment.unit ? ` (${r.assignment.unit})` : '';
-        const pageNote = r.assignment.note ? ` p.${r.assignment.note}` : '';
-        const hwDesc = `${r.assignment.subject} ${r.assignment.type}${unitNote}${pageNote}`;
-        const escapedHwDesc = hwDesc.replace(/'/g, "\\'");
-        const escapedName = r.name.replace(/'/g, "\\'");
-
-        // 組合顯示用的說明文字（主說明 + 頁數備註分開顯示）
         const hwMain = `${r.assignment.subject} ${r.assignment.type}${unitNote}`;
-        const hwPage = r.assignment.note ? `<span style="color:#94a3b8; font-size:0.8em; margin-left:6px;">p.${r.assignment.note}</span>` : '';
+        const hwPage = r.assignment.note
+          ? `<span style="color:#94a3b8; font-size:0.8em; margin-left:6px;">p.${r.assignment.note}</span>`
+          : '';
+
+        // 每列用 data 屬性儲存 rowIndex/colIndex 供送出時讀取
+        tr.dataset.rowIndex = r.rowIndex;
+        tr.dataset.colIndex = r.colIndex;
+        tr.dataset.seatNo   = r.seatNo;
+        tr.dataset.name     = r.name;
 
         tr.innerHTML = `
+          <td style="text-align:center;">
+            <input type="checkbox" class="makeup-cb" onchange="updateMakeUpSubmitBtn()"
+              style="width:17px; height:17px; cursor:pointer; accent-color:#22c55e;">
+          </td>
           <td><strong>${String(r.seatNo).padStart(2, '0')}</strong></td>
           <td>${r.name}</td>
           <td style="color:#fca5a5; font-weight:600;">${hwMain}${hwPage}</td>
-          <td style="text-align:center;">
-            <button onclick="quickMakeUpSingleItem(${r.rowIndex}, ${r.colIndex}, '${r.seatNo}', '${escapedName}', '${escapedHwDesc}')" style="background:#22c55e; color:#0f172a; border:none; padding:4px 10px; border-radius:4px; font-weight:700; font-size:0.75rem; cursor:pointer;">✍️ 補登</button>
-          </td>
         `;
+
+        // 點擊整列也切換 checkbox（方便手機操作）
+        tr.style.cursor = 'pointer';
+        tr.addEventListener('click', function(e) {
+          if (e.target.type === 'checkbox') return; // checkbox 本身的點擊不重複處理
+          const cb = this.querySelector('.makeup-cb');
+          cb.checked = !cb.checked;
+          updateMakeUpSubmitBtn();
+        });
+
         tbody.appendChild(tr);
       });
     }
 
-    // 單筆補登（缺交催繳矩陣列表中每列的「補登」按鈕呼叫此函數）
-    function quickMakeUpSingleItem(rowIndex, colIndex, seatNo, name, hwDesc) {
-      const seatStr = String(seatNo).padStart(2, '0');
-      if (!confirm(`確認要為 ${seatStr}號 ${name} 補登「${hwDesc}」嗎？`)) return;
-      showToast(`⏳ 正在補登 ${seatStr}號 ${hwDesc}...`);
+    // 更新「送出補登」按鈕的計數與啟用狀態
+    function updateMakeUpSubmitBtn() {
+      const checked = document.querySelectorAll('.makeup-cb:checked').length;
+      const total   = document.querySelectorAll('.makeup-cb').length;
+      const btn     = document.getElementById('makeup-submit-btn');
+      const label   = document.getElementById('makeup-count-label');
+      const selAll  = document.getElementById('makeup-select-all');
+
+      if (btn) {
+        btn.textContent = `✅ 送出補登 (${checked})`;
+        btn.disabled = checked === 0;
+        btn.style.opacity  = checked === 0 ? '0.4' : '1';
+        btn.style.cursor   = checked === 0 ? 'not-allowed' : 'pointer';
+      }
+      if (label) {
+        label.textContent = checked === 0
+          ? '請勾選要補登的項目'
+          : `已勾選 ${checked} 筆，確認後按送出`;
+        label.style.color = checked === 0 ? '#94a3b8' : '#4ade80';
+      }
+      if (selAll && total > 0) {
+        selAll.checked       = checked === total;
+        selAll.indeterminate = checked > 0 && checked < total;
+      }
+    }
+
+    // 全選 / 全不選
+    function toggleSelectAll(checked) {
+      document.querySelectorAll('.makeup-cb').forEach(cb => { cb.checked = checked; });
+      updateMakeUpSubmitBtn();
+    }
+
+    // 批量送出補登
+    function submitMakeUpChecked() {
+      const rows = document.querySelectorAll('#reminder-table-body tr');
+      const makeUpList = [];
+      rows.forEach(tr => {
+        const cb = tr.querySelector('.makeup-cb');
+        if (cb && cb.checked) {
+          makeUpList.push({
+            rowIndex: parseInt(tr.dataset.rowIndex, 10),
+            colIndex: parseInt(tr.dataset.colIndex, 10)
+          });
+        }
+      });
+      if (makeUpList.length === 0) return;
+
+      showToast(`⏳ 正在送出 ${makeUpList.length} 筆補登...`);
+      const btn = document.getElementById('makeup-submit-btn');
+      if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
+
       google.script.run
         .withSuccessHandler(res => {
           if (res && res.success) {
-            showToast(`🟢 ${seatStr}號「${hwDesc}」補登完畢！`);
+            showToast(`🟢 成功補登 ${res.updatedCount} 筆！`);
             loadReminderData();
             loadTodayStatus();
           } else {
-            showToast(`❌ 補登失敗，請稍後再試。`);
+            showToast('❌ 補登失敗，請稍後再試。');
+            if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
           }
         })
         .withFailureHandler(err => {
           showToast(`❌ 補登錯誤：${err.message || err}`);
+          if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
         })
-        .batchSubmitMakeUp([{ rowIndex: rowIndex, colIndex: colIndex }]);
-    }
-
-    function quickMakeUpSeat(seatNo) {
-      if (!cachedReminderRes) return;
-      let itemsToUpdate = cachedReminderRes.unsubmittedRecords.filter(r => String(r.seatNo) === String(seatNo));
-      if (currentReminderSubject !== '全部') {
-        itemsToUpdate = itemsToUpdate.filter(r => r.assignment.subject === currentReminderSubject);
-      }
-      if (itemsToUpdate.length === 0) return;
-
-      const seatStr = String(seatNo).padStart(2, '0');
-      showToast(`⏳ 正在為 ${seatStr}號 進行作業補登...`);
-
-      google.script.run.withSuccessHandler(res => {
-        if (res.success) {
-          showToast(`🟢 已成功為 ${seatStr}號 補登完畢！`);
-          loadReminderData();
-          loadTodayStatus();
-        }
-      }).batchSubmitMakeUp(itemsToUpdate.map(i => ({ rowIndex: i.rowIndex, colIndex: i.colIndex })));
+        .batchSubmitMakeUp(makeUpList);
     }
   </script>
 </body>
