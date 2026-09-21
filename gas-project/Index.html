@@ -603,6 +603,27 @@
       });
     }
 
+    // 單筆補登（缺交催繳矩陣列表中每列的「補登」按鈕呼叫此函數）
+    function quickMakeUpSingleItem(rowIndex, colIndex, seatNo, name, hwDesc) {
+      const seatStr = String(seatNo).padStart(2, '0');
+      if (!confirm(`確認要為 ${seatStr}號 ${name} 補登「${hwDesc}」嗎？`)) return;
+      showToast(`⏳ 正在補登 ${seatStr}號 ${hwDesc}...`);
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res && res.success) {
+            showToast(`🟢 ${seatStr}號「${hwDesc}」補登完畢！`);
+            loadReminderData();
+            loadTodayStatus();
+          } else {
+            showToast(`❌ 補登失敗，請稍後再試。`);
+          }
+        })
+        .withFailureHandler(err => {
+          showToast(`❌ 補登錯誤：${err.message || err}`);
+        })
+        .batchSubmitMakeUp([{ rowIndex: rowIndex, colIndex: colIndex }]);
+    }
+
     function quickMakeUpSeat(seatNo) {
       if (!cachedReminderRes) return;
       let itemsToUpdate = cachedReminderRes.unsubmittedRecords.filter(r => String(r.seatNo) === String(seatNo));
