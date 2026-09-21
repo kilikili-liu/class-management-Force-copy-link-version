@@ -3,6 +3,11 @@
 .clasprc.json
 clasprc.json
 
+# 本機開發用的 GAS API URL 設定檔（含真實部署網址，絕不上傳 GitHub）
+local_config.js
+neocities/local_config.js
+gas-project/local_config.js
+
 # OS & Environment files
 .DS_Store
 Thumbs.db
