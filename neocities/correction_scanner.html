@@ -405,7 +405,7 @@
       <!-- 作業選擇列 -->
       <div class="assign-bar">
         <select id="assign-select" class="assign-select" onchange="onAssignmentChanged()"></select>
-        <button class="btn-edit-meta" onclick="openMetaModal()">📌 補填細節</button>
+        <button class="btn-edit-meta" onclick="openMetaModal()">✏️ 編輯說明</button>
       </div>
 
       <!-- 說明與人數統計列 -->
@@ -907,7 +907,7 @@
       const isMatchingCurrent = currAssign && (currAssign.subject === subject && currAssign.category === category);
       
       // 根據使用者要求，掃碼登記時絕對不改動/帶入任何「單元」與「頁數」資料，只針對該欄位紀錄錯題！
-      // 「單元」與「頁數」資料只能透過點擊「補填細節」並按下「儲存設定」時修改！
+      // 「單元」與「頁數」資料只能透過點擊「編輯說明」並按下「儲存設定」時修改！
       try {
         if (scanMode === 'register') {
           // 🟧 登記模式
