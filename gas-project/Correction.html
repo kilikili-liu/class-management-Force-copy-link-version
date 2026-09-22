@@ -616,6 +616,28 @@
     </div>
   </div>
 
+  <!-- 📌 編輯作業單元與頁碼 Modal -->
+  <div id="meta-modal" class="prompt-modal-overlay hidden">
+    <div class="prompt-modal-card" style="max-width:420px; text-align:left;">
+      <div style="font-weight:700; font-size:1.1rem; color:#38bdf8; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
+        <span>📌 編輯作業單元與頁碼說明</span>
+        <button onclick="closeMetaModal()" style="background:none; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer;">&times;</button>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px; font-weight:600;">📌 單元說明 (例如：L3 或 第三單元)：</label>
+        <input type="text" id="modal-unit" class="form-control" placeholder="例: L3" style="width:100%;">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px; font-weight:600;">📄 頁碼與備註 (例如：P.15~16)：</label>
+        <input type="text" id="modal-page" class="form-control" placeholder="例: P.15" style="width:100%;">
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button onclick="closeMetaModal()" style="background:#334155; color:#cbd5e1; border:none; padding:8px 14px; border-radius:6px; font-weight:700; cursor:pointer;">取消</button>
+        <button onclick="saveMetaModal()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer;">💾 儲存設定</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Floating Toast Banner with Undo Button -->
   <div class="toast-banner" id="toast-banner">
     <span id="toast-text"></span>
@@ -671,13 +693,16 @@
               <option value="" disabled selected>-- 請先選科目 --</option>
             </select>
           </div>
-          <div class="form-group">
-            <label for="reg-unit">📌 單元 (如: L1)</label>
-            <input type="text" id="reg-unit" class="form-control" placeholder="例: L3" oninput="renderSeatButtons()">
-          </div>
-          <div class="form-group">
-            <label for="reg-page">📄 頁數 (如: P.12)</label>
-            <input type="text" id="reg-page" class="form-control" placeholder="例: P.15" oninput="renderSeatButtons()">
+          <div class="form-group" style="flex: 1.5;">
+            <label style="font-size:0.82rem; color:var(--text-sub); font-weight:700;">📌 作業說明與單元頁碼</label>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span id="current-meta-text" style="font-size:0.88rem; color:#e2e8f0; font-weight:600; background:#0f172a; padding:6px 12px; border-radius:6px; border:1px solid #334155; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                📌 請先選擇科目與種類
+              </span>
+              <button type="button" onclick="openMetaModal()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:7px 12px; border-radius:6px; font-size:0.85rem; font-weight:700; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:4px;">
+                ✏️ 編輯說明
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1016,21 +1041,120 @@
       }
     }
 
+    // Helper: 更新目前選定作業的「單元/頁數」顯示文字
+    function updateCurrentMetaText() {
+      const metaTextEl = document.getElementById('current-meta-text');
+      if (!metaTextEl) return;
+
+      const subjectEl = document.getElementById('reg-subject');
+      const categoryEl = document.getElementById('reg-category');
+      const subject = subjectEl ? subjectEl.value : '';
+      const category = categoryEl ? categoryEl.value : '';
+
+      if (!subject || !category) {
+        metaTextEl.innerHTML = '📌 請先選擇科目與種類';
+        return;
+      }
+
+      const existingAssign = (matrixData.assignments || []).find(a =>
+        a.subject === subject && a.category === category
+      );
+
+      if (existingAssign) {
+        const unitStr = existingAssign.unit ? `單元: ${existingAssign.unit}` : '無單元';
+        const pageStr = existingAssign.page ? ` (頁數: ${existingAssign.page})` : '';
+        metaTextEl.innerHTML = `📌 ${unitStr}${pageStr}`;
+      } else {
+        metaTextEl.innerHTML = '📌 新作業 (點按號碼或編輯說明)';
+      }
+    }
+
+    // Modal Operations: 編輯單元與頁碼 Modal
+    function openMetaModal() {
+      const subjectEl = document.getElementById('reg-subject');
+      const categoryEl = document.getElementById('reg-category');
+      const subject = subjectEl ? subjectEl.value : '';
+      const category = categoryEl ? categoryEl.value : '';
+
+      if (!hasUserSelectedSubjectCategory || !subject || !category) {
+        openSelectPromptModal();
+        return;
+      }
+
+      const existingAssign = (matrixData.assignments || []).find(a =>
+        a.subject === subject && a.category === category
+      );
+
+      document.getElementById('modal-unit').value = existingAssign ? (existingAssign.unit || '') : '';
+      document.getElementById('modal-page').value = existingAssign ? (existingAssign.page || '') : '';
+      document.getElementById('meta-modal').classList.remove('hidden');
+    }
+
+    function closeMetaModal() {
+      document.getElementById('meta-modal').classList.add('hidden');
+    }
+
+    async function saveMetaModal() {
+      const subjectEl = document.getElementById('reg-subject');
+      const categoryEl = document.getElementById('reg-category');
+      const subject = subjectEl ? subjectEl.value : '';
+      const category = categoryEl ? categoryEl.value : '';
+
+      if (!subject || !category) {
+        closeMetaModal();
+        openSelectPromptModal();
+        return;
+      }
+
+      const unitVal = document.getElementById('modal-unit').value.trim();
+      const pageVal = document.getElementById('modal-page').value.trim();
+
+      let existingAssign = (matrixData.assignments || []).find(a =>
+        a.subject === subject && a.category === category
+      );
+
+      let colIndex = existingAssign ? existingAssign.colIndex : null;
+
+      showToastWithUndo(`⏳ 正在儲存【${subject}${category}】說明...`, null);
+      closeMetaModal();
+
+      try {
+        if (!colIndex) {
+          const createRes = await gasApiFetch(`${GAS_API_URL}?action=addCorrectionRecordMatrix&seat=01&subject=${encodeURIComponent(subject)}&category=${encodeURIComponent(category)}`);
+          if (createRes && createRes.success) {
+            colIndex = createRes.colIndex;
+          }
+        }
+
+        if (colIndex) {
+          const res = await gasApiFetch(`${GAS_API_URL}?action=updateHomeworkMetadata&colIndex=${colIndex}&unit=${encodeURIComponent(unitVal)}&note=${encodeURIComponent(pageVal)}&targetSheet=matrix`);
+          if (res && res.success) {
+            audioSuccess.play().catch(()=>{});
+            showToastWithUndo(`🟢 已更新【${subject}${category}】說明為：${unitVal || '無單元'} ${pageVal ? '(P.' + pageVal + ')' : ''}`, null);
+            fetchCorrectionMatrixData();
+          } else {
+            showToastWithUndo(`❌ 更新失敗：${res ? res.message : ''}`, null);
+          }
+        } else {
+          showToastWithUndo(`❌ 建立作業欄位失敗`, null);
+        }
+      } catch (err) {
+        showToastWithUndo(`❌ 請求異常：${err.message}`, null);
+      }
+    }
+
     // Helper: 判斷該學生在「目前登錄的這項作業」中是否有需訂正標記 (X)
     function isSeatErrorInCurrentAssignment(seatStr) {
       const subjectEl = document.getElementById('reg-subject');
       const categoryEl = document.getElementById('reg-category');
-      const unitEl = document.getElementById('reg-unit');
-      const pageEl = document.getElementById('reg-page');
       if (!subjectEl || !categoryEl) return false;
 
       const subject = subjectEl.value;
       const category = categoryEl.value;
-      const unit = unitEl ? unitEl.value.trim() : '';
-      const page = pageEl ? pageEl.value.trim() : '';
+      if (!subject || !category) return false;
 
       const existingAssign = (matrixData.assignments || []).find(a =>
-        a.subject === subject && a.category === category && (a.unit || '') === unit && (a.page || '') === page
+        a.subject === subject && a.category === category
       );
 
       if (existingAssign) {
@@ -1061,6 +1185,7 @@
       if (!subject) {
         categorySelect.innerHTML = '<option value="" disabled selected>-- 請先選科目 --</option>';
         hasUserSelectedSubjectCategory = false;
+        updateCurrentMetaText();
         renderSeatButtons();
         return;
       }
@@ -1083,6 +1208,7 @@
         hasUserSelectedSubjectCategory = false;
       }
 
+      updateCurrentMetaText();
       renderSeatButtons();
     }
 
@@ -1097,6 +1223,7 @@
       } else {
         hasUserSelectedSubjectCategory = false;
       }
+      updateCurrentMetaText();
       renderSeatButtons();
     }
 
@@ -1229,12 +1356,10 @@
         openSelectPromptModal();
         return;
       }
-      const unit = document.getElementById('reg-unit').value.trim();
-      const page = document.getElementById('reg-page').value.trim();
 
       // 找出目前選定作業的 colIndex
       const existingAssign = (matrixData.assignments || []).find(a =>
-        a.subject === subject && a.category === category && (a.unit || '') === unit && (a.page || '') === page
+        a.subject === subject && a.category === category
       );
       if (!existingAssign) {
         showToastWithUndo(`❌ 找不到對應的作業欄位，無法撤銷`, null);
@@ -1249,14 +1374,12 @@
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           fetchCorrectionMatrixData();
-          showToastWithUndo(`↩️ 已撤銷 ${seatStr}號【${subject}${category}${unit ? ' ' + unit : ''}】的需訂正登記`, {
+          showToastWithUndo(`↩️ 已撤銷 ${seatStr}號【${subject}${category}】的需訂正登記`, {
             type: 'register',
             seat: seatStr,
             colIndex: colIndex,
             subject: subject,
-            category: category,
-            unit: unit,
-            page: page
+            category: category
           });
         } else {
           showToastWithUndo(`❌ 撤銷失敗：${res.message}`, null);
@@ -1274,24 +1397,20 @@
         openSelectPromptModal();
         return;
       }
-      const unit = document.getElementById('reg-unit').value.trim();
-      const page = document.getElementById('reg-page').value.trim();
 
       showToastWithUndo(`⏳ 正在為 ${seatStr}號 登錄【${subject}${category}】...`, null);
       try {
-        const url = `${GAS_API_URL}?action=addCorrectionRecordMatrix&seat=${seatStr}&subject=${encodeURIComponent(subject)}&category=${encodeURIComponent(category)}&unit=${encodeURIComponent(unit)}&page=${encodeURIComponent(page)}`;
+        const url = `${GAS_API_URL}?action=addCorrectionRecordMatrix&seat=${seatStr}&subject=${encodeURIComponent(subject)}&category=${encodeURIComponent(category)}`;
         const res = await gasApiFetch(url);
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           fetchCorrectionMatrixData();
-          showToastWithUndo(`🔴 已登錄 ${seatStr}號【${subject}${category}${unit ? ' ' + unit : ''}】需訂正 (X)`, {
+          showToastWithUndo(`🔴 已登錄 ${seatStr}號【${subject}${category}】需訂正 (X)`, {
             type: 'register',
             seat: seatStr,
             colIndex: res.colIndex,
             subject: subject,
-            category: category,
-            unit: unit,
-            page: page
+            category: category
           });
         } else {
           showToastWithUndo(`❌ 登錄失敗：${res.message}`, null);
@@ -1308,6 +1427,7 @@
         const res = await gasApiFetch(`${GAS_API_URL}?action=getCorrectionMatrixData`);
         if (res.success) {
           matrixData = res;
+          updateCurrentMetaText();
           renderSeatButtons();
           if (currentMainView === 'matrix') renderMatrixTable();
           if (currentQuerySub === 'assignment') renderAssignmentQueryGrid();
