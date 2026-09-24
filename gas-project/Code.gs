@@ -96,7 +96,8 @@ function handleScannerApiAction(action, params) {
       return getHomeworkUnsubmittedData();
     }
     if (action === 'batchSubmitMakeUp') {
-      return batchSubmitMakeUp(JSON.parse(params.makeUpList || '[]'));
+      const list = typeof params.makeUpList === 'string' ? JSON.parse(params.makeUpList || '[]') : (params.makeUpList || []);
+      return batchSubmitMakeUp(list);
     }
 
     // ── 2. 錯題訂正與催繳矩陣 API ──

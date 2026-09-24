@@ -364,7 +364,7 @@
     </div>
     <div class="header-controls">
       <button class="btn-icon" id="btn-pwa-install" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <button class="btn-icon" id="btn-mode-toggle" style="background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="togglePureButtonMode()">🎯 純按鈕清點</button>
+      <a href="index.html" class="btn-icon" id="btn-mode-toggle" style="background:#0284c7; color:#fff; border-color:#38bdf8; text-decoration:none;">🎯 純按鈕清點</a>
       <button class="btn-icon" onclick="switchNextCamera()">🔄 切換鏡頭</button>
       <button class="btn-icon" onclick="openMetaModal()">⚙️ 細節</button>
     </div>
@@ -596,7 +596,21 @@
     let lastScanTime = 0;
     let currentFacingMode = "environment"; // "environment" (rear) vs "user" (front)
 
+    function adaptInternalLinks() {
+      if (location.hostname.includes('script.google.com') || location.hostname.includes('googleusercontent.com')) {
+        const baseGasUrl = location.href.split('?')[0];
+        document.querySelectorAll('a[href]').forEach(a => {
+          const href = a.getAttribute('href');
+          if (href === 'scanner.html') a.href = `${baseGasUrl}?page=scanner`;
+          else if (href === 'index.html') a.href = `${baseGasUrl}`;
+          else if (href === 'correction.html') a.href = `${baseGasUrl}?page=correction`;
+          else if (href === 'correction_scanner.html') a.href = `${baseGasUrl}?page=correction_scanner`;
+        });
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+      adaptInternalLinks();
       initSeatGrid();
       fetchTodayData();
       startCameraWithFacingMode(currentFacingMode);

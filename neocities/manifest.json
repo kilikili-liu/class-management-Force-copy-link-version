@@ -44,6 +44,13 @@
       "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
     },
     {
+      "name": "純按鈕點收主頁",
+      "short_name": "按鈕點收",
+      "description": "以按鈕矩陣點收作業與缺交催繳矩陣",
+      "url": "./index.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
       "name": "錯題訂正主頁",
       "short_name": "錯題主頁",
       "description": "純號碼登記錯題與催繳總覽",
