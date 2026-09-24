@@ -461,8 +461,8 @@
         <!-- Neocities 外部代管網址輸入 (僅在 PWA 模式顯示) -->
         <div id="pair-neocities-box" class="pair-input-group">
           <label class="pair-section-label" for="pair-neocities-input">🏠 您的 Neocities 網站網址 (Base URL)：</label>
-          <input type="text" id="pair-neocities-input" placeholder="例如：https://myclass.neocities.org" oninput="onPairParamChange()">
-          <span style="font-size:0.75rem; color:#94a3b8;">💡 首次設定後會自動記住，若尚未建立 Neocities 可切換至「GAS 原生網址」</span>
+          <input type="text" id="pair-neocities-input" placeholder="例如：https://zaca006.neocities.org/scanner" oninput="onPairParamChange()">
+          <span style="font-size:0.75rem; color:#94a3b8;">💡 預設為 https://zaca006.neocities.org/scanner，若有更換站點可自行修改</span>
         </div>
 
         <!-- GAS API 網址 (自動偵測) -->
@@ -612,8 +612,8 @@
     let qrcodeObj = null;
 
     function openPairModal() {
-      // 載入記住的 neocities 網址
-      const savedNeo = localStorage.getItem('class_mgmt_neocities_url') || '';
+      // 載入記住的 neocities 網址，預設為 https://zaca006.neocities.org/scanner
+      const savedNeo = localStorage.getItem('class_mgmt_neocities_url') || 'https://zaca006.neocities.org/scanner';
       document.getElementById('pair-neocities-input').value = savedNeo;
 
       // 取得 GAS API 網址
@@ -693,7 +693,10 @@
       // PWA 模式 (Neocities)
       let neoBase = document.getElementById('pair-neocities-input').value.trim();
       if (!neoBase) {
-        neoBase = 'https://YOUR_SITE.neocities.org';
+        neoBase = 'https://zaca006.neocities.org/scanner';
+      }
+      if (!/^https?:\/\//i.test(neoBase)) {
+        neoBase = 'https://' + neoBase;
       }
       neoBase = neoBase.replace(/\/+$/, '');
       const toolFile = currentPairTool.page || 'scanner.html';
