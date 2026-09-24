@@ -606,6 +606,13 @@
 </head>
 <body>
 
+  <!-- PWA 自動更新提示條 (方案1: 背景檢查 + 浮動提示) -->
+  <div id="pwa-update-banner" style="display:none; position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:999999; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:1px solid #38bdf8; padding:8px 14px; border-radius:30px; box-shadow:0 8px 24px rgba(0,0,0,0.6); font-size:0.85rem; font-weight:700; align-items:center; gap:8px; white-space:nowrap;">
+    <span>✨ 發現系統新版本！</span>
+    <button onclick="window.location.reload()" style="background:#22c55e; color:#0f172a; border:none; padding:4px 12px; border-radius:14px; font-weight:700; cursor:pointer; font-size:0.8rem; box-shadow:0 2px 6px rgba(0,0,0,0.3);">立即套用更新</button>
+    <button onclick="document.getElementById('pwa-update-banner').style.display='none'" style="background:transparent; color:#cbd5e1; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:0 4px;" title="稍後更新">&times;</button>
+  </div>
+
   <!-- Select Subject Prompt Modal -->
   <div id="select-prompt-modal" class="prompt-modal-overlay hidden">
     <div class="prompt-modal-card">
@@ -858,11 +865,51 @@
   </div>
 
   <script>
-    // ── PWA Service Worker 註冊與安裝提示 ──
+    // ── PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
     let deferredInstallPrompt = null;
+    const hadPriorController = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
+
+    function showPwaUpdateBanner() {
+      const banner = document.getElementById('pwa-update-banner');
+      if (banner) {
+        banner.style.display = 'flex';
+      }
+    }
+
     if ('serviceWorker' in navigator) {
+      // 監聽 Controller 變化：當有舊的 SW 且新 SW 接管時，觸發新版本提示
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hadPriorController) {
+          showPwaUpdateBanner();
+        }
+      });
+
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW note:', err));
+        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+          .then(reg => {
+            // 1. 定期與切換前台時主動向伺服器檢查新版本
+            reg.update().catch(() => {});
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState === 'visible') {
+                reg.update().catch(() => {});
+              }
+            });
+            setInterval(() => {
+              reg.update().catch(() => {});
+            }, 10 * 60 * 1000); // 每 10 分鐘背景檢查一次
+
+            // 2. 監聽更新事件
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (!newWorker) return;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  showPwaUpdateBanner();
+                }
+              });
+            });
+          })
+          .catch(err => console.log('SW note:', err));
       });
     }
     window.addEventListener('beforeinstallprompt', e => {
