@@ -374,7 +374,6 @@
     </div>
     <div style="display: flex; gap: 8px; align-items: center;">
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <button class="nav-btn" style="color:#38bdf8;" id="btn-sound" onclick="toggleSound()">🔇 靜音模式</button>
       <a href="scanner.html" class="nav-btn">📥 作業收繳</a>
       <a href="correction.html" class="nav-btn">✏️ 錯題主頁</a>
     </div>
@@ -403,8 +402,6 @@
       <!-- 相機按鈕 -->
       <div class="cam-controls">
         <button class="btn-action" onclick="switchNextCamera()">🔄 切換鏡頭</button>
-        <button class="btn-action" onclick="triggerNativeCamera()">📷 照片辨識</button>
-        <input type="file" id="camera-native-input" accept="image/*" capture="environment" style="display:none;" onchange="onNativeCameraCaptured(this)">
       </div>
     </div>
 
@@ -705,13 +702,6 @@
         vf.className = 'viewfinder-box status-clear-effect';
         showToast('已切換為：🟦 錯題銷案模式 (標為 O)', 'success');
       }
-    }
-
-    function toggleSound() {
-      isSilent = !isSilent;
-      const btn = document.getElementById('btn-sound');
-      btn.innerHTML = isSilent ? '🔇 靜音模式' : '🔊 音效模式';
-      showToast(isSilent ? '已切換為靜音（微震動）' : '已開啟提示音效', 'success');
     }
 
     function initSeatGrid() {
@@ -1223,24 +1213,6 @@
       startCameraWithFacingMode(false);
     }
 
-    function triggerNativeCamera() {
-      document.getElementById('camera-native-input').click();
-    }
-
-    function onNativeCameraCaptured(input) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        showToast('📷 正在解析照片中...', 'success');
-        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.scanFile(file, true)
-          .then(decodedText => { onScanSuccess(decodedText); })
-          .catch(err => {
-            showToast('❌ 照片中無法辨識 QR Code', 'error');
-            triggerFeedback('error');
-          });
-      }
-    }
-
     function showToast(msg, type = 'success') {
       const banner = document.getElementById('toast-banner');
       banner.className = `toast-banner ${type}`;
@@ -1254,10 +1226,6 @@
         if (type === 'success') navigator.vibrate([100, 50, 100]);
         else if (type === 'duplicate') navigator.vibrate([200, 100, 200]);
         else navigator.vibrate(400);
-      }
-      if (!isSilent) {
-        const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/clink_clink.ogg');
-        audio.play().catch(()=>{});
       }
     }
   </script>

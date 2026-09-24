@@ -281,6 +281,45 @@
       color: var(--accent-green);
     }
 
+    /* 純按鈕清點模式樣式 */
+    body.pure-button-mode #rotate-hint {
+      display: none !important;
+    }
+    body.pure-button-mode {
+      overflow-y: auto !important;
+      height: auto !important;
+      min-height: 100dvh;
+    }
+    body.pure-button-mode .camera-panel {
+      display: none !important;
+    }
+    body.pure-button-mode .app-container {
+      flex-direction: column !important;
+      height: auto !important;
+      overflow-y: auto !important;
+    }
+    body.pure-button-mode .info-panel {
+      flex: 1 !important;
+      width: 100% !important;
+      max-width: 680px;
+      margin: 0 auto;
+      border-left: none !important;
+      padding: 12px 14px;
+    }
+    body.pure-button-mode .seat-grid {
+      grid-template-columns: repeat(5, 1fr) !important;
+      gap: 8px !important;
+    }
+    body.pure-button-mode .seat-pill {
+      padding: 12px 4px !important;
+      font-size: 1.05rem !important;
+      border-radius: 8px !important;
+      min-height: 48px;
+    }
+    body.pure-button-mode .seat-pill:active {
+      transform: scale(0.96);
+    }
+
     .modal-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.7);
@@ -327,14 +366,11 @@
     </div>
     <div class="header-controls">
       <button class="btn-icon" id="btn-pwa-install" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <button class="btn-icon" id="btn-sound" onclick="toggleSound()">🔇 靜音模式</button>
-      <button class="btn-icon" onclick="triggerNativeCamera()">📷 原生拍照</button>
+      <button class="btn-icon" id="btn-mode-toggle" style="background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="togglePureButtonMode()">🎯 純按鈕清點</button>
       <button class="btn-icon" onclick="switchNextCamera()">🔄 切換鏡頭</button>
       <button class="btn-icon" onclick="openMetaModal()">⚙️ 細節</button>
     </div>
   </header>
-
-  <input type="file" id="camera-native-input" accept="image/*" capture="environment" style="display:none;" onchange="onNativeCameraCaptured(this)">
 
   <div class="app-container">
     <div class="camera-panel">
@@ -574,11 +610,32 @@
       }
     });
 
-    function toggleSound() {
-      isSilent = !isSilent;
-      const btn = document.getElementById('btn-sound');
-      btn.innerHTML = isSilent ? '🔇 靜音模式' : '🔊 音效模式';
-      showToast(isSilent ? '已切換為靜音（微震動）' : '已開啟提示音效', 'success');
+    let isPureButtonMode = false;
+
+    async function togglePureButtonMode() {
+      isPureButtonMode = !isPureButtonMode;
+      const btn = document.getElementById('btn-mode-toggle');
+      if (isPureButtonMode) {
+        document.body.classList.add('pure-button-mode');
+        if (btn) {
+          btn.innerHTML = '📷 返回相機掃碼';
+          btn.style.background = '#f97316';
+          btn.style.borderColor = '#fb923c';
+        }
+        if (html5QrCode && html5QrCode.isScanning) {
+          try { await html5QrCode.stop(); } catch(e){}
+        }
+        showToast('🎯 已切換為【純按鈕清點模式】（支援直向/橫向點收）', 'success');
+      } else {
+        document.body.classList.remove('pure-button-mode');
+        if (btn) {
+          btn.innerHTML = '🎯 純按鈕清點';
+          btn.style.background = '#0284c7';
+          btn.style.borderColor = '#38bdf8';
+        }
+        showToast('📷 已切換回【相機掃碼模式】', 'success');
+        startCameraWithFacingMode(currentFacingMode);
+      }
     }
 
     function initSeatGrid() {
@@ -731,30 +788,6 @@
         if (type === 'success') navigator.vibrate([100, 50, 100]);
         else if (type === 'duplicate') navigator.vibrate([200, 100, 200]);
         else navigator.vibrate(400);
-      }
-      if (!isSilent) {
-        const audio = new Audio('https://actions.google.com/sounds/v1/cartoon/clink_clink.ogg');
-        audio.play().catch(()=>{});
-      }
-    }
-
-    function triggerNativeCamera() {
-      document.getElementById('camera-native-input').click();
-    }
-
-    function onNativeCameraCaptured(input) {
-      if (input.files && input.files[0]) {
-        const file = input.files[0];
-        showToast('📷 正在解析照片中...', 'success');
-        if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.scanFile(file, true)
-          .then(decodedText => {
-            onScanSuccess(decodedText);
-          })
-          .catch(err => {
-            showToast('❌ 照片中無法辨識 QR Code', 'error');
-            triggerFeedback('error');
-          });
       }
     }
 
