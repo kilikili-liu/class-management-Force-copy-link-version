@@ -200,7 +200,210 @@
       text-align: center;
       box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
     }
+    .btn-phone-pair {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #fff;
+      border: 1px solid #38bdf8;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+    }
+    .btn-phone-pair:hover {
+      background: linear-gradient(135deg, #38bdf8, #0284c7);
+      color: #0f172a;
+      transform: translateY(-1px);
+    }
+
+    .pair-modal-card {
+      max-width: 520px;
+      width: 95%;
+      max-height: 90dvh;
+      overflow-y: auto;
+      text-align: left;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      border-radius: 14px;
+    }
+    .pair-modal-header {
+      background: #0f172a;
+      padding: 14px 18px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .pair-modal-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pair-modal-close {
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .pair-modal-close:hover { color: #fff; }
+    .pair-modal-content {
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      font-size: 0.88rem;
+    }
+    .pair-section-label {
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+    }
+    .pair-tool-chips {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .pair-chip-btn {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: var(--text-sub);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .pair-chip-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+      font-weight: 700;
+    }
+    .pair-mode-selector {
+      display: flex;
+      gap: 8px;
+    }
+    .pair-mode-btn {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: var(--text-sub);
+      padding: 7px 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      font-weight: 600;
+      text-align: center;
+    }
+    .pair-mode-btn.active {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+      font-weight: 700;
+    }
+    .pair-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .pair-input-group input {
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #fff;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-family: monospace;
+    }
+    .pair-qr-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .pair-qr-display {
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      display: inline-block;
+      min-width: 180px;
+      min-height: 180px;
+    }
+    .pair-qr-display img, .pair-qr-display canvas {
+      display: block !important;
+      margin: 0 auto;
+    }
+    .pair-url-box {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pair-url-text {
+      flex: 1;
+      font-family: monospace;
+      font-size: 0.76rem;
+      color: #94a3b8;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .pair-url-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .pair-sm-btn {
+      background: #334155;
+      color: #fff;
+      border: 1px solid #475569;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+    .pair-sm-btn:hover { background: #475569; }
+    .pair-instruction-steps {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px dashed #475569;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    .pair-instruction-steps strong { color: var(--accent-blue); }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -224,8 +427,72 @@
     </div>
   </div>
 
+  <!-- 手機掃碼連線 QR Code 彈出視窗 -->
+  <div id="pair-modal" class="modal-overlay hidden">
+    <div class="modal-card pair-modal-card">
+      <div class="pair-modal-header">
+        <div class="pair-modal-title">📱 手機掃碼連線 (快速綁定 PWA)</div>
+        <button class="pair-modal-close" onclick="closePairModal()">&times;</button>
+      </div>
+      <div class="pair-modal-content">
+        <!-- 選擇目標工具 -->
+        <div>
+          <div class="pair-section-label">🎯 選擇手機開啟的功能頁面：</div>
+          <div class="pair-tool-chips">
+            <button class="pair-chip-btn active" data-page="scanner.html" data-gaspage="scanner" onclick="selectPairTool(this)">📥 作業收繳速掃</button>
+            <button class="pair-chip-btn" data-page="correction_scanner.html" data-gaspage="correction_scanner" onclick="selectPairTool(this)">📱 訂正掃碼工具</button>
+            <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏️ 錯題訂正主頁</button>
+            <button class="pair-chip-btn" data-page="Index.html" data-gaspage="" onclick="selectPairTool(this)">🎯 電腦端主控制台</button>
+          </div>
+        </div>
+
+        <!-- 連線方式切換 -->
+        <div>
+          <div class="pair-section-label">🌐 連線載具模式：</div>
+          <div class="pair-mode-selector">
+            <button class="pair-mode-btn active" id="pair-mode-pwa" onclick="setPairMode('pwa')">🌟 Neocities PWA (建議・全螢幕可安裝)</button>
+            <button class="pair-mode-btn" id="pair-mode-gas" onclick="setPairMode('gas')">⚡ GAS 原生網址 (直接開啟)</button>
+          </div>
+        </div>
+
+        <!-- Neocities 外部代管網址輸入 (僅在 PWA 模式顯示) -->
+        <div id="pair-neocities-box" class="pair-input-group">
+          <label class="pair-section-label" for="pair-neocities-input">🏠 您的 Neocities 網站網址 (Base URL)：</label>
+          <input type="text" id="pair-neocities-input" placeholder="例如：https://myclass.neocities.org" oninput="onPairParamChange()">
+          <span style="font-size:0.75rem; color:#94a3b8;">💡 首次設定後會自動記住，若尚未建立 Neocities 可切換至「GAS 原生網址」</span>
+        </div>
+
+        <!-- GAS API 網址 (自動偵測) -->
+        <div class="pair-input-group">
+          <label class="pair-section-label" for="pair-gas-input">🔗 目前試算表 GAS API 網址：</label>
+          <input type="text" id="pair-gas-input" placeholder="自動偵測中..." oninput="onPairParamChange()">
+        </div>
+
+        <!-- 動態生成的 QR Code 預覽區 -->
+        <div class="pair-qr-wrapper">
+          <div class="pair-qr-display" id="pair-qrcode-container"></div>
+          <div class="pair-url-box">
+            <span class="pair-url-text" id="pair-url-preview">產生網址中...</span>
+            <div class="pair-url-actions">
+              <button class="pair-sm-btn" onclick="copyPairUrl()">📋 複製</button>
+              <a href="#" target="_blank" id="pair-open-link" class="pair-sm-btn">🔗 開啟</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3步使用說明 -->
+        <div class="pair-instruction-steps">
+          <div>📲 <strong>步驟 1：</strong>打開手機內建相機，對準上方 QR Code 掃描開啟。</div>
+          <div>✨ <strong>步驟 2：</strong>網頁開啟後即<strong>自動完成 GAS API 綁定</strong>，完全免手動複製貼上！</div>
+          <div>📲 <strong>步驟 3：</strong>點擊瀏覽器選單「<strong>加到主畫面</strong>」或畫面上「<strong>📲 安裝 App</strong>」，即可隨時在桌面以全螢幕使用。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <header>
     <div class="header-title">🎯 班級智慧作業清點與催繳系統</div>
+    <button class="btn-phone-pair" onclick="openPairModal()">📱 手機掃碼連線</button>
   </header>
 
   <div class="view-switcher">
@@ -335,6 +602,153 @@
     let lastAction = null;
     let toastTimer = null;
     let hasUserSelectedSubjectCategory = false;
+
+    // ── 📱 手機掃碼連線 (QR Code 綁定 PWA) 邏輯 ──
+    let currentPairTool = { page: 'scanner.html', gaspage: 'scanner' };
+    let currentPairMode = 'pwa'; // 'pwa' | 'gas'
+    let qrcodeObj = null;
+
+    function openPairModal() {
+      // 載入記住的 neocities 網址
+      const savedNeo = localStorage.getItem('class_mgmt_neocities_url') || '';
+      document.getElementById('pair-neocities-input').value = savedNeo;
+
+      // 取得 GAS API 網址
+      let gasUrl = document.getElementById('pair-gas-input').value;
+      if (!gasUrl) {
+        gasUrl = localStorage.getItem('class_mgmt_gas_api_url') || '';
+      }
+      if (!gasUrl) {
+        if (location.hostname.includes('script.google.com') || location.hostname.includes('googleusercontent.com')) {
+          gasUrl = location.href.split('?')[0];
+        }
+      }
+      document.getElementById('pair-gas-input').value = gasUrl;
+
+      // 嘗試透過 GAS 後端取得正式 Web App URL
+      try {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run.withSuccessHandler(serverUrl => {
+            if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
+              document.getElementById('pair-gas-input').value = serverUrl;
+              localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+              updatePairQrCode();
+            }
+          }).getGasWebAppUrl();
+        }
+      } catch(e) {}
+
+      updatePairQrCode();
+      document.getElementById('pair-modal').classList.remove('hidden');
+    }
+
+    function closePairModal() {
+      document.getElementById('pair-modal').classList.add('hidden');
+    }
+
+    function selectPairTool(btn) {
+      document.querySelectorAll('.pair-chip-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentPairTool = {
+        page: btn.getAttribute('data-page'),
+        gaspage: btn.getAttribute('data-gaspage')
+      };
+      updatePairQrCode();
+    }
+
+    function setPairMode(mode) {
+      currentPairMode = mode;
+      document.getElementById('pair-mode-pwa').classList.toggle('active', mode === 'pwa');
+      document.getElementById('pair-mode-gas').classList.toggle('active', mode === 'gas');
+      document.getElementById('pair-neocities-box').style.display = (mode === 'pwa') ? 'flex' : 'none';
+      updatePairQrCode();
+    }
+
+    function onPairParamChange() {
+      const neoVal = document.getElementById('pair-neocities-input').value.trim();
+      if (neoVal) {
+        localStorage.setItem('class_mgmt_neocities_url', neoVal);
+      }
+      const gasVal = document.getElementById('pair-gas-input').value.trim();
+      if (gasVal) {
+        localStorage.setItem('class_mgmt_gas_api_url', gasVal);
+      }
+      updatePairQrCode();
+    }
+
+    function buildPairTargetUrl() {
+      let gasUrl = document.getElementById('pair-gas-input').value.trim();
+      if (!gasUrl) {
+        gasUrl = location.href.split('?')[0];
+      }
+
+      if (currentPairMode === 'gas') {
+        if (!currentPairTool.gaspage) return gasUrl;
+        return `${gasUrl}?page=${encodeURIComponent(currentPairTool.gaspage)}`;
+      }
+
+      // PWA 模式 (Neocities)
+      let neoBase = document.getElementById('pair-neocities-input').value.trim();
+      if (!neoBase) {
+        neoBase = 'https://YOUR_SITE.neocities.org';
+      }
+      neoBase = neoBase.replace(/\/+$/, '');
+      const toolFile = currentPairTool.page || 'scanner.html';
+
+      return `${neoBase}/${toolFile}?api_url=${encodeURIComponent(gasUrl)}`;
+    }
+
+    function updatePairQrCode() {
+      const finalUrl = buildPairTargetUrl();
+      const previewEl = document.getElementById('pair-url-preview');
+      const linkEl = document.getElementById('pair-open-link');
+      if (previewEl) previewEl.textContent = finalUrl;
+      if (linkEl) linkEl.href = finalUrl;
+
+      const container = document.getElementById('pair-qrcode-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (typeof QRCode !== 'undefined') {
+        try {
+          qrcodeObj = new QRCode(container, {
+            text: finalUrl,
+            width: 180,
+            height: 180,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (e) {
+          renderFallbackQrImg(container, finalUrl);
+        }
+      } else {
+        renderFallbackQrImg(container, finalUrl);
+      }
+    }
+
+    function renderFallbackQrImg(container, url) {
+      container.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
+      img.alt = 'QR Code';
+      img.style.width = '180px';
+      img.style.height = '180px';
+      container.appendChild(img);
+    }
+
+    function copyPairUrl() {
+      const url = buildPairTargetUrl();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          showToast('✅ 網址已複製至剪貼簿！');
+        }).catch(() => {
+          prompt('請手動複製以下連線網址：', url);
+        });
+      } else {
+        prompt('請手動複製以下連線網址：', url);
+      }
+    }
 
     const subjectCategoryMap = {
       '國語': ['甲本', '乙本', '習作', '圈詞', '預習單', '學習單', '國練', '評量', '考卷', '作業本'],

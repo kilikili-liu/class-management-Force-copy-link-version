@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>✏️ 班級作業【訂正掃碼與銷案】工具</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="作業管理">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
   <!-- Html5Qrcode Library -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
@@ -364,9 +372,11 @@
     <div class="header-title-box">
       <div class="header-title">✏️ 班級作業【訂正掃碼】工具</div>
     </div>
-    <div style="display: flex; gap: 8px;">
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
       <button class="nav-btn" style="color:#38bdf8;" id="btn-sound" onclick="toggleSound()">🔇 靜音模式</button>
-      <a href="correction.html" class="nav-btn">🔙 返回訂正主頁</a>
+      <a href="scanner.html" class="nav-btn">📥 作業收繳</a>
+      <a href="correction.html" class="nav-btn">✏️ 錯題主頁</a>
     </div>
   </header>
 
@@ -466,6 +476,36 @@
   </div>
 
   <script>
+    // ── PWA Service Worker 註冊與安裝提示 ──
+    let deferredInstallPrompt = null;
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW note:', err));
+      });
+    }
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      const btn = document.getElementById('btn-pwa-install');
+      if (btn) btn.style.display = 'inline-flex';
+    });
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      const btn = document.getElementById('btn-pwa-install');
+      if (btn) btn.style.display = 'none';
+      console.log('PWA 已成功安裝至主畫面');
+    });
+    function triggerPwaInstall() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.then(() => {
+          deferredInstallPrompt = null;
+          const btn = document.getElementById('btn-pwa-install');
+          if (btn) btn.style.display = 'none';
+        });
+      }
+    }
+
     // 橫向鎖定
     if (screen.orientation && screen.orientation.lock) {
       screen.orientation.lock('landscape').catch(() => {});

@@ -115,6 +115,9 @@ function handleScannerApiAction(action, params) {
     if (action === 'updateCorrectionMatrixCell' || action === 'updateCorrectionStatus') {
       return updateCorrectionMatrixCell(params);
     }
+    if (action === 'getGasWebAppUrl') {
+      return { success: true, url: getGasWebAppUrl() };
+    }
 
     return { success: false, message: '未知的 API 動作: ' + action };
   } catch (err) {
@@ -842,3 +845,16 @@ function doScanRecordCorrection(params) {
     message: `🎯 ${seatStr}號【${subject} ${category}】有 ${seatRecords.length} 筆待訂正，請選擇銷案章節`
   };
 }
+
+/**
+ * 取得當前 GAS 專案部署發布之 Web App 網址
+ * 供前端 QR Code 掃碼連線設定使用
+ */
+function getGasWebAppUrl() {
+  try {
+    return ScriptApp.getService().getUrl() || '';
+  } catch (e) {
+    return '';
+  }
+}
+

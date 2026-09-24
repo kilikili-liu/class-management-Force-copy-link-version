@@ -1,0 +1,54 @@
+{
+  "name": "班級作業管理與訂正系統",
+  "short_name": "作業管理",
+  "description": "班級作業快速掃碼清點、缺繳統計與錯題訂正銷案系統",
+  "start_url": "./scanner.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "作業收繳速掃",
+      "short_name": "作業速掃",
+      "description": "開啟相機快速掃碼清點作業",
+      "url": "./scanner.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "訂正掃碼銷案",
+      "short_name": "訂正掃碼",
+      "description": "相機掃描 QR 碼快速登記錯題與銷案",
+      "url": "./correction_scanner.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "錯題訂正主頁",
+      "short_name": "錯題主頁",
+      "description": "純號碼登記錯題與催繳總覽",
+      "url": "./correction.html",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
