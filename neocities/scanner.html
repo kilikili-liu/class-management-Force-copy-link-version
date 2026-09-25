@@ -490,6 +490,41 @@
       if (btn) btn.style.display = 'none';
       console.log('PWA 已成功安裝至主畫面');
     });
+    function showIosInstallModal() {
+      let modal = document.getElementById('ios-pwa-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'ios-pwa-modal';
+        modal.className = 'modal-overlay';
+        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(4px); padding:16px;';
+        modal.innerHTML = `
+          <div style="background:#1e293b; border:1px solid #38bdf8; border-radius:16px; max-width:400px; width:100%; padding:22px; box-shadow:0 12px 36px rgba(0,0,0,0.6); text-align:center;">
+            <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
+            <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
+            <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
+              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
+              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
+              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
+              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
+            </div>
+            <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      } else {
+        modal.style.display = 'flex';
+      }
+    }
+
+    function checkIosPwaButton() {
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+      if (isIos && !isStandalone) {
+        const btn = document.getElementById('btn-pwa-install');
+        if (btn) btn.style.display = 'inline-flex';
+      }
+    }
+
     function triggerPwaInstall() {
       if (deferredInstallPrompt) {
         deferredInstallPrompt.prompt();
@@ -498,6 +533,11 @@
           const btn = document.getElementById('btn-pwa-install');
           if (btn) btn.style.display = 'none';
         });
+      } else {
+        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (isIos) {
+          showIosInstallModal();
+        }
       }
     }
 
@@ -699,6 +739,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       adaptInternalLinks();
+      checkIosPwaButton();
       initSeatGrid();
       fetchTodayData();
       startCameraWithFacingMode(currentFacingMode);
