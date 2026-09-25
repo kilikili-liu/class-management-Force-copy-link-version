@@ -39,36 +39,42 @@ function doGet(e) {
 
   // ── 2. GAS 原生 HTML 頁面路由 ──────────────────────────────────────────
   if (params.page === 'scanner') {
-    return HtmlService.createHtmlOutputFromFile('Scanner')
-        .setTitle('📱 班級作業 QR碼 速掃工具')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    return renderGasPage('Scanner', '📱 班級作業 QR碼 速掃工具');
   }
 
   if (params.page === 'correction' || params.page === 'correction_matrix') {
-    return HtmlService.createHtmlOutputFromFile('Correction')
-        .setTitle('✏️ 班級作業錯題訂正與銷案系統')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    return renderGasPage('Correction', '✏️ 班級作業錯題訂正與銷案系統');
   }
 
   if (params.page === 'correction_scanner' || params.page === 'correctionScanner') {
-    return HtmlService.createHtmlOutputFromFile('CorrectionScanner')
-        .setTitle('✏️ 班級作業【訂正掃碼與銷案】工具')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    return renderGasPage('CorrectionScanner', '✏️ 班級作業【訂正掃碼與銷案】工具');
   }
 
   if (params.page === 'sticker' || params.page === 'StickerGenerator' || params.page === 'sticker_generator') {
-    return HtmlService.createHtmlOutputFromFile('StickerGenerator')
-        .setTitle('🏷️ 班級學生作業條碼貼紙產出工具')
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    return renderGasPage('StickerGenerator', '🏷️ 班級學生作業條碼貼紙產出工具');
   }
 
   // 預設為純按鈕點收與催繳主頁
-  return HtmlService.createHtmlOutputFromFile('Index')
-      .setTitle('🎯 班級智慧作業清點與催繳系統')
+  return renderGasPage('Index', '🎯 班級智慧作業清點與催繳系統');
+}
+
+/**
+ * 渲染 GAS 原生頁面，自動注入正式 Web App URL 避免 iframe 沙箱 googleusercontent 網址失效
+ */
+function renderGasPage(fileName, title) {
+  const webAppUrl = getGasWebAppUrl();
+  const rawHtml = HtmlService.createHtmlOutputFromFile(fileName).getContent();
+  const injection = '<script>window._GAS_WEBAPP_URL = ' + JSON.stringify(webAppUrl) + ';</script>';
+  let finalHtml = rawHtml;
+  if (finalHtml.includes('</head>')) {
+    finalHtml = finalHtml.replace('</head>', injection + '</head>');
+  } else if (finalHtml.includes('</HEAD>')) {
+    finalHtml = finalHtml.replace('</HEAD>', injection + '</HEAD>');
+  } else {
+    finalHtml = injection + finalHtml;
+  }
+  return HtmlService.createHtmlOutput(finalHtml)
+      .setTitle(title)
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
 }

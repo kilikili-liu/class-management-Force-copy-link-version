@@ -1288,12 +1288,32 @@
 
     function handleGoBack(e) {
       if (e) e.preventDefault();
-      // 如果是在 Google Apps Script (GAS) 部署環境
-      if (location.hostname.includes('script.google.com') || location.hostname.includes('googleusercontent.com')) {
-        const baseGasUrl = location.href.split('?')[0];
-        location.href = baseGasUrl;
-        return;
+      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
+                    location.hostname.includes('script.google.com') ||
+                    location.hostname.includes('googleusercontent.com');
+
+      if (isGas) {
+        let baseGasUrl = window._GAS_WEBAPP_URL || localStorage.getItem('class_mgmt_gas_api_url');
+        if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
+          baseGasUrl = location.href.split('?')[0];
+        }
+        if (baseGasUrl && baseGasUrl.startsWith('https://script.google.com')) {
+          if (window.top) window.top.location.href = baseGasUrl;
+          else location.href = baseGasUrl;
+          return;
+        } else if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run.withSuccessHandler(serverUrl => {
+            if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
+              window._GAS_WEBAPP_URL = serverUrl;
+              localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+              if (window.top) window.top.location.href = serverUrl;
+              else location.href = serverUrl;
+            }
+          }).getGasWebAppUrl();
+          return;
+        }
       }
+
       // 若是新分頁開啟且能夠關閉分頁
       if (window.opener && !window.opener.closed) {
         window.close();
@@ -1308,15 +1328,53 @@
     }
 
     function adaptInternalLinks() {
-      if (location.hostname.includes('script.google.com') || location.hostname.includes('googleusercontent.com')) {
-        const baseGasUrl = location.href.split('?')[0];
+      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
+                    location.hostname.includes('script.google.com') ||
+                    location.hostname.includes('googleusercontent.com');
+
+      if (!isGas) return;
+
+      function applyGasUrls(baseGasUrl) {
+        if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
         document.querySelectorAll('a[href]').forEach(a => {
           const href = a.getAttribute('href');
-          if (href === 'index.html') a.href = `${baseGasUrl}`;
-          else if (href === 'scanner.html') a.href = `${baseGasUrl}?page=scanner`;
-          else if (href === 'correction.html') a.href = `${baseGasUrl}?page=correction`;
-          else if (href === 'correction_scanner.html') a.href = `${baseGasUrl}?page=correction_scanner`;
+          if (!href) return;
+          if (href === 'index.html' || href === baseGasUrl || href.endsWith('/exec')) {
+            a.href = `${baseGasUrl}`;
+            a.target = '_top';
+          } else if (href === 'scanner.html' || href.includes('page=scanner')) {
+            a.href = `${baseGasUrl}?page=scanner`;
+            a.target = '_top';
+          } else if (href === 'correction.html' || href.includes('page=correction')) {
+            a.href = `${baseGasUrl}?page=correction`;
+            a.target = '_top';
+          } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
+            a.href = `${baseGasUrl}?page=correction_scanner`;
+            a.target = '_top';
+          }
         });
+      }
+
+      let baseGasUrl = window._GAS_WEBAPP_URL;
+      if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
+        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
+      }
+      if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
+        baseGasUrl = location.href.split('?')[0];
+      }
+
+      if (baseGasUrl && baseGasUrl.startsWith('https://script.google.com')) {
+        applyGasUrls(baseGasUrl);
+      }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(serverUrl => {
+          if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
+            window._GAS_WEBAPP_URL = serverUrl;
+            localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+            applyGasUrls(serverUrl);
+          }
+        }).getGasWebAppUrl();
       }
     }
 

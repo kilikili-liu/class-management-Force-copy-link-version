@@ -644,15 +644,56 @@
     let currentFacingMode = "environment"; // "environment" (rear) vs "user" (front)
 
     function adaptInternalLinks() {
-      if (location.hostname.includes('script.google.com') || location.hostname.includes('googleusercontent.com')) {
-        const baseGasUrl = location.href.split('?')[0];
+      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
+                    location.hostname.includes('script.google.com') ||
+                    location.hostname.includes('googleusercontent.com');
+
+      if (!isGas) return;
+
+      function applyGasUrls(baseGasUrl) {
+        if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
         document.querySelectorAll('a[href]').forEach(a => {
           const href = a.getAttribute('href');
-          if (href === 'scanner.html') a.href = `${baseGasUrl}?page=scanner`;
-          else if (href === 'index.html') a.href = `${baseGasUrl}`;
-          else if (href === 'correction.html') a.href = `${baseGasUrl}?page=correction`;
-          else if (href === 'correction_scanner.html') a.href = `${baseGasUrl}?page=correction_scanner`;
+          if (!href) return;
+          if (href === 'scanner.html' || href.includes('page=scanner')) {
+            a.href = `${baseGasUrl}?page=scanner`;
+            a.target = '_top';
+          } else if (href === 'index.html' || href === baseGasUrl || href.endsWith('/exec')) {
+            a.href = `${baseGasUrl}`;
+            a.target = '_top';
+          } else if (href === 'correction.html' || href.includes('page=correction')) {
+            a.href = `${baseGasUrl}?page=correction`;
+            a.target = '_top';
+          } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
+            a.href = `${baseGasUrl}?page=correction_scanner`;
+            a.target = '_top';
+          } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
+            a.href = `${baseGasUrl}?page=sticker`;
+            a.target = '_top';
+          }
         });
+      }
+
+      let baseGasUrl = window._GAS_WEBAPP_URL;
+      if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
+        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
+      }
+      if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
+        baseGasUrl = location.href.split('?')[0];
+      }
+
+      if (baseGasUrl && baseGasUrl.startsWith('https://script.google.com')) {
+        applyGasUrls(baseGasUrl);
+      }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(serverUrl => {
+          if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
+            window._GAS_WEBAPP_URL = serverUrl;
+            localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+            applyGasUrls(serverUrl);
+          }
+        }).getGasWebAppUrl();
       }
     }
 

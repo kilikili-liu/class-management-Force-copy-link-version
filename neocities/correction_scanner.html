@@ -14,8 +14,6 @@
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <!-- Html5Qrcode Library -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <!-- 本機開發用設定檔（已被 .gitignore 排除，Neocities 上不存在此檔案，onerror 靜默略過）-->
-  <script src="local_config.js" onerror="void 0"></script>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -383,8 +381,9 @@
     </div>
     <div style="display: flex; gap: 8px; align-items: center;">
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <a href="scanner.html" class="nav-btn">📥 作業收繳</a>
-      <a href="correction.html" class="nav-btn">✏️ 錯題主頁</a>
+      <a href="index.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">🎯 純按鈕清點</a>
+      <a href="scanner.html" class="nav-btn" style="text-decoration:none;">📥 作業收繳</a>
+      <a href="correction.html" class="nav-btn" style="text-decoration:none;">✏️ 錯題主頁</a>
     </div>
   </header>
 
@@ -694,7 +693,63 @@
     let lastScannedPayload = "";
     let lastScanTime = 0;
 
+    // ── 雙環境路由自動適配 (Google Apps Script vs Neocities 靜態網頁) ──
+    function adaptInternalLinks() {
+      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
+                    location.hostname.includes('script.google.com') ||
+                    location.hostname.includes('googleusercontent.com');
+
+      if (!isGas) return;
+
+      function applyGasUrls(baseGasUrl) {
+        if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
+        document.querySelectorAll('a[href]').forEach(a => {
+          const href = a.getAttribute('href');
+          if (!href) return;
+          if (href === 'scanner.html' || href.includes('page=scanner')) {
+            a.href = `${baseGasUrl}?page=scanner`;
+            a.target = '_top';
+          } else if (href === 'index.html' || href === baseGasUrl || href.endsWith('/exec')) {
+            a.href = `${baseGasUrl}`;
+            a.target = '_top';
+          } else if (href === 'correction.html' || href.includes('page=correction')) {
+            a.href = `${baseGasUrl}?page=correction`;
+            a.target = '_top';
+          } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
+            a.href = `${baseGasUrl}?page=correction_scanner`;
+            a.target = '_top';
+          } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
+            a.href = `${baseGasUrl}?page=sticker`;
+            a.target = '_top';
+          }
+        });
+      }
+
+      let baseGasUrl = window._GAS_WEBAPP_URL;
+      if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
+        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
+      }
+      if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
+        baseGasUrl = location.href.split('?')[0];
+      }
+
+      if (baseGasUrl && baseGasUrl.startsWith('https://script.google.com')) {
+        applyGasUrls(baseGasUrl);
+      }
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(serverUrl => {
+          if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
+            window._GAS_WEBAPP_URL = serverUrl;
+            localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+            applyGasUrls(serverUrl);
+          }
+        }).getGasWebAppUrl();
+      }
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
+      adaptInternalLinks();
       initSeatGrid();
       fetchMatrixData();
       startCameraWithFacingMode(true);
