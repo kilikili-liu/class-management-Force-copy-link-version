@@ -541,6 +541,8 @@
             <option value="英語">英語</option>
             <option value="聯絡簿">聯絡簿</option>
             <option value="日記">日記</option>
+            <option value="單據">單據</option>
+            <option value="其它">其它</option>
           </select>
         </div>
         <div class="form-group">
@@ -588,6 +590,8 @@
           <button class="sub-tab-btn" onclick="filterReminderBySubject('英語')">英語</button>
           <button class="sub-tab-btn" onclick="filterReminderBySubject('聯絡簿')">聯絡簿</button>
           <button class="sub-tab-btn" onclick="filterReminderBySubject('日記')">日記</button>
+          <button class="sub-tab-btn" onclick="filterReminderBySubject('單據')">單據</button>
+          <button class="sub-tab-btn" onclick="filterReminderBySubject('其它')">其它</button>
         </div>
 
         <!-- 批量補登送出列 -->
@@ -1028,7 +1032,9 @@
       '自然': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
       '英語': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
       '聯絡簿': ['聯絡簿'],
-      '日記': ['日記']
+      '日記': ['日記'],
+      '單據': ['同意書', '回條', '繳費單'],
+      '其它': ['其它']
     };
 
     window.addEventListener('DOMContentLoaded', () => {
