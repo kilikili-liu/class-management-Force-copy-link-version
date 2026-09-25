@@ -92,6 +92,55 @@
       gap: 6px;
     }
 
+    .nav-back-btn {
+      background: #0284c7;
+      color: #ffffff !important;
+      border: 1px solid #38bdf8;
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .nav-back-btn:hover {
+      background: #0369a1;
+      transform: translateY(-1px);
+    }
+
+    .mobile-back-float {
+      display: none;
+    }
+    @media (max-width: 768px) {
+      .mobile-back-float {
+        display: inline-flex;
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 99999;
+        background: #0284c7;
+        color: #ffffff !important;
+        border: 2px solid #38bdf8;
+        padding: 9px 16px;
+        border-radius: 30px;
+        font-weight: 700;
+        font-size: 0.88rem;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+        text-decoration: none;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+      }
+      .mobile-back-float:hover {
+        background: #0369a1;
+      }
+    }
+
     /* Layout Grid */
     .main-grid {
       display: grid;
@@ -404,7 +453,7 @@
         background: white !important;
         padding: 0 !important;
       }
-      .container, header, .main-grid, .control-panel, .preview-header {
+      .container, header, .main-grid, .control-panel, .preview-header, .mobile-back-float {
         display: none !important;
       }
       .print-area {
@@ -1013,7 +1062,10 @@
     <!-- Header -->
     <header>
       <div>
-        <h1>🏷️ 班級作業清點條碼/QR Code 貼紙 JPG 產生器 (單機修復版)</h1>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px; flex-wrap:wrap;">
+          <a href="index.html" class="nav-back-btn" onclick="handleGoBack(event)">⬅️ 返回作業清點主頁</a>
+          <h1 style="margin:0;">🏷️ 班級作業清點條碼/QR Code 貼紙產生器</h1>
+        </div>
         <p>專為國小/國中班級作業打卡設計｜單機離線可用｜A4 標籤紙批次自動排版｜300 DPI 高解析度 JPG 匯出與美工刀一刀到底切線</p>
       </div>
       <div class="header-badges">
@@ -1162,6 +1214,9 @@
 
           <!-- Download / Export Actions -->
           <div class="export-actions">
+            <a href="index.html" class="btn btn-secondary btn-sm" onclick="handleGoBack(event)" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; background:#0284c7; color:#fff; border-color:#38bdf8;">
+              ⬅️ 回清點主頁
+            </a>
             <button class="btn btn-success btn-sm" onclick="downloadCurrentPageJPG()">
               💾 下載當頁 JPG
             </button>
@@ -1225,10 +1280,45 @@
     let selectedCustomSeats = new Set();
 
     window.addEventListener('DOMContentLoaded', () => {
+      adaptInternalLinks();
       renderItemTable();
       initSeatChips();
       generateStickers();
     });
+
+    function handleGoBack(e) {
+      if (e) e.preventDefault();
+      // 如果是在 Google Apps Script (GAS) 部署環境
+      if (location.hostname.includes('script.google.com') || location.hostname.includes('googleusercontent.com')) {
+        const baseGasUrl = location.href.split('?')[0];
+        location.href = baseGasUrl;
+        return;
+      }
+      // 若是新分頁開啟且能夠關閉分頁
+      if (window.opener && !window.opener.closed) {
+        window.close();
+        return;
+      }
+      // 若由同網站跳轉過來且有歷史紀錄
+      if (window.history.length > 1 && document.referrer && (document.referrer.includes('index') || document.referrer.includes(location.host))) {
+        window.history.back();
+      } else {
+        location.href = 'index.html';
+      }
+    }
+
+    function adaptInternalLinks() {
+      if (location.hostname.includes('script.google.com') || location.hostname.includes('googleusercontent.com')) {
+        const baseGasUrl = location.href.split('?')[0];
+        document.querySelectorAll('a[href]').forEach(a => {
+          const href = a.getAttribute('href');
+          if (href === 'index.html') a.href = `${baseGasUrl}`;
+          else if (href === 'scanner.html') a.href = `${baseGasUrl}?page=scanner`;
+          else if (href === 'correction.html') a.href = `${baseGasUrl}?page=correction`;
+          else if (href === 'correction_scanner.html') a.href = `${baseGasUrl}?page=correction_scanner`;
+        });
+      }
+    }
 
     function initSeatChips() {
       const container = document.getElementById('seat-chips-container');
@@ -1699,5 +1789,10 @@
       link.click();
     }
   </script>
+
+  <!-- Mobile Floating Return Button -->
+  <a href="index.html" class="mobile-back-float" onclick="handleGoBack(event)" title="返回作業清點主頁">
+    ⬅️ 回清點主頁
+  </a>
 </body>
 </html>
