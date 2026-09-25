@@ -517,7 +517,7 @@
       <a href="StickerGenerator.html" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">🏷️ 產生全班條碼</a>
       <a href="scanner.html" id="nav-btn-scanner" class="nav-btn" style="background:#0284c7; color:#fff; border:1px solid #38bdf8; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">📷 作業速掃</a>
       <a href="correction.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">✏️ 錯題主頁</a>
-      <button id="nav-btn-pair" class="btn-phone-pair" onclick="openPairModal()">📱 手機掃碼連線</button>
+      <button id="nav-btn-pair" class="btn-phone-pair" style="display:none;" onclick="openPairModal()">📱 手機相機速掃連線</button>
     </div>
   </header>
 
@@ -709,16 +709,23 @@
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
 
-      if (!isGas) return;
-
-      // 在 GAS 原生環境下，相機權限被 Google 沙箱封鎖，隱藏無效的作業速掃按鈕，並引導至手機掃碼連線
       const scanBtn = document.getElementById('nav-btn-scanner') || document.querySelector('a[href*="scanner.html"]');
-      if (scanBtn) scanBtn.style.display = 'none';
       const pairBtn = document.getElementById('nav-btn-pair') || document.querySelector('.btn-phone-pair');
-      if (pairBtn) {
-        pairBtn.innerHTML = '📱 手機相機速掃連線';
-        pairBtn.title = '點擊查看手機連線 QR Code（手機開啟外部空間即可使用相機速掃）';
-        pairBtn.style.boxShadow = '0 0 12px rgba(14, 165, 233, 0.7)';
+
+      if (isGas) {
+        // 在 GAS 原生環境下：相機被 Google 沙箱封鎖，隱藏作業速掃按鈕，並顯示「手機相機速掃連線」供手機配對
+        if (scanBtn) scanBtn.style.display = 'none';
+        if (pairBtn) {
+          pairBtn.style.display = 'inline-flex';
+          pairBtn.innerHTML = '📱 手機相機速掃連線';
+          pairBtn.title = '點擊查看手機連線 QR Code（手機開啟外部空間即可使用相機速掃）';
+          pairBtn.style.boxShadow = '0 0 12px rgba(14, 165, 233, 0.7)';
+        }
+      } else {
+        // 在外部空間 (Neocities / 手機 PWA)：本機直接可啟用相機，顯示作業速掃，隱藏不需配對的手機連線按鈕
+        if (scanBtn) scanBtn.style.display = 'inline-flex';
+        if (pairBtn) pairBtn.style.display = 'none';
+        return;
       }
 
       function applyGasUrls(baseGasUrl) {
@@ -939,11 +946,11 @@
 
       // 取得 GAS API 網址
       let gasUrl = document.getElementById('pair-gas-input').value;
-      if (!gasUrl) {
-        gasUrl = localStorage.getItem('class_mgmt_gas_api_url') || '';
+      if (!gasUrl || !gasUrl.startsWith('https://script.google.com')) {
+        gasUrl = window._GAS_WEBAPP_URL || localStorage.getItem('class_mgmt_gas_api_url') || '';
       }
       if (!gasUrl) {
-        if (location.hostname.includes('script.google.com') || location.hostname.includes('googleusercontent.com')) {
+        if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
           gasUrl = location.href.split('?')[0];
         }
       }
