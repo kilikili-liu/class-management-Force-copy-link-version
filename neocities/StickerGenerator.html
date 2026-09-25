@@ -1323,7 +1323,10 @@
       if (window.history.length > 1 && document.referrer && (document.referrer.includes('index') || document.referrer.includes(location.host))) {
         window.history.back();
       } else {
-        location.href = 'index.html';
+        const gasUrl = new URLSearchParams(window.location.search).get('api_url') ||
+                       localStorage.getItem('class_management_gas_api_url') ||
+                       localStorage.getItem('class_mgmt_gas_api_url');
+        location.href = gasUrl ? `index.html?api_url=${encodeURIComponent(gasUrl)}` : 'index.html';
       }
     }
 
@@ -1332,7 +1335,24 @@
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
 
-      if (!isGas) return;
+      if (!isGas) {
+        const gasUrl = new URLSearchParams(window.location.search).get('api_url') ||
+                       localStorage.getItem('class_management_gas_api_url') ||
+                       localStorage.getItem('class_mgmt_gas_api_url');
+        if (gasUrl && gasUrl.startsWith('https://script.google.com')) {
+          const encApi = encodeURIComponent(gasUrl);
+          const targetPages = ['scanner.html', 'index.html', 'correction.html', 'correction_scanner.html', 'StickerGenerator.html'];
+          document.querySelectorAll('a[href]').forEach(a => {
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+            const purePage = href.split('?')[0];
+            if (targetPages.includes(purePage)) {
+              a.href = `${purePage}?api_url=${encApi}`;
+            }
+          });
+        }
+        return;
+      }
 
       function applyGasUrls(baseGasUrl) {
         if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
@@ -1357,7 +1377,7 @@
 
       let baseGasUrl = window._GAS_WEBAPP_URL;
       if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
+        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url') || localStorage.getItem('class_management_gas_api_url');
       }
       if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
         baseGasUrl = location.href.split('?')[0];
@@ -1372,10 +1392,25 @@
           if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
             window._GAS_WEBAPP_URL = serverUrl;
             localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+            localStorage.setItem('class_management_gas_api_url', serverUrl);
             applyGasUrls(serverUrl);
           }
         }).getGasWebAppUrl();
       }
+    }
+
+    // iOS PWA 獨立視窗保活：攔截同源 a 標籤點擊，改以 window.location.href 導航，避免跳出 PWA 進入 Safari
+    if (window.navigator.standalone === true) {
+      document.addEventListener('click', function(e) {
+        const a = e.target.closest('a');
+        if (!a) return;
+        const href = a.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.target === '_blank') return;
+        if (!href.startsWith('http://') && !href.startsWith('https://') || href.startsWith(window.location.origin)) {
+          e.preventDefault();
+          window.location.href = a.href;
+        }
+      }, false);
     }
 
     function initSeatChips() {

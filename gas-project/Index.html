@@ -771,6 +771,18 @@
         if (scanBtn) scanBtn.style.display = 'inline-flex';
         if (pairBtn) pairBtn.style.display = 'none';
         checkIosPwaButton();
+        if (GAS_API_URL && GAS_API_URL.startsWith('https://script.google.com')) {
+          const encApi = encodeURIComponent(GAS_API_URL);
+          const targetPages = ['scanner.html', 'index.html', 'correction.html', 'correction_scanner.html', 'StickerGenerator.html'];
+          document.querySelectorAll('a[href]').forEach(a => {
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+            const purePage = href.split('?')[0];
+            if (targetPages.includes(purePage)) {
+              a.href = `${purePage}?api_url=${encApi}`;
+            }
+          });
+        }
         return;
       }
 
@@ -800,7 +812,7 @@
 
       let baseGasUrl = window._GAS_WEBAPP_URL;
       if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
+        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url') || localStorage.getItem('class_management_gas_api_url');
       }
       if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
         baseGasUrl = location.href.split('?')[0];
@@ -815,10 +827,25 @@
           if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
             window._GAS_WEBAPP_URL = serverUrl;
             localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+            localStorage.setItem('class_management_gas_api_url', serverUrl);
             applyGasUrls(serverUrl);
           }
         }).getGasWebAppUrl();
       }
+    }
+
+    // iOS PWA 獨立視窗保活：攔截同源 a 標籤點擊，改以 window.location.href 導航，避免跳出 PWA 進入 Safari
+    if (window.navigator.standalone === true) {
+      document.addEventListener('click', function(e) {
+        const a = e.target.closest('a');
+        if (!a) return;
+        const href = a.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.target === '_blank') return;
+        if (!href.startsWith('http://') && !href.startsWith('https://') || href.startsWith(window.location.origin)) {
+          e.preventDefault();
+          window.location.href = a.href;
+        }
+      }, false);
     }
 
     // ── 🌐 統一 API 呼叫器 (支援 GAS 原生 google.script.run 與 Neocities 外部 HTTP/JSONP) ──
@@ -987,7 +1014,10 @@
 
     function openPairModal() {
       // 載入記住的 neocities 網址，預設為 https://zaca006.neocities.org/scanner
-      const savedNeo = localStorage.getItem('class_mgmt_neocities_url') || 'https://zaca006.neocities.org/scanner';
+      let savedNeo = localStorage.getItem('class_mgmt_neocities_url') || 'https://zaca006.neocities.org/scanner';
+      if (savedNeo.startsWith('http://') && !savedNeo.includes('localhost') && !savedNeo.includes('127.0.0.1')) {
+        savedNeo = savedNeo.replace(/^http:\/\//i, 'https://');
+      }
       document.getElementById('pair-neocities-input').value = savedNeo;
 
       // 取得 GAS API 網址
@@ -1071,6 +1101,9 @@
       }
       if (!/^https?:\/\//i.test(neoBase)) {
         neoBase = 'https://' + neoBase;
+      }
+      if (neoBase.startsWith('http://') && !neoBase.includes('localhost') && !neoBase.includes('127.0.0.1')) {
+        neoBase = neoBase.replace(/^http:\/\//i, 'https://');
       }
       neoBase = neoBase.replace(/\/+$/, '');
       const toolFile = currentPairTool.page || 'scanner.html';

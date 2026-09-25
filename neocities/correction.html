@@ -983,11 +983,14 @@
       const urlParams = new URLSearchParams(window.location.search);
       const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
       if (paramGasUrl) {
-        try { localStorage.setItem('class_management_gas_api_url', paramGasUrl); } catch(e){}
+        try {
+          localStorage.setItem('class_management_gas_api_url', paramGasUrl);
+          localStorage.setItem('class_mgmt_gas_api_url', paramGasUrl);
+        } catch(e){}
         return paramGasUrl;
       }
 
-      const stored = localStorage.getItem('class_management_gas_api_url');
+      const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
         return stored;
       }
@@ -1004,8 +1007,12 @@
       // 首次使用：提示輸入 GAS 網址並儲存，避免在程式碼中寫入機敏部署網址
       const entered = prompt('⚙️ 首次設定\n請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
       if (entered && entered.trim().startsWith('https://script.google.com')) {
-        localStorage.setItem('class_management_gas_api_url', entered.trim());
-        return entered.trim();
+        const clean = entered.trim();
+        try {
+          localStorage.setItem('class_management_gas_api_url', clean);
+          localStorage.setItem('class_mgmt_gas_api_url', clean);
+        } catch(e){}
+        return clean;
       }
       alert('❌ 網址格式不正確，請重新整理頁面並輸入正確的 GAS 網址。');
       return '';
@@ -1117,7 +1124,22 @@
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
 
-      if (!isGas) return;
+      if (!isGas) {
+        // 在外部空間 (Neocities / 手機 PWA)：將 GAS API 網址自動帶入所有內部頁面連結中，確保換頁時永遠不用重新設定或跳彈窗！
+        if (GAS_API_URL && GAS_API_URL.startsWith('https://script.google.com')) {
+          const encApi = encodeURIComponent(GAS_API_URL);
+          const targetPages = ['scanner.html', 'index.html', 'correction.html', 'correction_scanner.html', 'StickerGenerator.html'];
+          document.querySelectorAll('a[href]').forEach(a => {
+            const href = a.getAttribute('href');
+            if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+            const purePage = href.split('?')[0];
+            if (targetPages.includes(purePage)) {
+              a.href = `${purePage}?api_url=${encApi}`;
+            }
+          });
+        }
+        return;
+      }
 
       // 在 GAS 原生環境下，相機權限被 Google 沙箱封鎖，隱藏無效的相機掃碼按鈕
       document.querySelectorAll('a[href*="scanner.html"], a[href*="correction_scanner.html"]').forEach(btn => {
@@ -1156,7 +1178,7 @@
 
       let baseGasUrl = window._GAS_WEBAPP_URL;
       if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
+        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url') || localStorage.getItem('class_management_gas_api_url');
       }
       if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
         baseGasUrl = location.href.split('?')[0];
@@ -1171,10 +1193,25 @@
           if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
             window._GAS_WEBAPP_URL = serverUrl;
             localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+            localStorage.setItem('class_management_gas_api_url', serverUrl);
             applyGasUrls(serverUrl);
           }
         }).getGasWebAppUrl();
       }
+    }
+
+    // iOS PWA 獨立視窗保活：攔截同源 a 標籤點擊，改以 window.location.href 導航，避免跳出 PWA 進入 Safari
+    if (window.navigator.standalone === true) {
+      document.addEventListener('click', function(e) {
+        const a = e.target.closest('a');
+        if (!a) return;
+        const href = a.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.target === '_blank') return;
+        if (!href.startsWith('http://') && !href.startsWith('https://') || href.startsWith(window.location.origin)) {
+          e.preventDefault();
+          window.location.href = a.href;
+        }
+      }, false);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
