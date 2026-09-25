@@ -16,16 +16,24 @@ flowchart LR
 
 ---
 
-### 步驟 1：建立試算表副本與設定學生名單
+### 步驟 1：建立試算表副本與使用前置作業
+
+#### 1-1. 建立試算表副本
 請點擊下方連結，在您的 Google 雲端硬碟建立系統試算表副本：
 
 👉 **[點我建立試算表副本 (Google Sheets Copy Link)](https://docs.google.com/spreadsheets/d/1O7rwisRcjLcclZRDfHoGjGl7y8Nk9R9orQuhJqMfkd0/copy)**
 
-> 📌 **學生名單與空號扣減設定說明**：
-> 1. **學生名單設定**：使用前，請在副本 Google Sheets 的 **`工作表1`** 上「學生姓名」欄位填入貴班學生的姓名。
-> 2. **預設人數**：系統預設上限為 **30 人**（座號 01 ~ 30 號）。
-> 3. **空號/轉出設定**：若貴班人數少於 30 人，或中間有轉學/缺號座號，請在該座號姓名處填入 **`空號`**（或 **`轉出`**）。
-> 4. **自動隱藏與人數扣減**：姓名處若填入「空號」，系統該座號即**不顯示按鈕**，全班總人數也會**自動減少一人**。
+#### 1-2. 試算表使用前置作業
+* 📝 **修改試算表名稱**：建議將試算表左上方的檔名修改為自己的班級（例如：`三年二班作業清點系統`）。
+* ✏️ **編輯貴班全班姓名**：使用前，請在副本 Google Sheets 的 **`工作表1`** 上「學生姓名」B 欄（座號 1 ~ 30 號旁）填入貴班學生的姓名。
+* 👥 **人數上限是 30 人**：系統預設與人數上限為 **30 人**（座號 01 ~ 30 號）。
+* 🚫 **空號 / 轉出設定**：若貴班人數少於 30 人（例如全班 25 人），或中間有轉學缺號，**請直接在該座號姓名處填入「空號」**（或「轉出」）。
+* 💡 **自動扣除與按鈕隱藏**：姓名欄只要填入「空號」，系統前台清點介面與缺交催繳矩陣即**自動不顯示該座號按鈕**，且全班應交總人數也會**自動扣除一人**，計算百分之百精準！
+
+<div align="center">
+  <img src="docs/images/spreadsheet_setup.png" alt="試算表學生名單與空號設定範例" width="340" />
+  <p><em>▲ 試算表設定範例：B 欄填寫學生姓名，未滿 30 人或轉出者直接填入「空號」即可自動扣減與隱藏按鈕</em></p>
+</div>
 
 ---
 
@@ -121,7 +129,7 @@ flowchart LR
 | **📥 作業 QR Code 速掃工具** | `https://您的帳號.neocities.org/scanner.html` | 手機相機極速辨識，附「🎯 純按鈕清點」切換按鈕 |
 | **✏️ 錯題訂正與銷案矩陣主頁** | `https://您的帳號.neocities.org/correction.html` | 錯題登記、銷案矩陣與全班催繳總覽 |
 | **📱 獨立訂正條碼速掃工具** | `https://您的帳號.neocities.org/correction_scanner.html` | 橫向雙欄設計，相機即掃即銷案 |
-| **🏷️ 條碼與 QR Code 貼紙產生器** | `https://您的帳號.neocities.org/StickerGenerator.html` | 批量排版產生全班標籤，支援 A4 直接列印 |
+| **🏷️ 條碼與 QR Code 貼紙產生器** | [線上免安裝版](https://zaca006.neocities.org/scanner/StickerGenerator) 或 `https://您的帳號.neocities.org/StickerGenerator.html` | 批量排版產生全班標籤，支援自選座號補印與 A4 直接列印 |
 
 ---
 
@@ -154,7 +162,7 @@ flowchart LR
 
 ## 📱 學生條碼格式說明 (Barcode Format)
 
-系統相容以下三種條碼格式（可使用 `StickerGenerator.html` 直接產生標籤貼紙貼在學生作業本上）：
+系統相容以下三種條碼格式，可直接點擊開啟 👉 **[🏷️ 條碼與 QR Code 貼紙線上產生器](https://zaca006.neocities.org/scanner/StickerGenerator)**（或使用專案內的 `StickerGenerator.html`）批量排版產出全班標籤貼紙，支援全班列印或「自選座號補印」，可直接以 A4 貼紙列印後張貼於學生作業本：
 
 | 條碼格式 | 範例 | 說明 |
 |---|---|---|
@@ -167,6 +175,9 @@ flowchart LR
 ## 📁 專案檔案架構
 
 ```text
+├── docs/                      # 📖 說明文件與附圖
+│   └── images/                # 📸 文件圖檔
+│       └── spreadsheet_setup.png # 試算表學生名單與空號設定範例圖
 ├── gas-project/               # 💻 Google Apps Script 後端專案核心 (clasp 部署用)
 │   ├── appsscript.json        # GAS 專案組態檔
 │   ├── Code.gs                # 後端 API 與試算表讀寫邏輯 (支援 getGasWebAppUrl、批次補登)
