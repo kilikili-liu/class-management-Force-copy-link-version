@@ -31,7 +31,7 @@ flowchart LR
 * 💡 **自動扣除與按鈕隱藏**：姓名欄只要填入「空號」，系統前台清點介面與缺交催繳矩陣即**自動不顯示該座號按鈕**，且全班應交總人數也會**自動扣除一人**，計算百分之百精準！
 
 <div align="center">
-  <img src="docs/images/spreadsheet_setup.png" alt="試算表學生名單與空號設定範例" width="340" />
+  <img src="docs/images/spreadsheet_sample.png" alt="試算表學生名單與空號設定範例" width="340" />
   <p><em>▲ 試算表設定範例：B 欄填寫學生姓名，未滿 30 人或轉出者直接填入「空號」即可自動扣減與隱藏按鈕</em></p>
 </div>
 
@@ -177,7 +177,7 @@ flowchart LR
 ```text
 ├── docs/                      # 📖 說明文件與附圖
 │   └── images/                # 📸 文件圖檔
-│       └── spreadsheet_setup.png # 試算表學生名單與空號設定範例圖
+│       └── spreadsheet_sample.png # 試算表學生名單與空號設定範例圖
 ├── gas-project/               # 💻 Google Apps Script 後端專案核心 (clasp 部署用)
 │   ├── appsscript.json        # GAS 專案組態檔
 │   ├── Code.gs                # 後端 API 與試算表讀寫邏輯 (支援 getGasWebAppUrl、批次補登)
