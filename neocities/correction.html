@@ -1078,6 +1078,17 @@
 
       if (!isGas) return;
 
+      // 在 GAS 原生環境下，相機權限被 Google 沙箱封鎖，隱藏無效的相機掃碼按鈕
+      document.querySelectorAll('a[href*="scanner.html"], a[href*="correction_scanner.html"]').forEach(btn => {
+        btn.style.display = 'none';
+      });
+      const indexBtn = document.querySelector('a[href*="index.html"]');
+      if (indexBtn) {
+        indexBtn.style.background = '#0284c7';
+        indexBtn.style.color = '#fff';
+        indexBtn.style.borderColor = '#38bdf8';
+      }
+
       function applyGasUrls(baseGasUrl) {
         if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
         document.querySelectorAll('a[href]').forEach(a => {
