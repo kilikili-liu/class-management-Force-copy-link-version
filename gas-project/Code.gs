@@ -59,6 +59,13 @@ function doGet(e) {
         .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
   }
 
+  if (params.page === 'sticker' || params.page === 'StickerGenerator' || params.page === 'sticker_generator') {
+    return HtmlService.createHtmlOutputFromFile('StickerGenerator')
+        .setTitle('🏷️ 班級學生作業條碼貼紙產出工具')
+        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
+        .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+  }
+
   // 預設為純按鈕點收與催繳主頁
   return HtmlService.createHtmlOutputFromFile('Index')
       .setTitle('🎯 班級智慧作業清點與催繳系統')

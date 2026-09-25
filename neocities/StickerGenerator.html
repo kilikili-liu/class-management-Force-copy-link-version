@@ -219,6 +219,31 @@
       color: #f87171;
     }
 
+    /* Seat Chip Buttons */
+    .seat-chip {
+      background: #0f172a;
+      border: 1px solid #475569;
+      color: #94a3b8;
+      padding: 6px 2px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .seat-chip:hover {
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .seat-chip.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+    }
+
     /* Primary Action Buttons */
     .btn {
       display: inline-flex;
@@ -1011,14 +1036,53 @@
           <div class="form-row">
             <div class="form-group">
               <label for="seat-count">全班人數</label>
-              <input type="number" id="seat-count" class="form-control" value="25" min="1" max="40" onchange="generateStickers()">
+              <input type="number" id="seat-count" class="form-control" value="25" min="1" max="40" onchange="onSeatCountChange()">
             </div>
             <div class="form-group">
               <label for="prefix-text">格式前綴</label>
               <input type="text" id="prefix-text" class="form-control" value="CMS" placeholder="CMS" onchange="generateStickers()">
             </div>
           </div>
-          <div class="form-group">
+
+          <!-- 列印範圍切換：全班 vs 自選座號 -->
+          <div class="form-group" style="margin-top: 4px;">
+            <label style="font-size: 0.85rem; color: var(--text-sub); font-weight: 600;">🎯 列印座號範圍</label>
+            <div style="display: flex; gap: 14px; margin-top: 4px; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600;">
+                <input type="radio" name="seat-mode" value="all" checked onchange="toggleSeatMode()" style="accent-color: #38bdf8; cursor: pointer;">
+                全班 (1 ~ N 號)
+              </label>
+              <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: #38bdf8;">
+                <input type="radio" name="seat-mode" value="custom" onchange="toggleSeatMode()" style="accent-color: #38bdf8; cursor: pointer;">
+                自選座號 (補印少數/脫落)
+              </label>
+            </div>
+          </div>
+
+          <!-- 自選座號面板 (僅在 custom 模式顯示) -->
+          <div id="custom-seat-panel" style="display: none; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-top: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+              <span style="font-size: 0.82rem; color: #94a3b8; font-weight: 600;">點選欲補印座號：</span>
+              <div style="display: flex; gap: 4px;">
+                <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.75rem;" onclick="selectAllCustomSeats()">全選</button>
+                <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.75rem;" onclick="clearAllCustomSeats()">清空</button>
+              </div>
+            </div>
+            
+            <!-- 座號按鈕晶片網格 -->
+            <div id="seat-chips-container" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px;">
+              <!-- 01 ~ N 按鈕動態渲染 -->
+            </div>
+
+            <!-- 文字輸入框輔助 -->
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="custom-seat-input" style="font-size: 0.78rem;">或快速輸入座號（例：3, 8, 12）：</label>
+              <input type="text" id="custom-seat-input" class="form-control" style="font-size: 0.82rem; padding: 6px 8px;" placeholder="例: 3, 8" oninput="onCustomSeatInput(this.value)">
+            </div>
+            <div id="custom-seat-summary" style="font-size: 0.78rem; color: #34d399; margin-top: 6px; font-weight: 600;">已選取 0 位座號</div>
+          </div>
+
+          <div class="form-group" style="margin-top: 10px;">
             <label for="sort-order">貼紙排序優先順序</label>
             <select id="sort-order" class="form-control" onchange="generateStickers()">
               <option value="category">作業種類優先 (方便一次黏貼全班同一本)</option>
@@ -1158,10 +1222,137 @@
     const stickersPerPage = 70; // 7 cols x 10 rows
     let currentSelectedSticker = null;
 
+    let selectedCustomSeats = new Set();
+
     window.addEventListener('DOMContentLoaded', () => {
       renderItemTable();
+      initSeatChips();
       generateStickers();
     });
+
+    function initSeatChips() {
+      const container = document.getElementById('seat-chips-container');
+      if (!container) return;
+      container.innerHTML = '';
+      const seatCount = parseInt(document.getElementById('seat-count').value, 10) || 25;
+      for (let s = 1; s <= seatCount; s++) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `seat-chip ${selectedCustomSeats.has(s) ? 'active' : ''}`;
+        chip.textContent = String(s).padStart(2, '0');
+        chip.onclick = () => toggleSeatChip(s);
+        container.appendChild(chip);
+      }
+      updateCustomSeatSummary();
+    }
+
+    function toggleSeatChip(seatNo) {
+      if (selectedCustomSeats.has(seatNo)) {
+        selectedCustomSeats.delete(seatNo);
+      } else {
+        selectedCustomSeats.add(seatNo);
+      }
+      syncChipsAndInputFromSet();
+      generateStickers();
+    }
+
+    function syncChipsAndInputFromSet() {
+      const container = document.getElementById('seat-chips-container');
+      if (container) {
+        const chips = container.querySelectorAll('.seat-chip');
+        chips.forEach((chip, idx) => {
+          const seatNo = idx + 1;
+          chip.classList.toggle('active', selectedCustomSeats.has(seatNo));
+        });
+      }
+      const input = document.getElementById('custom-seat-input');
+      if (input) {
+        const sorted = Array.from(selectedCustomSeats).sort((a, b) => a - b);
+        input.value = sorted.join(', ');
+      }
+      updateCustomSeatSummary();
+    }
+
+    function onCustomSeatInput(val) {
+      selectedCustomSeats.clear();
+      const parts = val.split(/[,，\s]+/);
+      const maxSeat = parseInt(document.getElementById('seat-count').value, 10) || 40;
+      parts.forEach(part => {
+        part = part.trim();
+        if (!part) return;
+        if (part.includes('-')) {
+          const [start, end] = part.split('-').map(n => parseInt(n.trim(), 10));
+          if (!isNaN(start) && !isNaN(end)) {
+            for (let i = Math.min(start, end); i <= Math.max(start, end); i++) {
+              if (i >= 1 && i <= maxSeat) selectedCustomSeats.add(i);
+            }
+          }
+        } else {
+          const num = parseInt(part, 10);
+          if (!isNaN(num) && num >= 1 && num <= maxSeat) {
+            selectedCustomSeats.add(num);
+          }
+        }
+      });
+
+      const container = document.getElementById('seat-chips-container');
+      if (container) {
+        const chips = container.querySelectorAll('.seat-chip');
+        chips.forEach((chip, idx) => {
+          const seatNo = idx + 1;
+          chip.classList.toggle('active', selectedCustomSeats.has(seatNo));
+        });
+      }
+      updateCustomSeatSummary();
+      generateStickers();
+    }
+
+    function selectAllCustomSeats() {
+      const seatCount = parseInt(document.getElementById('seat-count').value, 10) || 25;
+      selectedCustomSeats.clear();
+      for (let s = 1; s <= seatCount; s++) selectedCustomSeats.add(s);
+      syncChipsAndInputFromSet();
+      generateStickers();
+    }
+
+    function clearAllCustomSeats() {
+      selectedCustomSeats.clear();
+      syncChipsAndInputFromSet();
+      generateStickers();
+    }
+
+    function updateCustomSeatSummary() {
+      const summary = document.getElementById('custom-seat-summary');
+      if (summary) {
+        const count = selectedCustomSeats.size;
+        if (count === 0) {
+          summary.textContent = '⚠️ 尚未勾選座號（請點選上方按鈕或輸入座號）';
+          summary.style.color = '#ef4444';
+        } else {
+          const sorted = Array.from(selectedCustomSeats).sort((a, b) => a - b).map(s => String(s).padStart(2, '0'));
+          summary.textContent = `✅ 已選取 ${count} 位座號：[${sorted.join(', ')}]`;
+          summary.style.color = '#34d399';
+        }
+      }
+    }
+
+    function toggleSeatMode() {
+      const mode = document.querySelector('input[name="seat-mode"]:checked')?.value || 'all';
+      const panel = document.getElementById('custom-seat-panel');
+      if (panel) {
+        panel.style.display = (mode === 'custom') ? 'block' : 'none';
+      }
+      if (mode === 'custom' && selectedCustomSeats.size === 0) {
+        selectedCustomSeats.add(1);
+        syncChipsAndInputFromSet();
+      }
+      generateStickers();
+    }
+
+    function onSeatCountChange() {
+      initSeatChips();
+      generateStickers();
+    }
 
     function renderItemTable() {
       const tbody = document.getElementById('item-tbody');
@@ -1202,36 +1393,49 @@
     }
 
     function generateStickers() {
+      const mode = document.querySelector('input[name="seat-mode"]:checked')?.value || 'all';
       const seatCount = parseInt(document.getElementById('seat-count').value) || 25;
       const prefix = document.getElementById('prefix-text').value.trim() || 'CMS';
       const sortOrder = document.getElementById('sort-order').value;
 
+      let targetSeats = [];
+      if (mode === 'all') {
+        for (let s = 1; s <= seatCount; s++) targetSeats.push(s);
+      } else {
+        targetSeats = Array.from(selectedCustomSeats).sort((a, b) => a - b);
+      }
+
       generatedStickers = [];
 
-      if (sortOrder === 'category') {
-        // 作業種類優先：先跑作業，再跑座號 01~N
-        currentItems.forEach(item => {
-          for (let s = 1; s <= seatCount; s++) {
-            const seatStr = String(s).padStart(2, '0');
-            const payload = `${prefix}|${seatStr}|${item.sub}|${item.cat}`;
-            const label = `${seatStr}|${item.sub}|${item.cat}`;
-            generatedStickers.push({ seat: seatStr, sub: item.sub, cat: item.cat, payload, label });
-          }
-        });
-      } else {
-        // 座號優先：先跑座號 01~N，再跑作業
-        for (let s = 1; s <= seatCount; s++) {
-          const seatStr = String(s).padStart(2, '0');
+      if (targetSeats.length > 0) {
+        if (sortOrder === 'category') {
+          // 作業種類優先：先跑作業，再跑座號
           currentItems.forEach(item => {
-            const payload = `${prefix}|${seatStr}|${item.sub}|${item.cat}`;
-            const label = `${seatStr}|${item.sub}|${item.cat}`;
-            generatedStickers.push({ seat: seatStr, sub: item.sub, cat: item.cat, payload, label });
+            targetSeats.forEach(s => {
+              const seatStr = String(s).padStart(2, '0');
+              const payload = `${prefix}|${seatStr}|${item.sub}|${item.cat}`;
+              const label = `${seatStr}|${item.sub}|${item.cat}`;
+              generatedStickers.push({ seat: seatStr, sub: item.sub, cat: item.cat, payload, label });
+            });
+          });
+        } else {
+          // 座號優先：先跑座號，再跑作業
+          targetSeats.forEach(s => {
+            const seatStr = String(s).padStart(2, '0');
+            currentItems.forEach(item => {
+              const payload = `${prefix}|${seatStr}|${item.sub}|${item.cat}`;
+              const label = `${seatStr}|${item.sub}|${item.cat}`;
+              generatedStickers.push({ seat: seatStr, sub: item.sub, cat: item.cat, payload, label });
+            });
           });
         }
       }
 
       const totalPages = Math.ceil(generatedStickers.length / stickersPerPage) || 1;
-      document.getElementById('summary-info').textContent = `共 ${generatedStickers.length} 張貼紙（分 ${totalPages} 頁 A4）`;
+      const seatDesc = mode === 'all' 
+        ? `全班 1~${seatCount} 號` 
+        : (targetSeats.length > 0 ? `指定 ${targetSeats.length} 位座號` : '未選座號');
+      document.getElementById('summary-info').textContent = `共 ${generatedStickers.length} 張貼紙（分 ${totalPages} 頁 A4）｜${seatDesc}`;
 
       renderPageTabs(totalPages);
       currentPageIndex = 0;
