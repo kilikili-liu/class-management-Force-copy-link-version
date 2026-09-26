@@ -912,11 +912,15 @@
         return stored;
       }
 
+      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.startsWith('https://script.google.com')) {
+        return window._GAS_WEBAPP_URL;
+      }
+
       if (window.GAS_API_URL && window.GAS_API_URL !== 'YOUR_GAS_WEB_APP_URL') {
         return window.GAS_API_URL;
       }
 
-      if (location.hostname.includes('googleusercontent.com') || location.hostname.includes('script.google.com')) {
+      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
         return location.href.split('?')[0];
       }
 
@@ -1035,7 +1039,7 @@
 
     async function gasApi(action, params = {}) {
       if (!GAS_API_URL) {
-        GAS_API_URL = prompt(' 請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
+        GAS_API_URL = prompt('請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL，格式: https://script.google.com/macros/s/.../exec)');
         if (GAS_API_URL) {
           localStorage.setItem('class_management_gas_api_url', GAS_API_URL.trim());
           localStorage.setItem('class_mgmt_gas_api_url', GAS_API_URL.trim());
@@ -1262,7 +1266,7 @@
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
       if (!isGas && !GAS_API_URL) {
-        const inputUrl = prompt(' 請輸入您的 GAS 網頁應用程式網址：\n\n格式：https://script.google.com/macros/s/.../exec');
+        const inputUrl = prompt('請輸入您的 GAS 網頁應用程式網址 (格式: https://script.google.com/macros/s/.../exec)');
         if (inputUrl && inputUrl.trim().startsWith('https://script.google.com')) {
           GAS_API_URL = inputUrl.trim();
           localStorage.setItem('class_management_gas_api_url', GAS_API_URL);

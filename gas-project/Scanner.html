@@ -561,6 +561,10 @@
         return paramGasUrl;
       }
 
+      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.startsWith('https://script.google.com')) {
+        return window._GAS_WEBAPP_URL;
+      }
+
       const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
         return stored;
@@ -570,7 +574,7 @@
         return window.GAS_API_URL;
       }
 
-      if (location.hostname.includes('googleusercontent.com') || location.hostname.includes('script.google.com')) {
+      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
         return location.href.split('?')[0];
       }
 
