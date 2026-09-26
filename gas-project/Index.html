@@ -414,7 +414,19 @@
     }
     .pair-instruction-steps strong { color: var(--accent-blue); }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    window.addEventListener('error', function(e) {
+      console.error('Global Error caught:', e);
+      var errDiv = document.getElementById('global-err-box');
+      if (!errDiv) {
+        errDiv = document.createElement('div');
+        errDiv.id = 'global-err-box';
+        errDiv.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#ef4444;color:#fff;padding:12px;border-radius:8px;z-index:9999999;font-size:12px;max-width:80%;box-shadow:0 4px 12px rgba(0,0,0,0.5);';
+        (document.body || document.documentElement).appendChild(errDiv);
+      }
+      errDiv.textContent = '⚠️ 程式錯誤: ' + (e.message || e);
+    });
+  </script>
 </head>
 <body>
 
@@ -518,9 +530,9 @@
     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer;" onclick="triggerPwaInstall()">📲 安裝App</button>
       <a href="StickerGenerator.html" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">🏷️ 產生全班條碼</a>
-      <a href="scanner.html" id="nav-btn-scanner" class="nav-btn" style="background:#0284c7; color:#fff; border:1px solid #38bdf8; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">📷 作業速掃</a>
+      <a href="scanner.html" id="nav-btn-scanner" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border:1px solid #38bdf8; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">📷 作業速掃</a>
       <a href="correction.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">✏️ 錯題主頁</a>
-      <button id="nav-btn-pair" class="btn-phone-pair" style="display:none;" onclick="openPairModal()">📱 手機相機速掃連線</button>
+      <button id="nav-btn-pair" class="btn-phone-pair" style="display:inline-flex; box-shadow:0 0 12px rgba(14, 165, 233, 0.7);" onclick="openPairModal()" title="點擊查看手機連線 QR Code（手機開啟外部空間即可使用相機速掃）">📱 手機相機速掃連線</button>
     </div>
   </header>
 
@@ -568,10 +580,40 @@
       <div class="seat-grid-container">
         <div class="seat-grid-header">
           <span>點擊座號按鈕切換【🟢 已繳 / 🔴 未繳】：</span>
-          <span id="submitted-summary" style="color:var(--accent-blue); font-weight:700;">載入中...</span>
+          <span id="submitted-summary" style="color:var(--accent-blue); font-weight:700;">⚠️ 請先選擇上方【科目 | 種類】</span>
         </div>
         <div class="seat-grid" id="seat-grid">
-          <!-- Rendered dynamically -->
+          <!-- 預先渲染 1~30 號座號按鈕 -->
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(1)"><div>01號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(2)"><div>02號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(3)"><div>03號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(4)"><div>04號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(5)"><div>05號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(6)"><div>06號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(7)"><div>07號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(8)"><div>08號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(9)"><div>09號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(10)"><div>10號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(11)"><div>11號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(12)"><div>12號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(13)"><div>13號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(14)"><div>14號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(15)"><div>15號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(16)"><div>16號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(17)"><div>17號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(18)"><div>18號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(19)"><div>19號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(20)"><div>20號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(21)"><div>21號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(22)"><div>22號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(23)"><div>23號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(24)"><div>24號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(25)"><div>25號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(26)"><div>26號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(27)"><div>27號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(28)"><div>28號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(29)"><div>29號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(30)"><div>30號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
         </div>
       </div>
     </div>
@@ -1305,6 +1347,15 @@
         }
       } else {
         renderFallbackQrImg(container, finalUrl);
+        if (!window._loadingQrCodeLib) {
+          window._loadingQrCodeLib = true;
+          const s = document.createElement('script');
+          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+          s.onload = () => {
+            updatePairQrCode();
+          };
+          document.head.appendChild(s);
+        }
       }
     }
 
