@@ -925,148 +925,6 @@
 
     let GAS_API_URL = getGasApiUrl();
 
-    let pairScannerObj = null;
-
-    function showPairSetupModal() {
-      let modal = document.getElementById('pair-setup-modal');
-      if (modal) {
-        modal.style.display = 'flex';
-        return;
-      }
-      modal = document.createElement('div');
-      modal.id = 'pair-setup-modal';
-      modal.className = 'modal-overlay';
-      modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.92); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(6px); padding:16px;';
-      modal.innerHTML = `
-        <div style="background:#1e293b; border:1px solid #38bdf8; border-radius:18px; max-width:440px; width:100%; padding:22px; box-shadow:0 16px 40px rgba(0,0,0,0.7); text-align:center; color:#f8fafc;">
-          <div style="font-size:2.8rem; margin-bottom:8px;">📱🔗</div>
-          <h3 style="font-size:1.2rem; font-weight:800; margin-bottom:10px; color:#38bdf8;">尚未連線至班級試算表</h3>
-          <p style="font-size:0.86rem; color:#cbd5e1; line-height:1.6; margin-bottom:14px; text-align:left; background:#0f172a; padding:12px; border-radius:10px; border:1px solid #334155;">
-            <strong>快速配對步驟：</strong><br>
-            1. 請在電腦開啟您的 Google 班級試算表。<br>
-            2. 點擊右上角<strong>「📱 手機相機速掃連線」</strong>顯示配對 QR Code。<br>
-            3. 點擊下方綠色按鈕開啟相機，對準電腦螢幕掃描即可自動綁定！
-          </p>
-
-          <div id="pair-camera-box" style="display:none; margin-bottom:14px; border-radius:12px; overflow:hidden; border:2px solid #22c55e;">
-            <div id="pair-qr-reader" style="width:100%; max-height:260px; background:#000;"></div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:10px;">
-            <button id="btn-start-pair-scan" onclick="startPairCameraScan()" style="background:#22c55e; color:#fff; border:none; padding:11px 18px; border-radius:10px; font-weight:700; cursor:pointer; font-size:0.95rem; display:flex; align-items:center; justify-content:center; gap:8px;">
-              📷 開啟相機掃描電腦螢幕 QR 碼配對
-            </button>
-
-            <button onclick="toggleManualPairInput()" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-size:0.84rem; cursor:pointer;">
-              ✏️ 手動貼上 GAS 網址 (備用)
-            </button>
-
-            <div id="manual-pair-container" style="display:none; text-align:left; margin-top:6px;">
-              <input type="text" id="manual-gas-input" placeholder="貼上 https://script.google.com/macros/s/.../exec" style="width:100%; padding:9px 12px; border-radius:8px; background:#0f172a; border:1px solid #475569; color:#f8fafc; font-size:0.84rem; margin-bottom:8px;">
-              <button onclick="saveManualGasUrl()" style="width:100%; background:#0284c7; color:#fff; border:none; padding:9px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.88rem;">儲存並連線</button>
-            </div>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-    }
-
-    async function startPairCameraScan() {
-      const btn = document.getElementById('btn-start-pair-scan');
-      const box = document.getElementById('pair-camera-box');
-      if (box) box.style.display = 'block';
-      if (btn) btn.style.display = 'none';
-
-      if (typeof Html5Qrcode === 'undefined') {
-        const loadingTip = document.createElement('div');
-        loadingTip.id = 'pair-scan-loading';
-        loadingTip.style.cssText = 'color:#38bdf8; font-size:0.86rem; margin-bottom:8px;';
-        loadingTip.textContent = '⏳ 正在載入相機掃描核心...';
-        if (box && box.parentNode) box.parentNode.insertBefore(loadingTip, box);
-
-        try {
-          await new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js';
-            s.onload = resolve;
-            s.onerror = () => {
-              const s2 = document.createElement('script');
-              s2.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
-              s2.onload = resolve;
-              s2.onerror = reject;
-              document.head.appendChild(s2);
-            };
-            document.head.appendChild(s);
-          });
-          const tip = document.getElementById('pair-scan-loading');
-          if (tip) tip.remove();
-        } catch (e) {
-          const tip = document.getElementById('pair-scan-loading');
-          if (tip) tip.remove();
-          if (box) box.style.display = 'none';
-          if (btn) btn.style.display = 'flex';
-          alert('相機掃描元件載入失敗，請確認網路連線或改用手動貼上。');
-          return;
-        }
-      }
-
-      try {
-        pairScannerObj = new Html5Qrcode('pair-qr-reader');
-        await pairScannerObj.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 220, height: 220 } },
-          (decodedText) => {
-            handleScannedPairUrl(decodedText);
-          },
-          () => {}
-        );
-      } catch (err) {
-        console.warn('Pair camera error:', err);
-        alert('無法開啟相機，請確認已授權相機權限，或改用下方手動貼上網址。');
-        if (box) box.style.display = 'none';
-        if (btn) btn.style.display = 'flex';
-      }
-    }
-
-    function handleScannedPairUrl(decodedText) {
-      let gasUrl = '';
-      const match = decodedText.match(/[?&](?:api_url|gas|gas_url)=([^&]+)/);
-      if (match) {
-        try { gasUrl = decodeURIComponent(match[1]); } catch(e){ gasUrl = match[1]; }
-      } else if (decodedText.startsWith('https://script.google.com')) {
-        gasUrl = decodedText.trim();
-      }
-
-      if (gasUrl && gasUrl.startsWith('https://script.google.com')) {
-        if (pairScannerObj) {
-          pairScannerObj.stop().catch(() => {});
-        }
-        localStorage.setItem('class_management_gas_api_url', gasUrl);
-        localStorage.setItem('class_mgmt_gas_api_url', gasUrl);
-        alert('🎉 配對成功！已自動綁定班級試算表，即將進入系統！');
-        const pure = window.location.href.split('?')[0];
-        window.location.href = `${pure}?api_url=${encodeURIComponent(gasUrl)}`;
-      }
-    }
-
-    function toggleManualPairInput() {
-      const box = document.getElementById('manual-pair-container');
-      if (box) box.style.display = (box.style.display === 'none') ? 'block' : 'none';
-    }
-
-    function saveManualGasUrl() {
-      const val = (document.getElementById('manual-gas-input').value || '').trim();
-      if (val.startsWith('https://script.google.com')) {
-        localStorage.setItem('class_management_gas_api_url', val);
-        localStorage.setItem('class_mgmt_gas_api_url', val);
-        alert('🎉 儲存成功！即將進入系統！');
-        const pure = window.location.href.split('?')[0];
-        window.location.href = `${pure}?api_url=${encodeURIComponent(val)}`;
-      } else {
-        alert('❌ 網址格式不正確，格式需為 https://script.google.com/macros/s/.../exec');
-      }
-    }
-
     function updateDynamicManifest(gasApiUrl) {
       if (!gasApiUrl || !gasApiUrl.startsWith('https://script.google.com')) return;
       const manifestLink = document.querySelector('link[rel="manifest"]');
@@ -1404,8 +1262,12 @@
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
       if (!isGas && !GAS_API_URL) {
-        showPairSetupModal();
-        return;
+        const inputUrl = prompt('⚙️ 請輸入您的 GAS 網頁應用程式網址：\n\n格式：https://script.google.com/macros/s/.../exec');
+        if (inputUrl && inputUrl.trim().startsWith('https://script.google.com')) {
+          GAS_API_URL = inputUrl.trim();
+          localStorage.setItem('class_management_gas_api_url', GAS_API_URL);
+          localStorage.setItem('class_mgmt_gas_api_url', GAS_API_URL);
+        }
       }
       hasUserSelectedSubjectCategory = false;
       renderEmptySeatButtons();
