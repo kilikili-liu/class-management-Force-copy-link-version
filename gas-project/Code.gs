@@ -63,17 +63,9 @@ function doGet(e) {
  */
 function renderGasPage(fileName, title) {
   const webAppUrl = getGasWebAppUrl();
-  const rawHtml = HtmlService.createHtmlOutputFromFile(fileName).getContent();
-  const injection = '<script>window._GAS_WEBAPP_URL = ' + JSON.stringify(webAppUrl) + ';</script>';
-  let finalHtml = rawHtml;
-  if (finalHtml.includes('</head>')) {
-    finalHtml = finalHtml.replace('</head>', injection + '</head>');
-  } else if (finalHtml.includes('</HEAD>')) {
-    finalHtml = finalHtml.replace('</HEAD>', injection + '</HEAD>');
-  } else {
-    finalHtml = injection + finalHtml;
-  }
-  return HtmlService.createHtmlOutput(finalHtml)
+  const template = HtmlService.createTemplateFromFile(fileName);
+  template._GAS_WEBAPP_URL = webAppUrl;
+  return template.evaluate()
       .setTitle(title)
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
