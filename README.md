@@ -1,4 +1,8 @@
-# 🎯 班級智慧作業清點、缺交催繳與錯題訂正系統 (PWA 雙模式強化版)
+<div align="center">
+  <img src="docs/images/logo.png" alt="Class Management System Logo" width="130" style="border-radius: 20px;" />
+  <h1>🎯 班級智慧作業清點、缺交催繳與錯題訂正系統</h1>
+  <p><strong>(PWA 雙模式強化版)</strong></p>
+</div>
 
 > 一套專為國小導師與任課教師設計的智慧班級作業管理系統。支援 **純按鈕快速點收**、**手機 QR Code 速掃**、**全班缺交催繳矩陣** 以及 **錯題訂正銷案矩陣**。  
 > 具備 **PWA 獨立 App 全螢幕模式**、**手機 QR Code 一秒自動連線配對** 以及 **背景自動偵測升級** 功能！
@@ -236,6 +240,7 @@ flowchart LR
 ```text
 ├── docs/                      # 📖 說明文件與附圖
 │   └── images/                # 📸 文件圖檔
+│       ├── logo.png                        # 標誌與商標圖示
 │       ├── spreadsheet_sample.png          # 試算表學生名單與空號設定範例圖
 │       ├── operation_button_check.jpg      # 純按鈕作業點收實際運作圖
 │       ├── operation_qr_scan.jpg           # 作業 QR Code 速掃實際運作圖
@@ -271,3 +276,12 @@ flowchart LR
 ## 📄 授權條款 (License)
 
 本專案採用 [MIT License](LICENSE) 授權開放，歡迎各位老師自由建立副本、修改與分享！
+
+<br/>
+
+<div align="center">
+  <img src="docs/images/logo.png" alt="Class Management System Brand Logo" width="64" style="border-radius: 12px; vertical-align: middle;" />
+  <p style="color: #888; font-size: 0.9em; margin-top: 8px;">
+    <strong>Class Management System</strong> · 班級智慧作業清點與錯題管理系統
+  </p>
+</div>
