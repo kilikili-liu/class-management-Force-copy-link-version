@@ -158,6 +158,11 @@ flowchart LR
    - 手機桌面即會產生獨立的「作業管理」App 圖示，點開即享全螢幕橫向鎖定、無瀏覽器網址列干擾的原生 App 體驗！
    - ⚠️ **注意**：本系統之 PWA「安裝 App 到主畫面」功能**不支援 iPhone / iPad**（iOS Safari 環境限制），請使用 Android 手機/平板以獲得完整 PWA 體驗。
 
+<div align="center">
+  <img src="docs/images/mobile_pairing_modal.jpg" alt="手機掃碼連線配對視窗範例" width="360" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+  <p><em>▲ 電腦端「📱 手機掃碼連線」彈窗：直接手機掃描即可自動綁定 API 網址並啟用 PWA</em></p>
+</div>
+
 ---
 
 ## ⚡ 獨家功能：PWA 自動偵測更新機制（免下拉重新整理）
@@ -242,6 +247,7 @@ flowchart LR
 │   └── images/                # 📸 文件圖檔
 │       ├── logo.png                        # 標誌與商標圖示
 │       ├── spreadsheet_sample.png          # 試算表學生名單與空號設定範例圖
+│       ├── mobile_pairing_modal.jpg        # 手機掃碼連線快速綁定彈窗範例圖
 │       ├── operation_button_check.jpg      # 純按鈕作業點收實際運作圖
 │       ├── operation_qr_scan.jpg           # 作業 QR Code 速掃實際運作圖
 │       ├── operation_matrix_call.jpg       # 全班未繳催繳矩陣列表實際運作圖
