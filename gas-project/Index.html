@@ -12,7 +12,6 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <!-- 本機開發用設定檔（已被 .gitignore 排除，Neocities 上不存在此檔案，onerror 靜默略過）-->
   <script src="local_config.js" onerror="void 0"></script>
   <style>
@@ -936,8 +935,36 @@
       if (btn) btn.style.display = 'none';
 
       if (typeof Html5Qrcode === 'undefined') {
-        alert('相機掃描元件載入中，請稍候重試或改用手動貼上。');
-        return;
+        const loadingTip = document.createElement('div');
+        loadingTip.id = 'pair-scan-loading';
+        loadingTip.style.cssText = 'color:#38bdf8; font-size:0.86rem; margin-bottom:8px;';
+        loadingTip.textContent = '⏳ 正在載入相機掃描核心...';
+        if (box && box.parentNode) box.parentNode.insertBefore(loadingTip, box);
+
+        try {
+          await new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js';
+            s.onload = resolve;
+            s.onerror = () => {
+              const s2 = document.createElement('script');
+              s2.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+              s2.onload = resolve;
+              s2.onerror = reject;
+              document.head.appendChild(s2);
+            };
+            document.head.appendChild(s);
+          });
+          const tip = document.getElementById('pair-scan-loading');
+          if (tip) tip.remove();
+        } catch (e) {
+          const tip = document.getElementById('pair-scan-loading');
+          if (tip) tip.remove();
+          if (box) box.style.display = 'none';
+          if (btn) btn.style.display = 'flex';
+          alert('相機掃描元件載入失敗，請確認網路連線或改用手動貼上。');
+          return;
+        }
       }
 
       try {
@@ -953,6 +980,8 @@
       } catch (err) {
         console.warn('Pair camera error:', err);
         alert('無法開啟相機，請確認已授權相機權限，或改用下方手動貼上網址。');
+        if (box) box.style.display = 'none';
+        if (btn) btn.style.display = 'flex';
       }
     }
 
@@ -1316,7 +1345,7 @@
       '其它': ['其它']
     };
 
-    window.addEventListener('DOMContentLoaded', () => {
+    function initIndexPage() {
       adaptInternalLinks();
       updateDynamicManifest(GAS_API_URL);
       const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
@@ -1328,8 +1357,17 @@
       }
       hasUserSelectedSubjectCategory = false;
       renderEmptySeatButtons();
-      document.getElementById('submitted-summary').textContent = '⚠️ 請先選擇上方【科目 | 種類】';
-    });
+      const summaryElem = document.getElementById('submitted-summary');
+      if (summaryElem) {
+        summaryElem.textContent = '⚠️ 請先選擇上方【科目 | 種類】';
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initIndexPage);
+    } else {
+      initIndexPage();
+    }
 
     function openSelectPromptModal() {
       document.getElementById('select-prompt-modal').classList.remove('hidden');

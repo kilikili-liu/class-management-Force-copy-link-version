@@ -1343,7 +1343,7 @@
       }, false);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    function initCorrectionPage() {
       adaptInternalLinks();
       checkIosPwaButton();
       updateDynamicManifest(GAS_API_URL);
@@ -1354,7 +1354,13 @@
       hasUserSelectedSubjectCategory = false;
       onSubjectChange();   // 初始化種類選單
       fetchCorrectionMatrixData();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initCorrectionPage);
+    } else {
+      initCorrectionPage();
+    }
 
     function openSelectPromptModal() {
       document.getElementById('select-prompt-modal').classList.remove('hidden');

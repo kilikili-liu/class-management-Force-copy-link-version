@@ -1279,12 +1279,18 @@
 
     let selectedCustomSeats = new Set();
 
-    window.addEventListener('DOMContentLoaded', () => {
+    function initStickerGeneratorPage() {
       adaptInternalLinks();
       renderItemTable();
       initSeatChips();
       generateStickers();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initStickerGeneratorPage);
+    } else {
+      initStickerGeneratorPage();
+    }
 
     function handleGoBack(e) {
       if (e) e.preventDefault();

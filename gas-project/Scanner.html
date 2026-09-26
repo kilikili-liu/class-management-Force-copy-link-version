@@ -903,7 +903,7 @@
       }, false);
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
+    function initScannerPage() {
       adaptInternalLinks();
       checkIosPwaButton();
       updateDynamicManifest(GAS_API_URL);
@@ -914,7 +914,13 @@
       initSeatGrid();
       fetchTodayData();
       startCameraWithFacingMode(currentFacingMode);
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initScannerPage);
+    } else {
+      initScannerPage();
+    }
 
     window.addEventListener('beforeunload', () => {
       if (html5QrCode) {
