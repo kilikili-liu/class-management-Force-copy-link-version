@@ -44,6 +44,36 @@ flowchart LR
 
 ---
 
+## 📸 「訂正系統」實際運作圖
+
+<div align="center">
+  <table style="border-collapse: collapse; border: none;">
+    <tr>
+      <td align="center" valign="bottom" style="padding: 10px; border: none;">
+        <img src="docs/images/correction_button_register.jpg" alt="純按鈕錯題登記" width="450" /><br/>
+        <b>▲ 錯題登記介面（批改登記／純按鈕）</b>
+      </td>
+      <td align="center" valign="bottom" style="padding: 10px; border: none;">
+        <img src="docs/images/correction_qr_scan.jpg" alt="訂正掃碼工具" width="450" /><br/>
+        <b>▲ 訂正掃碼工具（相機即掃即登）</b>
+      </td>
+    </tr>
+    <tr>
+      <td align="center" valign="bottom" style="padding: 10px; border: none;">
+        <img src="docs/images/correction_query_clear.jpg" alt="查詢與銷案" width="260" /><br/>
+        <b>▲ 查詢與銷案介面（個別學生訂正掌握）</b>
+      </td>
+      <td align="center" valign="bottom" style="padding: 10px; border: none;">
+        <img src="docs/images/correction_matrix_call.jpg" alt="全班催繳矩陣" width="260" /><br/>
+        <b>▲ 全班催繳矩陣（錯題未訂正總覽）</b>
+      </td>
+    </tr>
+  </table>
+  <p><em>「訂正系統」實際運作圖：支援批改登記、相機條碼即掃即登/銷案、個別學生錯題查詢與全班催繳矩陣</em></p>
+</div>
+
+---
+
 ### 步驟 1：建立試算表副本與使用前置作業
 
 #### 1-1. 建立試算表副本
@@ -206,10 +236,14 @@ flowchart LR
 ```text
 ├── docs/                      # 📖 說明文件與附圖
 │   └── images/                # 📸 文件圖檔
-│       ├── spreadsheet_sample.png     # 試算表學生名單與空號設定範例圖
-│       ├── operation_button_check.jpg # 純按鈕作業點收實際運作圖
-│       ├── operation_qr_scan.jpg      # 作業 QR Code 速掃實際運作圖
-│       └── operation_matrix_call.jpg  # 全班未繳催繳矩陣列表實際運作圖
+│       ├── spreadsheet_sample.png          # 試算表學生名單與空號設定範例圖
+│       ├── operation_button_check.jpg      # 純按鈕作業點收實際運作圖
+│       ├── operation_qr_scan.jpg           # 作業 QR Code 速掃實際運作圖
+│       ├── operation_matrix_call.jpg       # 全班未繳催繳矩陣列表實際運作圖
+│       ├── correction_button_register.jpg  # 訂正系統錯題登記介面實際運作圖
+│       ├── correction_qr_scan.jpg          # 訂正相機速掃工具實際運作圖
+│       ├── correction_query_clear.jpg      # 訂正查詢與銷案介面實際運作圖
+│       └── correction_matrix_call.jpg      # 訂正全班催繳矩陣實際運作圖
 ├── gas-project/               # 💻 Google Apps Script 後端專案核心 (clasp 部署用)
 │   ├── appsscript.json        # GAS 專案組態檔
 │   ├── Code.gs                # 後端 API 與試算表讀寫邏輯 (支援 getGasWebAppUrl、批次補登)
