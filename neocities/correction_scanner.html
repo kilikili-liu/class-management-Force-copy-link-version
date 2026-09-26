@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>✏️ 班級作業【訂正掃碼與銷案】工具</title>
+  <title>✏ 班級作業【訂正掃碼與銷案】工具</title>
   <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -378,13 +378,13 @@
   <!-- 頂部 Header -->
   <header>
     <div class="header-title-box">
-      <div class="header-title">✏️ 班級作業【訂正掃碼】工具</div>
+      <div class="header-title">✏ 班級作業【訂正掃碼】工具</div>
     </div>
     <div style="display: flex; gap: 8px; align-items: center;">
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
       <a href="index.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">🎯 純按鈕清點</a>
       <a href="scanner.html" class="nav-btn" style="text-decoration:none;">📥 作業收繳</a>
-      <a href="correction.html" class="nav-btn" style="text-decoration:none;">✏️ 錯題主頁</a>
+      <a href="correction.html" class="nav-btn" style="text-decoration:none;">✏ 錯題主頁</a>
     </div>
   </header>
 
@@ -419,7 +419,7 @@
       <!-- 作業選擇列 -->
       <div class="assign-bar">
         <select id="assign-select" class="assign-select" onchange="onAssignmentChanged()"></select>
-        <button class="btn-edit-meta" onclick="openMetaModal()">✏️ 編輯說明</button>
+        <button class="btn-edit-meta" onclick="openMetaModal()">✏ 編輯說明</button>
       </div>
 
       <!-- 說明與人數統計列 -->
@@ -553,10 +553,10 @@
             <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
             <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
             <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
-              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
-              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
-              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
-              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
+              <div>1. 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
+              <div>2. 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
+              <div>3. 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
+              <div>4. 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
             </div>
             <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
           </div>
@@ -661,7 +661,7 @@
             </button>
 
             <button onclick="toggleManualPairInput()" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-size:0.84rem; cursor:pointer;">
-              ✏️ 手動貼上 GAS 網址 (備用)
+              ✏ 手動貼上 GAS 網址 (備用)
             </button>
 
             <div id="manual-pair-container" style="display:none; text-align:left; margin-top:6px;">
@@ -1182,7 +1182,7 @@
       const currAssign = getCurrAssign();
 
       if (!currAssign) {
-        showToast('⚠️ 請先選擇作業項目或新增作業', 'error');
+        showToast(' 請先選擇作業項目或新增作業', 'error');
         return;
       }
 
@@ -1318,7 +1318,7 @@
             const allUncorrected = records.filter(r => r.seat === seatStr && r.status === 'X');
             if (allUncorrected.length === 0) {
               triggerFeedback('error');
-              showToast(`ℹ️ 座號 ${seatStr} 號目前無待訂正項目`, 'error');
+              showToast(`ℹ 座號 ${seatStr} 號目前無待訂正項目`, 'error');
             } else if (allUncorrected.length === 1) {
               const rec = allUncorrected[0];
               const res = await gasApi('updateCorrectionMatrixCell', { colIndex: rec.colIndex, seat: seatStr, status: 'O' });
@@ -1340,7 +1340,7 @@
         }
       } catch (err) {
         triggerFeedback('error');
-        showToast('⚠️ 回應解析失敗，正在重新同步確認...', 'error');
+        showToast(' 回應解析失敗，正在重新同步確認...', 'error');
         await fetchMatrixData();
       } finally {
         setTimeout(() => { isProcessingScan = false; }, 1200);
@@ -1406,7 +1406,7 @@
     function openMetaModal() {
       const curr = getCurrAssign();
       if (!curr) {
-        showToast('⚠️ 目前尚無選取的作業可編輯細節', 'error');
+        showToast(' 目前尚無選取的作業可編輯細節', 'error');
         return;
       }
       // 讀取當前作業原有的單元與頁數作為預設值
@@ -1490,11 +1490,11 @@
             <p style="color:#cbd5e1; font-size:0.86rem; line-height:1.6; text-align:left; margin-bottom:18px;">
               因 Google Apps Script 官方安全沙箱限制，凡透過 <code>script.google.com</code> 原生網址開啟之頁面均無法授權調用瀏覽器相機（<code>getUserMedia</code>）。<br><br>
               👉 <strong>建議使用方式：</strong><br>
-              1. 點擊下方<strong>「✏️ 切換至錯題主頁」</strong>，直接在電腦大螢幕以按鈕登記錯題或依矩陣銷案。<br>
+              1. 點擊下方<strong>「✏ 切換至錯題主頁」</strong>，直接在電腦大螢幕以按鈕登記錯題或依矩陣銷案。<br>
               2. 如需手機相機即掃即銷案，請改用手機開啟 <strong>Neocities 外部託管網址</strong> 或手機安裝之 <strong>PWA App</strong>！
             </p>
             <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-              <a href="${baseGasUrl ? `${baseGasUrl}?page=correction` : 'correction.html'}" class="nav-btn" style="background:#0284c7; color:#fff; text-decoration:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:0.9rem;" target="_top">✏️ 切換至錯題主頁</a>
+              <a href="${baseGasUrl ? `${baseGasUrl}?page=correction` : 'correction.html'}" class="nav-btn" style="background:#0284c7; color:#fff; text-decoration:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:0.9rem;" target="_top">✏ 切換至錯題主頁</a>
               <button onclick="document.getElementById('gas-camera-modal').style.display='none'" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.85rem;">我知道了</button>
             </div>
           </div>
@@ -1511,7 +1511,7 @@
                     location.hostname.includes('googleusercontent.com');
 
       if (isGas) {
-        showToast('⚠️ Google 原生網址封鎖相機權限，請切換錯題主頁或使用手機 PWA', 'error');
+        showToast(' Google 原生網址封鎖相機權限，請切換錯題主頁或使用手機 PWA', 'error');
         showGasCameraBlockedNotice();
         return;
       }
@@ -1567,7 +1567,7 @@
 
     function switchNextCamera() {
       if (availableCameras.length <= 1) {
-        showToast('⚠️ 本裝置只有一個相機', 'error');
+        showToast(' 本裝置只有一個相機', 'error');
         return;
       }
       currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;

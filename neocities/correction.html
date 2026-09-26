@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>✏️ 班級作業錯題訂正與銷案系統</title>
+  <title>✏ 班級作業錯題訂正與銷案系統</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
@@ -616,7 +616,7 @@
   <!-- Select Subject Prompt Modal -->
   <div id="select-prompt-modal" class="prompt-modal-overlay hidden">
     <div class="prompt-modal-card">
-      <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
+      <div style="font-size:2.5rem; margin-bottom:10px;"></div>
       <h3 style="color:#f8fafc; font-size:1.15rem; margin-bottom:10px; font-weight:700;">請先選擇作業項目</h3>
       <p style="color:#cbd5e1; font-size:0.95rem; line-height:1.6; margin-bottom:20px;">
         請先選擇 <strong style="color:#38bdf8;">【科目 | 種類】</strong><br>再按號碼按鈕進行登記！
@@ -652,12 +652,12 @@
   <!-- Floating Toast Banner with Undo Button -->
   <div class="toast-banner" id="toast-banner">
     <span id="toast-text"></span>
-    <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩️ 復原按錯</button>
+    <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩ 復原按錯</button>
   </div>
 
   <header>
     <div class="header-title">
-      ✏️ 班級作業錯題訂正與銷案系統
+      ✏ 班級作業錯題訂正與銷案系統
     </div>
     <div style="display:flex; gap:6px; align-items:center;">
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
@@ -714,7 +714,7 @@
                 📌 請先選擇科目與種類
               </span>
               <button type="button" onclick="openMetaModal()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:7px 12px; border-radius:6px; font-size:0.85rem; font-weight:700; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:4px;">
-                ✏️ 編輯說明
+                ✏ 編輯說明
               </button>
             </div>
           </div>
@@ -940,10 +940,10 @@
             <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
             <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
             <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
-              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
-              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
-              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
-              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
+              <div>1. 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
+              <div>2. 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
+              <div>3. 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
+              <div>4. 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
             </div>
             <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
           </div>
@@ -1044,7 +1044,7 @@
             </button>
 
             <button onclick="toggleManualPairInput()" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-size:0.84rem; cursor:pointer;">
-              ✏️ 手動貼上 GAS 網址 (備用)
+              ✏ 手動貼上 GAS 網址 (備用)
             </button>
 
             <div id="manual-pair-container" style="display:none; text-align:left; margin-top:6px;">
@@ -1709,7 +1709,7 @@
           const res = await gasApiFetch(url);
           if (res.success) {
             audioSuccess.play().catch(()=>{});
-            showToastWithUndo(`↩️ 已成功撤銷 ${act.seat}號【${act.subject || ''}${act.category || ''}】的這筆登記！`, null);
+            showToastWithUndo(`↩ 已成功撤銷 ${act.seat}號【${act.subject || ''}${act.category || ''}】的這筆登記！`, null);
             fetchCorrectionMatrixData();
           } else {
             showToastWithUndo(`❌ 復原失敗：${res.message}`, null);
@@ -1724,7 +1724,7 @@
           const res = await gasApiFetch(url);
           if (res.success) {
             audioSuccess.play().catch(()=>{});
-            showToastWithUndo(`↩️ 已復原 ${act.seat}號 狀態為待訂正 (X)！`, null);
+            showToastWithUndo(`↩ 已復原 ${act.seat}號 狀態為待訂正 (X)！`, null);
             fetchCorrectionMatrixData();
             if (document.getElementById('uncorrected-modal').classList.contains('show')) {
               openModalForSeat(act.seat);
@@ -1762,7 +1762,7 @@
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           fetchCorrectionMatrixData();
-          showToastWithUndo(`↩️ 已撤銷 ${seatStr}號 當日【${subject}${category}】的需訂正登記`, {
+          showToastWithUndo(`↩ 已撤銷 ${seatStr}號 當日【${subject}${category}】的需訂正登記`, {
             type: 'register',
             seat: seatStr,
             colIndex: colIndex,

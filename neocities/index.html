@@ -425,7 +425,7 @@
         errDiv.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#ef4444;color:#fff;padding:14px;border-radius:8px;z-index:9999999;font-size:13px;max-width:90%;box-shadow:0 4px 16px rgba(0,0,0,0.7);word-break:break-all;line-height:1.6;font-family:monospace;';
         (document.body || document.documentElement).appendChild(errDiv);
       }
-      errDiv.innerHTML = '<strong>⚠️ 程式錯誤:</strong> ' + (e.message || e) + 
+      errDiv.innerHTML = '<strong> 程式錯誤:</strong> ' + (e.message || e) + 
         '<br><strong>📍 檔案:</strong> ' + (e.filename || '內嵌腳本') + 
         '<br><strong>📍 位置:</strong> 第 ' + e.lineno + ' 行，第 ' + e.colno + ' 列';
     });
@@ -443,13 +443,13 @@
   <!-- Floating Toast -->
   <div class="toast-banner" id="toast-banner">
     <span id="toast-text"></span>
-    <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩️ 復原按錯</button>
+    <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩ 復原按錯</button>
   </div>
 
   <!-- Select Subject Prompt Modal -->
   <div id="select-prompt-modal" class="modal-overlay hidden">
     <div class="modal-card">
-      <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
+      <div style="font-size:2.5rem; margin-bottom:10px;"></div>
       <h3 style="color:#f8fafc; font-size:1.15rem; margin-bottom:10px; font-weight:700;">請先選擇作業項目</h3>
       <p style="color:#cbd5e1; font-size:0.95rem; line-height:1.6; margin-bottom:20px;">
         請先選擇 <strong style="color:#38bdf8;">【科目 | 種類】</strong><br>再按號碼按鈕進行點收！
@@ -475,7 +475,7 @@
             <button class="pair-chip-btn active" data-page="scanner.html" data-gaspage="scanner" onclick="selectPairTool(this)">📥 作業收繳速掃</button>
             <button class="pair-chip-btn" data-page="index.html" data-gaspage="" onclick="selectPairTool(this)">🎯 純按鈕點收主頁</button>
             <button class="pair-chip-btn" data-page="correction_scanner.html" data-gaspage="correction_scanner" onclick="selectPairTool(this)">📱 訂正掃碼工具</button>
-            <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏️ 錯題訂正主頁</button>
+            <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏ 錯題訂正主頁</button>
           </div>
         </div>
 
@@ -532,9 +532,9 @@
     <div class="header-title">🎯 班級智慧作業清點與催繳系統</div>
     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <a href="?page=sticker" target="_top" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">🏷️ 產生全班條碼</a>
+      <a href="<?= (typeof _GAS_WEBAPP_URL !== 'undefined' && _GAS_WEBAPP_URL) ? _GAS_WEBAPP_URL + '?page=sticker' : 'StickerGenerator.html' ?>" target="_top" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">🏷️ 產生全班條碼</a>
       <a href="scanner.html" id="nav-btn-scanner" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border:1px solid #38bdf8; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">📷 作業速掃</a>
-      <a href="?page=correction" target="_top" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">✏️ 錯題主頁</a>
+      <a href="<?= (typeof _GAS_WEBAPP_URL !== 'undefined' && _GAS_WEBAPP_URL) ? _GAS_WEBAPP_URL + '?page=correction' : 'correction.html' ?>" target="_top" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">✏️ 錯題主頁</a>
       <button id="nav-btn-pair" class="btn-phone-pair" style="display:inline-flex; box-shadow:0 0 12px rgba(14, 165, 233, 0.7);" onclick="openPairModal()" title="點擊查看手機連線 QR Code（手機開啟外部空間即可使用相機速掃）">📱 手機相機速掃連線</button>
     </div>
   </header>
@@ -583,7 +583,7 @@
       <div class="seat-grid-container">
         <div class="seat-grid-header">
           <span>點擊座號按鈕切換【🟢 已繳 / 🔴 未繳】：</span>
-          <span id="submitted-summary" style="color:var(--accent-blue); font-weight:700;">⚠️ 請先選擇上方【科目 | 種類】</span>
+          <span id="submitted-summary" style="color:var(--accent-blue); font-weight:700;"> 請先選擇上方【科目 | 種類】</span>
         </div>
         <div class="seat-grid" id="seat-grid">
           <!-- 預先渲染 1~30 號座號按鈕 -->
@@ -752,10 +752,10 @@
             <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
             <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
             <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
-              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
-              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
-              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
-              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
+              <div>1. 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
+              <div>2. 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
+              <div>3. 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
+              <div>4. 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
             </div>
             <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
           </div>
@@ -1035,7 +1035,7 @@
 
     async function gasApi(action, params = {}) {
       if (!GAS_API_URL) {
-        GAS_API_URL = prompt('⚙️ 請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
+        GAS_API_URL = prompt(' 請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
         if (GAS_API_URL) {
           localStorage.setItem('class_management_gas_api_url', GAS_API_URL.trim());
           localStorage.setItem('class_mgmt_gas_api_url', GAS_API_URL.trim());
@@ -1262,7 +1262,7 @@
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
       if (!isGas && !GAS_API_URL) {
-        const inputUrl = prompt('⚙️ 請輸入您的 GAS 網頁應用程式網址：\n\n格式：https://script.google.com/macros/s/.../exec');
+        const inputUrl = prompt(' 請輸入您的 GAS 網頁應用程式網址：\n\n格式：https://script.google.com/macros/s/.../exec');
         if (inputUrl && inputUrl.trim().startsWith('https://script.google.com')) {
           GAS_API_URL = inputUrl.trim();
           localStorage.setItem('class_management_gas_api_url', GAS_API_URL);
@@ -1273,7 +1273,7 @@
       renderEmptySeatButtons();
       const summaryElem = document.getElementById('submitted-summary');
       if (summaryElem) {
-        summaryElem.textContent = '⚠️ 請先選擇上方【科目 | 種類】';
+        summaryElem.textContent = ' 請先選擇上方【科目 | 種類】';
       }
     }
 
@@ -1300,7 +1300,7 @@
         categorySelect.innerHTML = '<option value="" disabled selected>-- 請先選科目 --</option>';
         hasUserSelectedSubjectCategory = false;
         renderEmptySeatButtons();
-        document.getElementById('submitted-summary').textContent = '⚠️ 請先選擇上方【科目 | 種類】';
+        document.getElementById('submitted-summary').textContent = ' 請先選擇上方【科目 | 種類】';
         return;
       }
 

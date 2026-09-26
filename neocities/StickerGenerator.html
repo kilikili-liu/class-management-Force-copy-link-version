@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🏷️ 班級作業清點條碼/QR Code 貼紙 JPG 產生器 (單機修復版)</title>
+  <title>🏷 班級作業清點條碼/QR Code 貼紙 JPG 產生器 (單機修復版)</title>
   <script>window._GAS_WEBAPP_URL = "<?= (typeof _GAS_WEBAPP_URL !== 'undefined') ? _GAS_WEBAPP_URL : '' ?>";</script>
   <style>
     :root {
@@ -1064,15 +1064,15 @@
     <header>
       <div>
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px; flex-wrap:wrap;">
-          <a href="index.html" class="nav-back-btn" onclick="handleGoBack(event)">⬅️ 返回作業清點主頁</a>
-          <h1 style="margin:0;">🏷️ 班級作業清點條碼/QR Code 貼紙產生器</h1>
+          <a href="index.html" class="nav-back-btn" onclick="handleGoBack(event)">⬅ 返回作業清點主頁</a>
+          <h1 style="margin:0;">🏷 班級作業清點條碼/QR Code 貼紙產生器</h1>
         </div>
         <p>專為國小/國中班級作業打卡設計｜單機離線可用｜A4 標籤紙批次自動排版｜300 DPI 高解析度 JPG 匯出與美工刀一刀到底切線</p>
       </div>
       <div class="header-badges">
-        <span class="badge">🖨️ A4 標準 300 DPI</span>
+        <span class="badge">🖨 A4 標準 300 DPI</span>
         <span class="badge">📐 25mm × 25mm 貼紙</span>
-        <span class="badge">✂️ 美工刀輔助切線</span>
+        <span class="badge">✂ 美工刀輔助切線</span>
         <span class="badge">⚡ 100% 本機免連網</span>
       </div>
     </header>
@@ -1173,7 +1173,7 @@
         <!-- Paper & Cutting Line Config Card -->
         <div class="card">
           <div class="card-title">
-            <span>⚙️ 排版與規格設定</span>
+            <span> 排版與規格設定</span>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -1216,7 +1216,7 @@
           <!-- Download / Export Actions -->
           <div class="export-actions">
             <a href="index.html" class="btn btn-secondary btn-sm" onclick="handleGoBack(event)" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; background:#0284c7; color:#fff; border-color:#38bdf8;">
-              ⬅️ 回清點主頁
+              ⬅ 回清點主頁
             </a>
             <button class="btn btn-success btn-sm" onclick="downloadCurrentPageJPG()">
               💾 下載當頁 JPG
@@ -1225,7 +1225,7 @@
               📦 下載全套 JPG
             </button>
             <button class="btn btn-secondary btn-sm" onclick="window.print()">
-              🖨️ 列印 A4
+              🖨 列印 A4
             </button>
           </div>
         </div>
@@ -1516,7 +1516,7 @@
       if (summary) {
         const count = selectedCustomSeats.size;
         if (count === 0) {
-          summary.textContent = '⚠️ 尚未勾選座號（請點選上方按鈕或輸入座號）';
+          summary.textContent = ' 尚未勾選座號（請點選上方按鈕或輸入座號）';
           summary.style.color = '#ef4444';
         } else {
           const sorted = Array.from(selectedCustomSeats).sort((a, b) => a - b).map(s => String(s).padStart(2, '0'));
@@ -1553,7 +1553,7 @@
           <td class="item-seq">#${index + 1}</td>
           <td><input type="text" value="${item.sub}" onchange="updateItem(${index}, 'sub', this.value)"></td>
           <td><input type="text" value="${item.cat}" onchange="updateItem(${index}, 'cat', this.value)"></td>
-          <td><button class="btn-icon" onclick="deleteItem(${index})">🗑️</button></td>
+          <td><button class="btn-icon" onclick="deleteItem(${index})">🗑</button></td>
         `;
         tbody.appendChild(tr);
       });
@@ -1892,7 +1892,7 @@
 
   <!-- Mobile Floating Return Button -->
   <a href="index.html" class="mobile-back-float" onclick="handleGoBack(event)" title="返回作業清點主頁">
-    ⬅️ 回清點主頁
+    ⬅ 回清點主頁
   </a>
 </body>
 </html>
