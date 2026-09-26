@@ -618,7 +618,7 @@
             </button>
 
             <div id="manual-pair-container" style="display:none; text-align:left; margin-top:6px;">
-              <input type="text" id="manual-gas-input" placeholder="貼上 https://script.google.com/macros/s/.../exec" style="width:100%; padding:9px 12px; border-radius:8px; background:#0f172a; border:1px solid #475569; color:#f8fafc; font-size:0.84rem; margin-bottom:8px;">
+              <input type="text" id="manual-gas-input" placeholder="貼上 GAS Web App exec 網址" style="width:100%; padding:9px 12px; border-radius:8px; background:#0f172a; border:1px solid #475569; color:#f8fafc; font-size:0.84rem; margin-bottom:8px;">
               <button onclick="saveManualGasUrl()" style="width:100%; background:#0284c7; color:#fff; border:none; padding:9px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.88rem;">儲存並連線</button>
             </div>
           </div>
@@ -689,7 +689,7 @@
         const pure = window.location.href.split('?')[0];
         window.location.href = `${pure}?api_url=${encodeURIComponent(val)}`;
       } else {
-        alert('❌ 網址格式不正確，格式需為 https://script.google.com/macros/s/.../exec');
+        alert('❌ 網址格式不正確，需為 GAS Web App exec 網址');
       }
     }
 
