@@ -14,6 +14,34 @@ flowchart LR
     C --> D["4. 手機掃碼連線<br/>(自動綁定 + 安裝App)"]
 ```
 
+> ⚠️ **重要裝置相容性提示**：  
+> 本系統之「安裝 PWA App 到主畫面」功能**不支援 iPhone / iPad**（iOS / iPadOS 系統之 Safari / WebKit 核心對於 PWA 與背景更新/沙盒支援有限制）。  
+> 建議使用 **Android 手機 / 平板**（搭配 Chrome）或 **Windows / Mac 電腦瀏覽器** 獲得最佳且完整的體驗！
+
+---
+
+## 📸 「作業清點系統」實際運作圖
+
+<div align="center">
+  <table style="border-collapse: collapse; border: none;">
+    <tr>
+      <td align="center" valign="bottom" style="padding: 10px; border: none;">
+        <img src="docs/images/operation_button_check.jpg" alt="純按鈕作業點收" width="260" /><br/>
+        <b>▲ 純按鈕作業點收介面</b>
+      </td>
+      <td align="center" valign="bottom" style="padding: 10px; border: none;">
+        <img src="docs/images/operation_qr_scan.jpg" alt="作業 QR Code 速掃" width="380" /><br/>
+        <b>▲ 作業 QR Code 高速相機速掃</b>
+      </td>
+      <td align="center" valign="bottom" style="padding: 10px; border: none;">
+        <img src="docs/images/operation_matrix_call.jpg" alt="全班未繳催繳矩陣列表" width="260" /><br/>
+        <b>▲ 全班未繳催繳矩陣列表</b>
+      </td>
+    </tr>
+  </table>
+  <p><em>「作業清點系統」實際運作圖：支援純按鈕號碼點收、鏡頭 QR Code 極速辨識、全班缺交矩陣與批次補登</em></p>
+</div>
+
 ---
 
 ### 步驟 1：建立試算表副本與使用前置作業
@@ -91,9 +119,10 @@ flowchart LR
 3. **手機相機一掃即連**：
    拿起手機打開**內建相機**，對準電腦螢幕上的 QR Code 掃描開啟。
    - ✨ **自動完成綁定**：網頁開啟時已自動完成 `GAS_API_URL` 綁定，全站各功能（速掃、按鈕點收、錯題訂正）全域共享，免手動設定！
-4. **一鍵安裝為 PWA App**：
-   - 點擊網頁頂部藍色的 **「📲 安裝 App」** 按鈕（或點擊手機瀏覽器選單「**加入主畫面**」）。
+4. **一鍵安裝為 PWA App（推薦 Android Chrome）**：
+   - 點擊網頁頂部藍色的 **「📲 安裝 App」** 按鈕（或點擊手機瀏覽器選單「**加到主畫面**」）。
    - 手機桌面即會產生獨立的「作業管理」App 圖示，點開即享全螢幕橫向鎖定、無瀏覽器網址列干擾的原生 App 體驗！
+   - ⚠️ **注意**：本系統之 PWA「安裝 App 到主畫面」功能**不支援 iPhone / iPad**（iOS Safari 環境限制），請使用 Android 手機/平板以獲得完整 PWA 體驗。
 
 ---
 
@@ -177,7 +206,10 @@ flowchart LR
 ```text
 ├── docs/                      # 📖 說明文件與附圖
 │   └── images/                # 📸 文件圖檔
-│       └── spreadsheet_sample.png # 試算表學生名單與空號設定範例圖
+│       ├── spreadsheet_sample.png     # 試算表學生名單與空號設定範例圖
+│       ├── operation_button_check.jpg # 純按鈕作業點收實際運作圖
+│       ├── operation_qr_scan.jpg      # 作業 QR Code 速掃實際運作圖
+│       └── operation_matrix_call.jpg  # 全班未繳催繳矩陣列表實際運作圖
 ├── gas-project/               # 💻 Google Apps Script 後端專案核心 (clasp 部署用)
 │   ├── appsscript.json        # GAS 專案組態檔
 │   ├── Code.gs                # 後端 API 與試算表讀寫邏輯 (支援 getGasWebAppUrl、批次補登)
