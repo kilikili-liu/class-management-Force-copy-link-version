@@ -987,17 +987,19 @@
         return paramGasUrl;
       }
 
-      const stored = localStorage.getItem('class_management_gas_api_url');
+      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.startsWith('https://script.google.com')) {
+        return window._GAS_WEBAPP_URL;
+      }
+      if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL && window.GAS_API_URL.startsWith('https://script.google.com')) {
+        return window.GAS_API_URL;
+      }
+
+      const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
         return stored;
       }
 
-      if (window.GAS_API_URL && window.GAS_API_URL !== 'YOUR_GAS_WEB_APP_URL') {
-        return window.GAS_API_URL;
-      }
-
-      // 若在 Google Apps Script 環境內部，自動抓取當前頁面 URL
-      if (location.hostname.includes('googleusercontent.com') || location.hostname.includes('script.google.com')) {
+      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
         return location.href.split('?')[0];
       }
 
@@ -1012,6 +1014,27 @@
     }
 
     const GAS_API_URL = getGasApiUrl();
+
+    async function apiCallCorrection(action, params = {}) {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(res => resolve(res))
+            .withFailureHandler(err => reject(err))
+            .handleScannerApiAction(action, params);
+        });
+      } else {
+        const cleanBase = (GAS_API_URL || '').replace(/\/a\/macros\/[a-zA-Z0-9.-]+\//, '/');
+        const url = new URL(cleanBase);
+        url.searchParams.set('action', action);
+        for (const [k, v] of Object.entries(params)) {
+          if (v !== undefined && v !== null) {
+            url.searchParams.set(k, String(v));
+          }
+        }
+        return await gasApiFetch(url.toString());
+      }
+    }
 
     // 增強版超穩定 GAS API 呼叫器（支援 fetch 優先、JSONP 備援、自動重試、與 18 秒冷啟動逾時）
     async function gasApiFetch(url, retries = 2, timeoutMs = 18000) {
@@ -1334,14 +1357,23 @@
 
       try {
         if (!colIndex) {
-          const createRes = await gasApiFetch(`${GAS_API_URL}?action=addCorrectionRecordMatrix&seat=01&subject=${encodeURIComponent(subject)}&category=${encodeURIComponent(category)}`);
+          const createRes = await apiCallCorrection('addCorrectionRecordMatrix', {
+            seat: '01',
+            subject: subject,
+            category: category
+          });
           if (createRes && createRes.success) {
             colIndex = createRes.colIndex;
           }
         }
 
         if (colIndex) {
-          const res = await gasApiFetch(`${GAS_API_URL}?action=updateHomeworkMetadata&colIndex=${colIndex}&unit=${encodeURIComponent(unitVal)}&note=${encodeURIComponent(pageVal)}&targetSheet=matrix`);
+          const res = await apiCallCorrection('updateHomeworkMetadata', {
+            colIndex: colIndex,
+            unit: unitVal,
+            note: pageVal,
+            targetSheet: 'matrix'
+          });
           if (res && res.success) {
             audioSuccess.play().catch(()=>{});
             showToastWithUndo(`🟢 已更新當日【${subject}${category}】說明為：${unitVal || '無單元'} ${pageVal ? '(P.' + pageVal + ')' : ''}`, null);
@@ -1528,8 +1560,11 @@
       if (act.type === 'register') {
         showToastWithUndo(`⏳ 正在復原 ${act.seat}號 的登記...`, null);
         try {
-          const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${act.colIndex}&seat=${act.seat}&status=`;
-          const res = await gasApiFetch(url);
+          const res = await apiCallCorrection('updateCorrectionMatrixCell', {
+            colIndex: act.colIndex,
+            seat: act.seat,
+            status: ''
+          });
           if (res.success) {
             audioSuccess.play().catch(()=>{});
             showToastWithUndo(`↩️ 已成功撤銷 ${act.seat}號【${act.subject || ''}${act.category || ''}】的這筆登記！`, null);
@@ -1543,8 +1578,11 @@
       } else if (act.type === 'clear') {
         showToastWithUndo(`⏳ 正在復原 ${act.seat}號 的銷案...`, null);
         try {
-          const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${act.colIndex}&seat=${act.seat}&status=${act.prevStatus || 'X'}`;
-          const res = await gasApiFetch(url);
+          const res = await apiCallCorrection('updateCorrectionMatrixCell', {
+            colIndex: act.colIndex,
+            seat: act.seat,
+            status: act.prevStatus || 'X'
+          });
           if (res.success) {
             audioSuccess.play().catch(()=>{});
             showToastWithUndo(`↩️ 已復原 ${act.seat}號 狀態為待訂正 (X)！`, null);
@@ -1580,8 +1618,11 @@
       const colIndex = existingAssign.colIndex;
       showToastWithUndo(`⏳ 正在撤銷 ${seatStr}號 當日需訂正登記...`, null);
       try {
-        const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${colIndex}&seat=${seatStr}&status=`;
-        const res = await gasApiFetch(url);
+        const res = await apiCallCorrection('updateCorrectionMatrixCell', {
+          colIndex: colIndex,
+          seat: seatStr,
+          status: ''
+        });
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           fetchCorrectionMatrixData();
@@ -1613,11 +1654,11 @@
 
       showToastWithUndo(`⏳ 正在為 ${seatStr}號 登錄【${subject}${category}】...`, null);
       try {
-        let url = `${GAS_API_URL}?action=addCorrectionRecordMatrix&seat=${seatStr}&subject=${encodeURIComponent(subject)}&category=${encodeURIComponent(category)}`;
+        const params = { seat: seatStr, subject, category };
         if (existingAssign && existingAssign.colIndex) {
-          url += `&colIndex=${existingAssign.colIndex}`;
+          params.colIndex = existingAssign.colIndex;
         }
-        const res = await gasApiFetch(url);
+        const res = await apiCallCorrection('addCorrectionRecordMatrix', params);
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           fetchCorrectionMatrixData();
@@ -1640,8 +1681,8 @@
     async function fetchCorrectionMatrixData() {
       document.getElementById('uncorrected-summary-badge').textContent = '更新中...';
       try {
-        const res = await gasApiFetch(`${GAS_API_URL}?action=getCorrectionMatrixData`);
-        if (res.success) {
+        const res = await apiCallCorrection('getCorrectionMatrixData');
+        if (res && res.success) {
           matrixData = res;
           updateCurrentMetaText();
           renderSeatButtons();
@@ -1650,8 +1691,11 @@
 
           const totalUncorrected = Object.values(res.seatSummary || {}).reduce((a,b)=>a+b, 0);
           document.getElementById('uncorrected-summary-badge').textContent = `全班未訂正共 ${totalUncorrected} 筆`;
+        } else {
+          document.getElementById('uncorrected-summary-badge').textContent = (res && res.message) ? res.message : '讀取失敗';
         }
       } catch (err) {
+        console.error('fetchCorrectionMatrixData error:', err);
         document.getElementById('uncorrected-summary-badge').textContent = '讀取失敗';
       }
     }
@@ -1659,8 +1703,7 @@
     // Modal Selection Box
     async function openModalForSeat(seatStr) {
       try {
-        const url = `${GAS_API_URL}?action=getStudentUncorrectedMatrix&seat=${seatStr}`;
-        const res = await gasApiFetch(url);
+        const res = await apiCallCorrection('getStudentUncorrectedMatrix', { seat: seatStr });
         if (res.success) {
           showUncorrectedModal(seatStr, res.records || []);
         }
@@ -1718,8 +1761,11 @@
     async function executeModalClear(colIndex, seatStr) {
       showToastWithUndo(`⏳ 正在為 ${seatStr}號 辦理銷案...`, null);
       try {
-        const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${colIndex}&seat=${seatStr}&status=O`;
-        const res = await gasApiFetch(url);
+        const res = await apiCallCorrection('updateCorrectionMatrixCell', {
+          colIndex: colIndex,
+          seat: seatStr,
+          status: 'O'
+        });
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           fetchCorrectionMatrixData();
@@ -1792,8 +1838,11 @@
           const actionLabel = nextStatus === 'O' ? '標已訂正 (O)' : '改回待訂正 (X)';
           showToastWithUndo(`⏳ 正在為 ${seatStr}號 ${actionLabel}...`, null);
           try {
-            const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${colIndex}&seat=${seatStr}&status=${nextStatus}`;
-            const res = await gasApiFetch(url);
+            const res = await apiCallCorrection('updateCorrectionMatrixCell', {
+              colIndex: colIndex,
+              seat: seatStr,
+              status: nextStatus
+            });
             if (res.success) {
               audioSuccess.play().catch(() => {});
               if (nextStatus === 'O') {
