@@ -34,13 +34,43 @@
     }
     header {
       background: rgba(30, 41, 59, 0.95);
-      padding: 10px 16px;
+      padding: 8px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #334155;
+      gap: 8px;
     }
-    .header-title { font-weight: 700; color: var(--accent-blue); font-size: 1.1rem; }
+    .header-title {
+      font-weight: 700;
+      color: var(--accent-blue);
+      font-size: 1.05rem;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .title-short { display: none; }
+    .title-full { display: inline; }
+    .header-nav-box {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .nav-btn {
+      white-space: nowrap;
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
     
     .view-switcher {
       display: flex;
@@ -68,7 +98,7 @@
       border-color: var(--accent-blue);
     }
     
-    .container { padding: 12px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .container { padding: 12px; flex: 1; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; }
     .view-panel { display: none; flex-direction: column; gap: 10px; }
     .view-panel.active { display: flex; }
 
@@ -78,14 +108,16 @@
       border-radius: 10px;
       padding: 10px;
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
+      box-sizing: border-box;
+      width: 100%;
     }
     @media (min-width: 500px) {
-      .form-card { grid-template-columns: repeat(4, 1fr); }
+      .form-card { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
-    .form-group { display: flex; flex-direction: column; gap: 3px; }
-    .form-group label { font-size: 0.75rem; color: var(--text-sub); font-weight: 600; }
+    .form-group { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .form-group label { font-size: 0.75rem; color: var(--text-sub); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .form-control {
       background: #0f172a;
       border: 1px solid #475569;
@@ -93,6 +125,9 @@
       padding: 6px 8px;
       border-radius: 6px;
       font-size: 0.85rem;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
     }
 
     .seat-grid-container {
@@ -100,6 +135,8 @@
       border: 1px solid #334155;
       border-radius: 10px;
       padding: 10px;
+      box-sizing: border-box;
+      width: 100%;
     }
     .seat-grid-header {
       font-size: 0.85rem;
@@ -112,11 +149,27 @@
     }
     .seat-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 8px;
+      width: 100%;
+      box-sizing: border-box;
     }
     @media (min-width: 500px) {
-      .seat-grid { grid-template-columns: repeat(10, 1fr); }
+      .seat-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+    }
+    @media (max-width: 600px) {
+      header { padding: 6px 8px; gap: 4px; }
+      .header-title { font-size: 0.95rem; }
+      .title-short { display: inline; }
+      .title-full { display: none; }
+      .header-nav-box { gap: 4px; }
+      .nav-btn { padding: 4px 6px; font-size: 0.75rem; }
+      .container { padding: 8px; gap: 8px; }
+      .form-card { padding: 8px; gap: 6px; }
+      .form-control { padding: 5px 6px; font-size: 0.8rem; }
+      .seat-grid-container { padding: 8px; }
+      .seat-grid { gap: 6px; }
+      .seat-btn { padding: 8px 2px; font-size: 0.88rem; }
     }
     .seat-btn {
       background: #0f172a;
@@ -516,12 +569,15 @@
   </div>
 
   <header>
-    <div class="header-title">🎯 班級智慧作業清點與催繳系統</div>
-    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-      <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <a href="StickerGenerator.html" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">🏷️ 產生全班條碼</a>
-      <a href="scanner.html" id="nav-btn-scanner" class="nav-btn" style="background:#0284c7; color:#fff; border:1px solid #38bdf8; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">📷 作業速掃</a>
-      <a href="correction.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">✏️ 錯題主頁</a>
+    <div class="header-title">
+      <span class="title-full">🎯 班級智慧作業清點與催繳系統</span>
+      <span class="title-short">🎯 作業清點</span>
+    </div>
+    <div class="header-nav-box">
+      <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border:1px solid #38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
+      <a href="StickerGenerator.html" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none;">🏷️ 條碼貼紙</a>
+      <a href="scanner.html" id="nav-btn-scanner" class="nav-btn" style="background:#0284c7; color:#fff; border:1px solid #38bdf8; text-decoration:none;">📷 作業速掃</a>
+      <a href="correction.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">✏️ 錯題訂正</a>
       <button id="nav-btn-pair" class="btn-phone-pair" style="display:none;" onclick="openPairModal()">📱 手機相機速掃連線</button>
     </div>
   </header>
