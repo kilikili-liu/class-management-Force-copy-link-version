@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>FullScreen</key>
+            <true/>
+            <key>Icon</key>
+            <data>
+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
+            </data>
+            <key>IsRemovable</key>
+            <true/>
+            <key>Label</key>
+            <string>作業速掃</string>
+            <key>PayloadDescription</key>
+            <string>班級作業速掃與催繳系統桌面 App</string>
+            <key>PayloadDisplayName</key>
+            <string>作業速掃</string>
+            <key>PayloadIdentifier</key>
+            <string>com.kilikili.classmanagement.webclip</string>
+            <key>PayloadType</key>
+            <string>com.apple.webClip.managed</string>
+            <key>PayloadUUID</key>
+            <string>E1898BF1-8225-4134-A344-DA4F09535FE5</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>Precomposed</key>
+            <true/>
+            <key>URL</key>
+            <string>https://zaca006.neocities.org/scanner/scanner.html</string>
+        </dict>
+    </array>
+    <key>PayloadDescription</key>
+    <string>安裝「班級作業速掃」全螢幕桌面 App 圖示到 iOS 主畫面，支援橫向全螢幕無網址列操作。</string>
+    <key>PayloadDisplayName</key>
+    <string>班級作業速掃 App</string>
+    <key>PayloadIdentifier</key>
+    <string>com.kilikili.classmanagement.profile</string>
+    <key>PayloadOrganization</key>
+    <string>Class Management System</string>
+    <key>PayloadRemovalDisallowed</key>
+    <false/>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>6572869C-B5CA-4AE3-B24E-D85CE195B814</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>

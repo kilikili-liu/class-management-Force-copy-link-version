@@ -367,6 +367,12 @@
     <button onclick="document.getElementById('pwa-update-banner').style.display='none'" style="background:transparent; color:#cbd5e1; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:0 4px;" title="稍後更新">&times;</button>
   </div>
 
+  <!-- 未綁定試算表提示條 -->
+  <div id="unbound-banner" style="display:none; position:relative; z-index:99999; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; padding:7px 14px; font-weight:700; font-size:0.82rem; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+    <span>📱 尚未綁定試算表：請將相機鏡頭對準電腦上的 QR Code 自動綁定！</span>
+    <button onclick="promptManualGasUrl()" style="background:#0f172a; color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:0.75rem; cursor:pointer; font-weight:600; white-space:nowrap; margin-left:8px;">⌨️ 手動輸入網址</button>
+  </div>
+
   <!-- 橫向旋轉提示 -->
   <div id="rotate-hint">
     <div class="hint-icon">📱</div>
@@ -381,6 +387,7 @@
     </div>
     <div style="display: flex; gap: 8px; align-items: center;">
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
+      <button onclick="promptManualGasUrl()" class="nav-btn" style="background:#1e293b; color:#cbd5e1; border:1px solid #475569;" title="連線設定">🔗 連線設定</button>
       <a href="index.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">🎯 純按鈕清點</a>
       <a href="scanner.html" class="nav-btn" style="text-decoration:none;">📥 作業收繳</a>
       <a href="correction.html" class="nav-btn" style="text-decoration:none;">✏️ 錯題主頁</a>
@@ -620,17 +627,79 @@
         return location.href.split('?')[0];
       }
 
-      // 首次使用：提示輸入 GAS 網址並儲存，避免在程式碼中寫入機敏部署網址
-      const entered = prompt('⚙️ 首次設定\n請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
-      if (entered && entered.trim().startsWith('https://script.google.com')) {
-        localStorage.setItem('class_management_gas_api_url', entered.trim());
-        return entered.trim();
-      }
-      alert('❌ 網址格式不正確，請重新整理頁面並輸入正確的 GAS 網址。');
+      // 首次使用：若無網址參數且無 localStorage，不跳出阻擋性 prompt，返回空字串並由鏡頭待命掃碼綁定
       return '';
     }
 
-    const GAS_API_URL = getGasApiUrl();
+    let GAS_API_URL = getGasApiUrl();
+
+    // 手動檢視或設定 GAS 網址
+    function promptManualGasUrl() {
+      const current = GAS_API_URL || '尚未設定';
+      const entered = prompt(`⚙️ 班級試算表連線設定\n目前綁定網址：\n${current}\n\n若需更改，請貼上新的 GAS Web App 網址 (以 https://script.google.com 開頭)：\n(清空並按確定可解除綁定)`, GAS_API_URL || '');
+      if (entered === null) return;
+      if (entered.trim() === '') {
+        localStorage.removeItem('class_management_gas_api_url');
+        localStorage.removeItem('class_mgmt_gas_api_url');
+        GAS_API_URL = '';
+        showToast('⚠️ 已清除綁定，請重新掃碼綁定', 'error');
+        const banner = document.getElementById('unbound-banner');
+        if (banner) banner.style.display = 'flex';
+        return;
+      }
+      if (entered.trim().startsWith('https://script.google.com')) {
+        localStorage.setItem('class_management_gas_api_url', entered.trim());
+        localStorage.setItem('class_mgmt_gas_api_url', entered.trim());
+        GAS_API_URL = entered.trim();
+        showToast('🟢 試算表連線設定成功！', 'success');
+        const banner = document.getElementById('unbound-banner');
+        if (banner) banner.style.display = 'none';
+        fetchMatrixData();
+      } else {
+        alert('❌ 網址格式不正確，必須以 https://script.google.com 開頭');
+      }
+    }
+
+    // 智能配對偵測：掃描到試算表配對 QR Code 自動綁定
+    function checkAndHandlePairCode(decodedText) {
+      if (!decodedText || typeof decodedText !== 'string') return false;
+      let matchedUrl = '';
+      if (decodedText.includes('api_url=')) {
+        try {
+          const u = new URL(decodedText);
+          matchedUrl = u.searchParams.get('api_url') || '';
+        } catch(e) {
+          const m = decodedText.match(/api_url=([^&]+)/);
+          if (m) matchedUrl = decodeURIComponent(m[1]);
+        }
+      } else if (decodedText.startsWith('https://script.google.com/macros/s/') && decodedText.includes('/exec')) {
+        matchedUrl = decodedText.trim();
+      } else if (decodedText.includes('gas=') || decodedText.includes('gas_url=')) {
+        try {
+          const u = new URL(decodedText);
+          matchedUrl = u.searchParams.get('gas') || u.searchParams.get('gas_url') || '';
+        } catch(e) {}
+      }
+
+      if (matchedUrl && matchedUrl.startsWith('https://script.google.com/macros/s/')) {
+        if (GAS_API_URL && GAS_API_URL === matchedUrl) {
+          showToast('ℹ️ 目前已連線至此試算表', 'info');
+          return true;
+        }
+        localStorage.setItem('class_management_gas_api_url', matchedUrl);
+        localStorage.setItem('class_mgmt_gas_api_url', matchedUrl);
+        GAS_API_URL = matchedUrl;
+        triggerFeedback('success');
+        showToast('🎉 試算表綁定成功！正在連線載入錯題資料...', 'success');
+        const banner = document.getElementById('unbound-banner');
+        if (banner) banner.style.display = 'none';
+        setTimeout(() => {
+          fetchMatrixData();
+        }, 600);
+        return true;
+      }
+      return false;
+    }
 
     // 增強版超穩定 GAS API 呼叫器（支援 fetch 優先、JSONP 備援、自動重試、與 18 秒冷啟動逾時）
     async function gasApiFetch(url, retries = 2, timeoutMs = 18000) {
@@ -874,6 +943,14 @@
     }
 
     async function fetchMatrixData(isSilentSync = false, isRetry = false) {
+      if (!GAS_API_URL) {
+        const banner = document.getElementById('unbound-banner');
+        if (banner) banner.style.display = 'flex';
+        if (!isSilentSync) {
+          showToast('📱 尚未綁定試算表，請對準電腦螢幕上的 QR Code 掃碼綁定', 'info');
+        }
+        return;
+      }
       try {
         if (!isSilentSync) {
           showToast('⏳ 正在同步訂正矩陣...', 'success');
@@ -1051,6 +1128,19 @@
       const now = Date.now();
       if (decodedText === lastScannedPayload && (now - lastScanTime) < 3000) return;
       if (isProcessingScan) return;
+
+      // 優先檢查是否為試算表連線/綁定 QR Code
+      if (checkAndHandlePairCode(decodedText)) {
+        lastScannedPayload = decodedText;
+        lastScanTime = now;
+        return;
+      }
+
+      if (!GAS_API_URL) {
+        showToast('⚠️ 尚未綁定試算表！請先將鏡頭對準電腦上的 QR Code 自動綁定', 'error');
+        triggerFeedback('error');
+        return;
+      }
 
       isProcessingScan = true;
       lastScannedPayload = decodedText;

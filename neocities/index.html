@@ -327,6 +327,34 @@
       gap: 14px;
       font-size: 0.88rem;
     }
+    .pair-view-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 8px;
+    }
+    .pair-view-tab {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: var(--text-sub);
+      padding: 9px 10px;
+      border-radius: 8px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .pair-view-tab:hover {
+      color: #fff;
+      border-color: #475569;
+    }
+    .pair-view-tab.active {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.25), rgba(56, 189, 248, 0.2));
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
     .pair-section-label {
       font-weight: 700;
       color: #cbd5e1;
@@ -504,66 +532,107 @@
   <div id="pair-modal" class="modal-overlay hidden">
     <div class="modal-card pair-modal-card">
       <div class="pair-modal-header">
-        <div class="pair-modal-title">📱 手機掃碼連線 (快速綁定 PWA)</div>
+        <div class="pair-modal-title">📱 手機掃碼連線 (快速綁定 PWA / iOS App)</div>
         <button class="pair-modal-close" onclick="closePairModal()">&times;</button>
       </div>
       <div class="pair-modal-content">
-        <!-- 選擇目標工具 -->
-        <div>
-          <div class="pair-section-label">🎯 選擇手機開啟的功能頁面：</div>
-          <div class="pair-tool-chips" style="grid-template-columns: repeat(2, 1fr);">
-            <button class="pair-chip-btn active" data-page="scanner.html" data-gaspage="scanner" onclick="selectPairTool(this)">📥 作業收繳速掃</button>
-            <button class="pair-chip-btn" data-page="index.html" data-gaspage="" onclick="selectPairTool(this)">🎯 純按鈕點收主頁</button>
-            <button class="pair-chip-btn" data-page="correction_scanner.html" data-gaspage="correction_scanner" onclick="selectPairTool(this)">📱 訂正掃碼工具</button>
-            <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏️ 錯題訂正主頁</button>
-          </div>
+        <!-- 頂部分頁切換：📱 試算表連線碼 vs 🍎 iOS App 描述檔 -->
+        <div class="pair-view-tabs">
+          <button class="pair-view-tab active" id="pair-tab-connect" onclick="switchPairView('connect')">📱 試算表連線碼 (Android 掃碼 / iOS 綁定)</button>
+          <button class="pair-view-tab" id="pair-tab-ios" onclick="switchPairView('ios')">🍎 iOS 桌面 App 描述檔</button>
         </div>
 
-        <!-- 連線方式切換 -->
-        <div>
-          <div class="pair-section-label">🌐 連線載具模式：</div>
-          <div class="pair-mode-selector">
-            <button class="pair-mode-btn active" id="pair-mode-pwa" onclick="setPairMode('pwa')">🌟 Neocities PWA (建議・全螢幕可安裝)</button>
-            <button class="pair-mode-btn" id="pair-mode-gas" onclick="setPairMode('gas')">⚡ GAS 原生網址 (直接開啟)</button>
-          </div>
-        </div>
-
-        <!-- Neocities 外部代管網址輸入 (僅在 PWA 模式顯示) -->
-        <div id="pair-neocities-box" class="pair-input-group">
-          <label class="pair-section-label" for="pair-neocities-input">🏠 您的 Neocities 網站網址 (Base URL)：</label>
-          <input type="text" id="pair-neocities-input" placeholder="例如：https://zaca006.neocities.org/scanner" oninput="onPairParamChange()">
-          <span style="font-size:0.75rem; color:#94a3b8;">💡 預設為 https://zaca006.neocities.org/scanner，若有更換站點可自行修改</span>
-        </div>
-
-        <!-- GAS API 網址 (自動偵測) -->
-        <div class="pair-input-group">
-          <label class="pair-section-label" for="pair-gas-input">🔗 目前試算表 GAS API 網址：</label>
-          <input type="text" id="pair-gas-input" placeholder="自動偵測中..." oninput="onPairParamChange()">
-        </div>
-
-        <!-- 動態生成的 QR Code 預覽區 -->
-        <div class="pair-qr-wrapper">
-          <div class="pair-qr-display" id="pair-qrcode-container"></div>
-          <div class="pair-url-box">
-            <span class="pair-url-text" id="pair-url-preview">產生網址中...</span>
-            <div class="pair-url-actions">
-              <button class="pair-sm-btn" onclick="copyPairUrl()">📋 複製</button>
-              <a href="#" target="_blank" id="pair-open-link" class="pair-sm-btn">🔗 開啟</a>
+        <!-- 區塊 A：試算表連線碼內容 -->
+        <div id="pair-view-connect-content">
+          <!-- 選擇目標工具 -->
+          <div>
+            <div class="pair-section-label">🎯 選擇手機開啟的功能頁面：</div>
+            <div class="pair-tool-chips" style="grid-template-columns: repeat(2, 1fr);">
+              <button class="pair-chip-btn active" data-page="scanner.html" data-gaspage="scanner" onclick="selectPairTool(this)">📥 作業收繳速掃</button>
+              <button class="pair-chip-btn" data-page="index.html" data-gaspage="" onclick="selectPairTool(this)">🎯 純按鈕點收主頁</button>
+              <button class="pair-chip-btn" data-page="correction_scanner.html" data-gaspage="correction_scanner" onclick="selectPairTool(this)">📱 訂正掃碼工具</button>
+              <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏️ 錯題訂正主頁</button>
             </div>
           </div>
-        </div>
 
-        <!-- 3步使用說明 -->
-        <div class="pair-instruction-steps">
-          <div>📲 <strong>步驟 1：</strong>打開手機內建相機，對準上方 QR Code 掃描開啟（iPhone 請於 Safari 開啟）。</div>
-          <div>✨ <strong>步驟 2：</strong>網頁開啟後即<strong>自動完成 GAS API 綁定</strong>，完全免手動複製貼上！</div>
-          <div style="margin-top:2px;">📲 <strong>步驟 3：安裝為全螢幕 App：</strong>
-            <div style="margin-left:12px; margin-top:2px; font-size:0.76rem; color:#94a3b8;">
-              • <strong>Android：</strong>點擊網頁頂部「📲 安裝 App」或瀏覽器選單「加到主畫面」<br>
-              • <strong>iPhone (Safari)：</strong>點擊下方工具列「分享 📤」➔ 往下滑點選「加入主畫面 ➕」➔ 點「新增」
+          <!-- 連線方式切換 -->
+          <div style="margin-top:10px;">
+            <div class="pair-section-label">🌐 連線載具模式：</div>
+            <div class="pair-mode-selector">
+              <button class="pair-mode-btn active" id="pair-mode-pwa" onclick="setPairMode('pwa')">🌟 Neocities PWA (建議・全螢幕可安裝)</button>
+              <button class="pair-mode-btn" id="pair-mode-gas" onclick="setPairMode('gas')">⚡ GAS 原生網址 (直接開啟)</button>
             </div>
           </div>
+
+          <!-- Neocities 外部代管網址輸入 (僅在 PWA 模式顯示) -->
+          <div id="pair-neocities-box" class="pair-input-group" style="margin-top:10px;">
+            <label class="pair-section-label" for="pair-neocities-input">🏠 您的 Neocities 網站網址 (Base URL)：</label>
+            <input type="text" id="pair-neocities-input" placeholder="例如：https://zaca006.neocities.org/scanner" oninput="onPairParamChange()">
+            <span style="font-size:0.75rem; color:#94a3b8;">💡 預設為 https://zaca006.neocities.org/scanner，若有更換站點可自行修改</span>
+          </div>
+
+          <!-- GAS API 網址 (自動偵測) -->
+          <div class="pair-input-group" style="margin-top:10px;">
+            <label class="pair-section-label" for="pair-gas-input">🔗 目前試算表 GAS API 網址：</label>
+            <input type="text" id="pair-gas-input" placeholder="自動偵測中..." oninput="onPairParamChange()">
+          </div>
+
+          <!-- 動態生成的 QR Code 預覽區 -->
+          <div class="pair-qr-wrapper" style="margin-top:12px;">
+            <div class="pair-qr-display" id="pair-qrcode-container"></div>
+            <div class="pair-url-box">
+              <span class="pair-url-text" id="pair-url-preview">產生網址中...</span>
+              <div class="pair-url-actions">
+                <button class="pair-sm-btn" onclick="copyPairUrl()">📋 複製</button>
+                <a href="#" target="_blank" id="pair-open-link" class="pair-sm-btn">🔗 開啟</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 說明指引 -->
+          <div class="pair-instruction-steps" style="margin-top:12px;">
+            <div style="font-weight:700; color:#38bdf8; margin-bottom:4px;">🤖 Android 系統：</div>
+            <div>• 打開相機直接掃描上方 QR Code 即可連線使用，並可點擊頁面頂部「📲 安裝 App」加到主畫面。</div>
+            <div style="font-weight:700; color:#a78bfa; margin-top:8px; margin-bottom:4px;">🍎 iOS (iPhone / iPad) 系統：</div>
+            <div>• <strong>已安裝 App：</strong> 打開 iPhone 桌面的「作業速掃」App，將鏡頭對準上方 QR Code 掃描一次，即自動完成綁定！</div>
+            <div>• <strong>尚未安裝 App：</strong> 請點選上方「🍎 iOS 桌面 App 描述檔」標籤安裝免簽名原生 App。</div>
+          </div>
         </div>
+
+        <!-- 區塊 B：iOS 描述檔內容 (預設隱藏) -->
+        <div id="pair-view-ios-content" style="display:none;">
+          <div style="background:rgba(56, 189, 248, 0.1); border:1px solid #0284c7; border-radius:8px; padding:10px 12px; font-size:0.82rem; color:#e0f2fe; line-height:1.5;">
+            🍎 <strong>iOS 專屬免簽名桌面 App 描述檔 (.mobileconfig)</strong><br>
+            安裝後即可在 iPhone / iPad 主畫面獲得與原生 App 一樣的全螢幕體驗（無上方網址列與下方工具列），且永不過期。
+          </div>
+
+          <!-- iOS QR Code 預覽區 -->
+          <div class="pair-qr-wrapper" style="margin-top:12px;">
+            <div class="pair-qr-display" id="pair-qrcode-ios-container"></div>
+            <div class="pair-url-box">
+              <span class="pair-url-text" id="pair-ios-url-preview">產生中...</span>
+              <div class="pair-url-actions">
+                <button class="pair-sm-btn" onclick="copyIosProfileUrl()">📋 複製</button>
+                <a href="#" target="_blank" id="pair-ios-dl-link" download="class_app.mobileconfig" class="pair-sm-btn" style="background:#0284c7; color:#fff; border-color:#38bdf8;">📥 下載描述檔</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- iOS 安裝 3 步教學 -->
+          <div class="pair-instruction-steps" style="margin-top:12px;">
+            <div style="font-weight:700; color:#38bdf8; margin-bottom:6px;">📲 iOS 3 步驟安裝與綁定教學：</div>
+            <div><strong>步驟 1：下載描述檔</strong><br>用 iPhone 相機掃描上方 QR Code（或在 Safari 開啟），點選「允許」下載描述檔。</div>
+            <div style="margin-top:6px;"><strong>步驟 2：前往系統設定安裝</strong><br>打開 iPhone「設定」➔ 點選最上方「已下載描述檔」➔ 點右上角「安裝」➔ 輸入手機解鎖密碼即可完成。</div>
+            <div style="margin-top:6px;"><strong>步驟 3：桌面點開 App 掃碼綁定</strong><br>回到 iPhone 主畫面點開「作業速掃」App，將鏡頭切換對準「📱 試算表連線碼」掃描一次，永久完成自動綁定！</div>
+          </div>
+
+          <div style="margin-top:12px; text-align:center;">
+            <button class="pair-chip-btn active" style="width:100%; padding:10px; font-size:0.88rem;" onclick="switchPairView('connect')">
+              👉 安裝完成？點此切換回「📱 試算表連線碼」供手機掃碼綁定
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -1039,10 +1108,12 @@
       }
     }
 
-    // ── 📱 手機掃碼連線 (QR Code 綁定 PWA) 邏輯 ──
+    // ── 📱 手機掃碼連線 (QR Code 綁定 PWA / iOS App) 邏輯 ──
     let currentPairTool = { page: 'scanner.html', gaspage: 'scanner' };
     let currentPairMode = 'pwa'; // 'pwa' | 'gas'
+    let currentPairView = 'connect'; // 'connect' | 'ios'
     let qrcodeObj = null;
+    let qrcodeIosObj = null;
 
     function openPairModal() {
       // 載入記住的 neocities 網址，預設為 https://zaca006.neocities.org/scanner
@@ -1074,12 +1145,89 @@
         }
       } catch(e) {}
 
+      switchPairView('connect');
       updatePairQrCode();
       document.getElementById('pair-modal').classList.remove('hidden');
     }
 
     function closePairModal() {
       document.getElementById('pair-modal').classList.add('hidden');
+    }
+
+    function switchPairView(view) {
+      currentPairView = view;
+      const tabConnect = document.getElementById('pair-tab-connect');
+      const tabIos = document.getElementById('pair-tab-ios');
+      const viewConnect = document.getElementById('pair-view-connect-content');
+      const viewIos = document.getElementById('pair-view-ios-content');
+
+      if (tabConnect) tabConnect.classList.toggle('active', view === 'connect');
+      if (tabIos) tabIos.classList.toggle('active', view === 'ios');
+      if (viewConnect) viewConnect.style.display = (view === 'connect') ? 'block' : 'none';
+      if (viewIos) viewIos.style.display = (view === 'ios') ? 'block' : 'none';
+
+      if (view === 'ios') {
+        updateIosProfileQrCode();
+      } else {
+        updatePairQrCode();
+      }
+    }
+
+    function getIosProfileUrl() {
+      let neoBase = document.getElementById('pair-neocities-input').value.trim();
+      if (!neoBase) {
+        neoBase = 'https://zaca006.neocities.org/scanner';
+      }
+      if (!/^https?:\/\//i.test(neoBase)) {
+        neoBase = 'https://' + neoBase;
+      }
+      neoBase = neoBase.replace(/\/+$/, '');
+      return `${neoBase}/class_app.mobileconfig`;
+    }
+
+    function updateIosProfileQrCode() {
+      const iosUrl = getIosProfileUrl();
+      const previewEl = document.getElementById('pair-ios-url-preview');
+      const dlLink = document.getElementById('pair-ios-dl-link');
+      if (previewEl) previewEl.textContent = iosUrl;
+      if (dlLink) {
+        dlLink.href = iosUrl;
+        dlLink.setAttribute('download', 'class_app.mobileconfig');
+      }
+
+      const container = document.getElementById('pair-qrcode-ios-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (typeof QRCode !== 'undefined') {
+        try {
+          qrcodeIosObj = new QRCode(container, {
+            text: iosUrl,
+            width: 180,
+            height: 180,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (e) {
+          renderFallbackQrImg(container, iosUrl);
+        }
+      } else {
+        renderFallbackQrImg(container, iosUrl);
+      }
+    }
+
+    function copyIosProfileUrl() {
+      const iosUrl = getIosProfileUrl();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(iosUrl).then(() => {
+          showToast('📋 已複製 iOS 描述檔下載連結！', 'success');
+        }).catch(() => {
+          prompt('請手動複製 iOS 描述檔網址：', iosUrl);
+        });
+      } else {
+        prompt('請手動複製 iOS 描述檔網址：', iosUrl);
+      }
     }
 
     function selectPairTool(btn) {
@@ -1110,6 +1258,9 @@
         localStorage.setItem('class_mgmt_gas_api_url', gasVal);
       }
       updatePairQrCode();
+      if (currentPairView === 'ios') {
+        updateIosProfileQrCode();
+      }
     }
 
     function buildPairTargetUrl() {
