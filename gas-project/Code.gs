@@ -63,9 +63,17 @@ function doGet(e) {
  */
 function renderGasPage(fileName, title) {
   const webAppUrl = getGasWebAppUrl();
-  const template = HtmlService.createTemplateFromFile(fileName);
-  template._GAS_WEBAPP_URL = webAppUrl;
-  return template.evaluate()
+  const rawHtml = HtmlService.createHtmlOutputFromFile(fileName).getContent();
+  const injection = '<script>window._GAS_WEBAPP_URL = ' + JSON.stringify(webAppUrl) + ';</script>';
+  let finalHtml = rawHtml;
+  if (finalHtml.includes('</head>')) {
+    finalHtml = finalHtml.replace('</head>', injection + '</head>');
+  } else if (finalHtml.includes('</HEAD>')) {
+    finalHtml = finalHtml.replace('</HEAD>', injection + '</HEAD>');
+  } else {
+    finalHtml = injection + finalHtml;
+  }
+  return HtmlService.createHtmlOutput(finalHtml)
       .setTitle(title)
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
@@ -695,13 +703,10 @@ function getCorrectionMatrixData(params = {}) {
   // 讀取座號欄以判斷空號（訂正矩陣第 1 欄為座號，但姓名需從作業工作表取得）
   // 使用作業工作表的姓名欄來判斷空號
   const hwSheet = getHwSheet();
+  const nameData = hwSheet.getRange(6, 2, CLASS_SIZE, 1).getDisplayValues();
   const vacantSeatNums = [];
-  if (hwSheet.getLastRow() >= 6) {
-    const numRows = Math.min(CLASS_SIZE, hwSheet.getLastRow() - 5);
-    const nameData = hwSheet.getRange(6, 2, numRows, 1).getDisplayValues();
-    for (let i = 0; i < numRows; i++) {
-      if (isVacantSeat(nameData[i][0])) vacantSeatNums.push(i + 1);
-    }
+  for (let i = 0; i < CLASS_SIZE; i++) {
+    if (isVacantSeat(nameData[i][0])) vacantSeatNums.push(i + 1);
   }
 
   for (let s = 1; s <= CLASS_SIZE; s++) {

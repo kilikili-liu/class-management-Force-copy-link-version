@@ -12,6 +12,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <!-- 本機開發用設定檔（已被 .gitignore 排除，Neocities 上不存在此檔案，onerror 靜默略過）-->
+  <script src="local_config.js" onerror="void 0"></script>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -414,22 +416,7 @@
     }
     .pair-instruction-steps strong { color: var(--accent-blue); }
   </style>
-  <script>
-    window._GAS_WEBAPP_URL = "<?= (typeof _GAS_WEBAPP_URL !== 'undefined') ? _GAS_WEBAPP_URL : '' ?>";
-    window.addEventListener('error', function(e) {
-      console.error('Global Error caught:', e);
-      var errDiv = document.getElementById('global-err-box');
-      if (!errDiv) {
-        errDiv = document.createElement('div');
-        errDiv.id = 'global-err-box';
-        errDiv.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#ef4444;color:#fff;padding:14px;border-radius:8px;z-index:9999999;font-size:13px;max-width:90%;box-shadow:0 4px 16px rgba(0,0,0,0.7);word-break:break-all;line-height:1.6;font-family:monospace;';
-        (document.body || document.documentElement).appendChild(errDiv);
-      }
-      errDiv.innerHTML = '<strong> 程式錯誤:</strong> ' + (e.message || e) + 
-        '<br><strong>📍 檔案:</strong> ' + (e.filename || '內嵌腳本') + 
-        '<br><strong>📍 位置:</strong> 第 ' + e.lineno + ' 行，第 ' + e.colno + ' 列';
-    });
-  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -443,13 +430,13 @@
   <!-- Floating Toast -->
   <div class="toast-banner" id="toast-banner">
     <span id="toast-text"></span>
-    <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩ 復原按錯</button>
+    <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩️ 復原按錯</button>
   </div>
 
   <!-- Select Subject Prompt Modal -->
   <div id="select-prompt-modal" class="modal-overlay hidden">
     <div class="modal-card">
-      <div style="font-size:2.5rem; margin-bottom:10px;"></div>
+      <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
       <h3 style="color:#f8fafc; font-size:1.15rem; margin-bottom:10px; font-weight:700;">請先選擇作業項目</h3>
       <p style="color:#cbd5e1; font-size:0.95rem; line-height:1.6; margin-bottom:20px;">
         請先選擇 <strong style="color:#38bdf8;">【科目 | 種類】</strong><br>再按號碼按鈕進行點收！
@@ -475,7 +462,7 @@
             <button class="pair-chip-btn active" data-page="scanner.html" data-gaspage="scanner" onclick="selectPairTool(this)">📥 作業收繳速掃</button>
             <button class="pair-chip-btn" data-page="index.html" data-gaspage="" onclick="selectPairTool(this)">🎯 純按鈕點收主頁</button>
             <button class="pair-chip-btn" data-page="correction_scanner.html" data-gaspage="correction_scanner" onclick="selectPairTool(this)">📱 訂正掃碼工具</button>
-            <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏ 錯題訂正主頁</button>
+            <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏️ 錯題訂正主頁</button>
           </div>
         </div>
 
@@ -532,10 +519,10 @@
     <div class="header-title">🎯 班級智慧作業清點與催繳系統</div>
     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border:1px solid #38bdf8; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; cursor:pointer;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <a href="<?= (typeof _GAS_WEBAPP_URL !== 'undefined' && _GAS_WEBAPP_URL) ? _GAS_WEBAPP_URL + '?page=sticker' : 'StickerGenerator.html' ?>" target="_top" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">🏷️ 產生全班條碼</a>
-      <a href="scanner.html" id="nav-btn-scanner" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border:1px solid #38bdf8; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">📷 作業速掃</a>
-      <a href="<?= (typeof _GAS_WEBAPP_URL !== 'undefined' && _GAS_WEBAPP_URL) ? _GAS_WEBAPP_URL + '?page=correction' : 'correction.html' ?>" target="_top" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">✏️ 錯題主頁</a>
-      <button id="nav-btn-pair" class="btn-phone-pair" style="display:inline-flex; box-shadow:0 0 12px rgba(14, 165, 233, 0.7);" onclick="openPairModal()" title="點擊查看手機連線 QR Code（手機開啟外部空間即可使用相機速掃）">📱 手機相機速掃連線</button>
+      <a href="StickerGenerator.html" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">🏷️ 產生全班條碼</a>
+      <a href="scanner.html" id="nav-btn-scanner" class="nav-btn" style="background:#0284c7; color:#fff; border:1px solid #38bdf8; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">📷 作業速掃</a>
+      <a href="correction.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700;">✏️ 錯題主頁</a>
+      <button id="nav-btn-pair" class="btn-phone-pair" style="display:none;" onclick="openPairModal()">📱 手機相機速掃連線</button>
     </div>
   </header>
 
@@ -583,40 +570,10 @@
       <div class="seat-grid-container">
         <div class="seat-grid-header">
           <span>點擊座號按鈕切換【🟢 已繳 / 🔴 未繳】：</span>
-          <span id="submitted-summary" style="color:var(--accent-blue); font-weight:700;"> 請先選擇上方【科目 | 種類】</span>
+          <span id="submitted-summary" style="color:var(--accent-blue); font-weight:700;">載入中...</span>
         </div>
         <div class="seat-grid" id="seat-grid">
-          <!-- 預先渲染 1~30 號座號按鈕 -->
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(1)"><div>01號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(2)"><div>02號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(3)"><div>03號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(4)"><div>04號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(5)"><div>05號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(6)"><div>06號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(7)"><div>07號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(8)"><div>08號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(9)"><div>09號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(10)"><div>10號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(11)"><div>11號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(12)"><div>12號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(13)"><div>13號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(14)"><div>14號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(15)"><div>15號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(16)"><div>16號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(17)"><div>17號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(18)"><div>18號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(19)"><div>19號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(20)"><div>20號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(21)"><div>21號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(22)"><div>22號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(23)"><div>23號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(24)"><div>24號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(25)"><div>25號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(26)"><div>26號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(27)"><div>27號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(28)"><div>28號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(29)"><div>29號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
-          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(30)"><div>30號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <!-- Rendered dynamically -->
         </div>
       </div>
     </div>
@@ -752,10 +709,10 @@
             <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
             <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
             <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
-              <div>1. 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
-              <div>2. 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
-              <div>3. 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
-              <div>4. 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
+              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
+              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
+              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
+              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
             </div>
             <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
           </div>
@@ -766,13 +723,8 @@
       }
     }
 
-    function isIosOrIpad() {
-      return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-             (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
-    }
-
     function checkIosPwaButton() {
-      const isIos = isIosOrIpad();
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
       const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
       if (isIos && !isStandalone) {
         const btn = document.getElementById('btn-pwa-install');
@@ -789,7 +741,8 @@
           if (btn) btn.style.display = 'none';
         });
       } else {
-        if (isIosOrIpad()) {
+        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (isIos) {
           showIosInstallModal();
         }
       }
@@ -818,18 +771,6 @@
         if (scanBtn) scanBtn.style.display = 'inline-flex';
         if (pairBtn) pairBtn.style.display = 'none';
         checkIosPwaButton();
-        if (GAS_API_URL && GAS_API_URL.startsWith('https://script.google.com')) {
-          const encApi = encodeURIComponent(GAS_API_URL);
-          const targetPages = ['scanner.html', 'index.html', 'correction.html', 'correction_scanner.html', 'StickerGenerator.html'];
-          document.querySelectorAll('a[href]').forEach(a => {
-            const href = a.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
-            const purePage = href.split('?')[0];
-            if (targetPages.includes(purePage)) {
-              a.href = `${purePage}?api_url=${encApi}`;
-            }
-          });
-        }
         return;
       }
 
@@ -859,7 +800,7 @@
 
       let baseGasUrl = window._GAS_WEBAPP_URL;
       if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url') || localStorage.getItem('class_management_gas_api_url');
+        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
       }
       if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
         baseGasUrl = location.href.split('?')[0];
@@ -874,25 +815,10 @@
           if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
             window._GAS_WEBAPP_URL = serverUrl;
             localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
-            localStorage.setItem('class_management_gas_api_url', serverUrl);
             applyGasUrls(serverUrl);
           }
         }).getGasWebAppUrl();
       }
-    }
-
-    // iOS PWA 獨立視窗保活：攔截同源 a 標籤點擊，改以 window.location.href 導航，避免跳出 PWA 進入 Safari
-    if (window.navigator.standalone === true) {
-      document.addEventListener('click', function(e) {
-        const a = e.target.closest('a');
-        if (!a) return;
-        const href = a.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.target === '_blank') return;
-        if (!href.startsWith('http://') && !href.startsWith('https://') || href.startsWith(window.location.origin)) {
-          e.preventDefault();
-          window.location.href = a.href;
-        }
-      }, false);
     }
 
     // ── 🌐 統一 API 呼叫器 (支援 GAS 原生 google.script.run 與 Neocities 外部 HTTP/JSONP) ──
@@ -912,15 +838,11 @@
         return stored;
       }
 
-      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.startsWith('https://script.google.com')) {
-        return window._GAS_WEBAPP_URL;
-      }
-
       if (window.GAS_API_URL && window.GAS_API_URL !== 'YOUR_GAS_WEB_APP_URL') {
         return window.GAS_API_URL;
       }
 
-      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+      if (location.hostname.includes('googleusercontent.com') || location.hostname.includes('script.google.com')) {
         return location.href.split('?')[0];
       }
 
@@ -928,30 +850,6 @@
     }
 
     let GAS_API_URL = getGasApiUrl();
-
-    function updateDynamicManifest(gasApiUrl) {
-      if (!gasApiUrl || !gasApiUrl.startsWith('https://script.google.com')) return;
-      const manifestLink = document.querySelector('link[rel="manifest"]');
-      if (!manifestLink) return;
-
-      const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-      const startUrl = `./${currentPath}?api_url=${encodeURIComponent(gasApiUrl)}`;
-
-      fetch(manifestLink.href)
-        .then(res => res.json())
-        .then(data => {
-          data.start_url = startUrl;
-          if (Array.isArray(data.shortcuts)) {
-            data.shortcuts = data.shortcuts.map(s => {
-              const pure = s.url.split('?')[0];
-              return { ...s, url: `${pure}?api_url=${encodeURIComponent(gasApiUrl)}` };
-            });
-          }
-          const blob = new Blob([JSON.stringify(data)], { type: 'application/manifest+json' });
-          manifestLink.href = URL.createObjectURL(blob);
-        })
-        .catch(() => {});
-    }
 
     function singleGasApiFetch(url, timeoutMs = 18000) {
       return new Promise((resolve, reject) => {
@@ -1039,7 +937,7 @@
 
     async function gasApi(action, params = {}) {
       if (!GAS_API_URL) {
-        GAS_API_URL = prompt('請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：');
+        GAS_API_URL = prompt('⚙️ 請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
         if (GAS_API_URL) {
           localStorage.setItem('class_management_gas_api_url', GAS_API_URL.trim());
           localStorage.setItem('class_mgmt_gas_api_url', GAS_API_URL.trim());
@@ -1089,10 +987,7 @@
 
     function openPairModal() {
       // 載入記住的 neocities 網址，預設為 https://zaca006.neocities.org/scanner
-      let savedNeo = localStorage.getItem('class_mgmt_neocities_url') || 'https://zaca006.neocities.org/scanner';
-      if (savedNeo.startsWith('http://') && !savedNeo.includes('localhost') && !savedNeo.includes('127.0.0.1')) {
-        savedNeo = savedNeo.replace(/^http:\/\//i, 'https://');
-      }
+      const savedNeo = localStorage.getItem('class_mgmt_neocities_url') || 'https://zaca006.neocities.org/scanner';
       document.getElementById('pair-neocities-input').value = savedNeo;
 
       // 取得 GAS API 網址
@@ -1177,9 +1072,6 @@
       if (!/^https?:\/\//i.test(neoBase)) {
         neoBase = 'https://' + neoBase;
       }
-      if (neoBase.startsWith('http://') && !neoBase.includes('localhost') && !neoBase.includes('127.0.0.1')) {
-        neoBase = neoBase.replace(/^http:\/\//i, 'https://');
-      }
       neoBase = neoBase.replace(/\/+$/, '');
       const toolFile = currentPairTool.page || 'scanner.html';
 
@@ -1212,15 +1104,6 @@
         }
       } else {
         renderFallbackQrImg(container, finalUrl);
-        if (!window._loadingQrCodeLib) {
-          window._loadingQrCodeLib = true;
-          const s = document.createElement('script');
-          s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-          s.onload = () => {
-            updatePairQrCode();
-          };
-          document.head.appendChild(s);
-        }
       }
     }
 
@@ -1259,33 +1142,12 @@
       '其它': ['其它']
     };
 
-    function initIndexPage() {
+    window.addEventListener('DOMContentLoaded', () => {
       adaptInternalLinks();
-      updateDynamicManifest(GAS_API_URL);
-      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
-                    location.hostname.includes('script.google.com') ||
-                    location.hostname.includes('googleusercontent.com');
-      if (!isGas && !GAS_API_URL) {
-        const inputUrl = prompt('請輸入您的 GAS 網頁應用程式網址：');
-        if (inputUrl && inputUrl.trim().startsWith('https://script.google.com')) {
-          GAS_API_URL = inputUrl.trim();
-          localStorage.setItem('class_management_gas_api_url', GAS_API_URL);
-          localStorage.setItem('class_mgmt_gas_api_url', GAS_API_URL);
-        }
-      }
       hasUserSelectedSubjectCategory = false;
       renderEmptySeatButtons();
-      const summaryElem = document.getElementById('submitted-summary');
-      if (summaryElem) {
-        summaryElem.textContent = ' 請先選擇上方【科目 | 種類】';
-      }
-    }
-
-    if (document.readyState === 'loading') {
-      window.addEventListener('DOMContentLoaded', initIndexPage);
-    } else {
-      initIndexPage();
-    }
+      document.getElementById('submitted-summary').textContent = '⚠️ 請先選擇上方【科目 | 種類】';
+    });
 
     function openSelectPromptModal() {
       document.getElementById('select-prompt-modal').classList.remove('hidden');
@@ -1304,7 +1166,7 @@
         categorySelect.innerHTML = '<option value="" disabled selected>-- 請先選科目 --</option>';
         hasUserSelectedSubjectCategory = false;
         renderEmptySeatButtons();
-        document.getElementById('submitted-summary').textContent = ' 請先選擇上方【科目 | 種類】';
+        document.getElementById('submitted-summary').textContent = '⚠️ 請先選擇上方【科目 | 種類】';
         return;
       }
 

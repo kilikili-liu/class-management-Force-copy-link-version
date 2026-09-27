@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>✏ 班級作業錯題訂正與銷案系統</title>
+  <title>✏️ 班級作業錯題訂正與銷案系統</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <script>window._GAS_WEBAPP_URL = "<?= (typeof _GAS_WEBAPP_URL !== 'undefined') ? _GAS_WEBAPP_URL : '' ?>";</script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -616,7 +616,7 @@
   <!-- Select Subject Prompt Modal -->
   <div id="select-prompt-modal" class="prompt-modal-overlay hidden">
     <div class="prompt-modal-card">
-      <div style="font-size:2.5rem; margin-bottom:10px;"></div>
+      <div style="font-size:2.5rem; margin-bottom:10px;">⚠️</div>
       <h3 style="color:#f8fafc; font-size:1.15rem; margin-bottom:10px; font-weight:700;">請先選擇作業項目</h3>
       <p style="color:#cbd5e1; font-size:0.95rem; line-height:1.6; margin-bottom:20px;">
         請先選擇 <strong style="color:#38bdf8;">【科目 | 種類】</strong><br>再按號碼按鈕進行登記！
@@ -652,19 +652,18 @@
   <!-- Floating Toast Banner with Undo Button -->
   <div class="toast-banner" id="toast-banner">
     <span id="toast-text"></span>
-    <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩ 復原按錯</button>
+    <button class="toast-undo-btn" id="toast-undo-btn" onclick="executeUndo()">↩️ 復原按錯</button>
   </div>
 
   <header>
     <div class="header-title">
-      ✏ 班級作業錯題訂正與銷案系統
+      ✏️ 班級作業錯題訂正與銷案系統
     </div>
     <div style="display:flex; gap:6px; align-items:center;">
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <a href="<?= (typeof _GAS_WEBAPP_URL !== 'undefined' && _GAS_WEBAPP_URL) ? _GAS_WEBAPP_URL : 'index.html' ?>" target="_top" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">🎯 純按鈕清點</a>
-      <a href="<?= (typeof _GAS_WEBAPP_URL !== 'undefined' && _GAS_WEBAPP_URL) ? _GAS_WEBAPP_URL + '?page=sticker' : 'StickerGenerator.html' ?>" target="_top" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none; padding:5px 10px; border-radius:8px; font-size:0.82rem; font-weight:700; display:inline-flex; align-items:center; gap:4px;">🏷️ 產生全班條碼</a>
-      <a href="<?= (typeof _GAS_WEBAPP_URL !== 'undefined' && _GAS_WEBAPP_URL) ? _GAS_WEBAPP_URL + '?page=correction_scanner' : 'correction_scanner.html' ?>" target="_top" class="nav-btn" style="background:#0284c7; color:#fff; border-color:#38bdf8; text-decoration:none;">📱 訂正掃碼工具</a>
-      <a href="<?= (typeof _GAS_WEBAPP_URL !== 'undefined' && _GAS_WEBAPP_URL) ? _GAS_WEBAPP_URL + '?page=scanner' : 'scanner.html' ?>" target="_top" class="nav-btn" style="text-decoration:none;">📥 切換至作業收繳</a>
+      <a href="index.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">🎯 純按鈕清點</a>
+      <a href="correction_scanner.html" class="nav-btn" style="background:#0284c7; color:#fff; border-color:#38bdf8; text-decoration:none;">📱 訂正掃碼工具</a>
+      <a href="scanner.html" class="nav-btn" style="text-decoration:none;">📥 切換至作業收繳</a>
     </div>
   </header>
 
@@ -715,7 +714,7 @@
                 📌 請先選擇科目與種類
               </span>
               <button type="button" onclick="openMetaModal()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:7px 12px; border-radius:6px; font-size:0.85rem; font-weight:700; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:4px;">
-                ✏ 編輯說明
+                ✏️ 編輯說明
               </button>
             </div>
           </div>
@@ -941,10 +940,10 @@
             <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
             <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
             <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
-              <div>1. 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
-              <div>2. 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
-              <div>3. 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
-              <div>4. 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
+              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
+              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
+              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
+              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
             </div>
             <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
           </div>
@@ -955,13 +954,8 @@
       }
     }
 
-    function isIosOrIpad() {
-      return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-             (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
-    }
-
     function checkIosPwaButton() {
-      const isIos = isIosOrIpad();
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
       const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
       if (isIos && !isStandalone) {
         const btn = document.getElementById('btn-pwa-install');
@@ -978,7 +972,8 @@
           if (btn) btn.style.display = 'none';
         });
       } else {
-        if (isIosOrIpad()) {
+        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (isIos) {
           showIosInstallModal();
         }
       }
@@ -988,18 +983,11 @@
       const urlParams = new URLSearchParams(window.location.search);
       const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
       if (paramGasUrl) {
-        try {
-          localStorage.setItem('class_management_gas_api_url', paramGasUrl);
-          localStorage.setItem('class_mgmt_gas_api_url', paramGasUrl);
-        } catch(e){}
+        try { localStorage.setItem('class_management_gas_api_url', paramGasUrl); } catch(e){}
         return paramGasUrl;
       }
 
-      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.startsWith('https://script.google.com')) {
-        return window._GAS_WEBAPP_URL;
-      }
-
-      const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
+      const stored = localStorage.getItem('class_management_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
         return stored;
       }
@@ -1008,147 +996,19 @@
         return window.GAS_API_URL;
       }
 
-      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+      // 若在 Google Apps Script 環境內部，自動抓取當前頁面 URL
+      if (location.hostname.includes('googleusercontent.com') || location.hostname.includes('script.google.com')) {
         return location.href.split('?')[0];
       }
 
+      // 首次使用：提示輸入 GAS 網址並儲存，避免在程式碼中寫入機敏部署網址
+      const entered = prompt('⚙️ 首次設定\n請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
+      if (entered && entered.trim().startsWith('https://script.google.com')) {
+        localStorage.setItem('class_management_gas_api_url', entered.trim());
+        return entered.trim();
+      }
+      alert('❌ 網址格式不正確，請重新整理頁面並輸入正確的 GAS 網址。');
       return '';
-    }
-
-    let pairScannerObj = null;
-
-    function showPairSetupModal() {
-      let modal = document.getElementById('pair-setup-modal');
-      if (modal) {
-        modal.style.display = 'flex';
-        return;
-      }
-      modal = document.createElement('div');
-      modal.id = 'pair-setup-modal';
-      modal.className = 'modal-overlay';
-      modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.92); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(6px); padding:16px;';
-      modal.innerHTML = `
-        <div style="background:#1e293b; border:1px solid #38bdf8; border-radius:18px; max-width:440px; width:100%; padding:22px; box-shadow:0 16px 40px rgba(0,0,0,0.7); text-align:center; color:#f8fafc;">
-          <div style="font-size:2.8rem; margin-bottom:8px;">📱🔗</div>
-          <h3 style="font-size:1.2rem; font-weight:800; margin-bottom:10px; color:#38bdf8;">尚未連線至班級試算表</h3>
-          <p style="font-size:0.86rem; color:#cbd5e1; line-height:1.6; margin-bottom:14px; text-align:left; background:#0f172a; padding:12px; border-radius:10px; border:1px solid #334155;">
-            <strong>快速配對步驟：</strong><br>
-            1. 請在電腦開啟您的 Google 班級試算表。<br>
-            2. 點擊右上角<strong>「📱 手機相機速掃連線」</strong>顯示配對 QR Code。<br>
-            3. 點擊下方綠色按鈕開啟相機，對準電腦螢幕掃描即可自動綁定！
-          </p>
-
-          <div id="pair-camera-box" style="display:none; margin-bottom:14px; border-radius:12px; overflow:hidden; border:2px solid #22c55e;">
-            <div id="pair-qr-reader" style="width:100%; max-height:260px; background:#000;"></div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:10px;">
-            <button id="btn-start-pair-scan" onclick="startPairCameraScan()" style="background:#22c55e; color:#fff; border:none; padding:11px 18px; border-radius:10px; font-weight:700; cursor:pointer; font-size:0.95rem; display:flex; align-items:center; justify-content:center; gap:8px;">
-              📷 開啟相機掃描電腦螢幕 QR 碼配對
-            </button>
-
-            <button onclick="toggleManualPairInput()" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-size:0.84rem; cursor:pointer;">
-              ✏ 手動貼上 GAS 網址 (備用)
-            </button>
-
-            <div id="manual-pair-container" style="display:none; text-align:left; margin-top:6px;">
-              <input type="text" id="manual-gas-input" placeholder="貼上 GAS Web App exec 網址" style="width:100%; padding:9px 12px; border-radius:8px; background:#0f172a; border:1px solid #475569; color:#f8fafc; font-size:0.84rem; margin-bottom:8px;">
-              <button onclick="saveManualGasUrl()" style="width:100%; background:#0284c7; color:#fff; border:none; padding:9px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.88rem;">儲存並連線</button>
-            </div>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-    }
-
-    async function startPairCameraScan() {
-      const btn = document.getElementById('btn-start-pair-scan');
-      const box = document.getElementById('pair-camera-box');
-      if (box) box.style.display = 'block';
-      if (btn) btn.style.display = 'none';
-
-      if (typeof Html5Qrcode === 'undefined') {
-        alert('相機掃描元件載入中，請稍候重試或改用手動貼上。');
-        return;
-      }
-
-      try {
-        pairScannerObj = new Html5Qrcode('pair-qr-reader');
-        await pairScannerObj.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 220, height: 220 } },
-          (decodedText) => {
-            handleScannedPairUrl(decodedText);
-          },
-          () => {}
-        );
-      } catch (err) {
-        console.warn('Pair camera error:', err);
-        alert('無法開啟相機，請確認已授權相機權限，或改用下方手動貼上網址。');
-      }
-    }
-
-    function handleScannedPairUrl(decodedText) {
-      let gasUrl = '';
-      const match = decodedText.match(/[?&](?:api_url|gas|gas_url)=([^&]+)/);
-      if (match) {
-        try { gasUrl = decodeURIComponent(match[1]); } catch(e){ gasUrl = match[1]; }
-      } else if (decodedText.startsWith('https://script.google.com')) {
-        gasUrl = decodedText.trim();
-      }
-
-      if (gasUrl && gasUrl.startsWith('https://script.google.com')) {
-        if (pairScannerObj) {
-          pairScannerObj.stop().catch(() => {});
-        }
-        localStorage.setItem('class_management_gas_api_url', gasUrl);
-        localStorage.setItem('class_mgmt_gas_api_url', gasUrl);
-        alert('🎉 配對成功！已自動綁定班級試算表，即將進入系統！');
-        const pure = window.location.href.split('?')[0];
-        window.location.href = `${pure}?api_url=${encodeURIComponent(gasUrl)}`;
-      }
-    }
-
-    function toggleManualPairInput() {
-      const box = document.getElementById('manual-pair-container');
-      if (box) box.style.display = (box.style.display === 'none') ? 'block' : 'none';
-    }
-
-    function saveManualGasUrl() {
-      const val = (document.getElementById('manual-gas-input').value || '').trim();
-      if (val.startsWith('https://script.google.com')) {
-        localStorage.setItem('class_management_gas_api_url', val);
-        localStorage.setItem('class_mgmt_gas_api_url', val);
-        alert('🎉 儲存成功！即將進入系統！');
-        const pure = window.location.href.split('?')[0];
-        window.location.href = `${pure}?api_url=${encodeURIComponent(val)}`;
-      } else {
-        alert('❌ 網址格式不正確，需為 GAS Web App exec 網址');
-      }
-    }
-
-    function updateDynamicManifest(gasApiUrl) {
-      if (!gasApiUrl || !gasApiUrl.startsWith('https://script.google.com')) return;
-      const manifestLink = document.querySelector('link[rel="manifest"]');
-      if (!manifestLink) return;
-
-      const currentPath = window.location.pathname.split('/').pop() || 'correction.html';
-      const startUrl = `./${currentPath}?api_url=${encodeURIComponent(gasApiUrl)}`;
-
-      fetch(manifestLink.href)
-        .then(res => res.json())
-        .then(data => {
-          data.start_url = startUrl;
-          if (Array.isArray(data.shortcuts)) {
-            data.shortcuts = data.shortcuts.map(s => {
-              const pure = s.url.split('?')[0];
-              return { ...s, url: `${pure}?api_url=${encodeURIComponent(gasApiUrl)}` };
-            });
-          }
-          const blob = new Blob([JSON.stringify(data)], { type: 'application/manifest+json' });
-          manifestLink.href = URL.createObjectURL(blob);
-        })
-        .catch(() => {});
     }
 
     const GAS_API_URL = getGasApiUrl();
@@ -1225,7 +1085,7 @@
             }
           })
           .catch(() => {
-            // 2. fetch 被受限時，無縫切換 JSONP 動態 script 載入
+            // 2. fetch 被受限時，無縫切換 JSONP 動態 <script> 載入
             if (isSettled) return;
             scriptTag = document.createElement('script');
             scriptTag.src = finalUrl;
@@ -1239,33 +1099,6 @@
             document.head.appendChild(scriptTag);
           });
       });
-    }
-
-    async function apiCallCorrection(action, params = {}) {
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        return new Promise((resolve, reject) => {
-          const runner = google.script.run
-            .withSuccessHandler(res => resolve(res))
-            .withFailureHandler(err => reject(err));
-          if (action === 'getCorrectionMatrixData') runner.getCorrectionMatrixData(params);
-          else if (action === 'getStudentUncorrectedMatrix') runner.getStudentUncorrectedMatrix(params.seat);
-          else if (action === 'addCorrectionRecordMatrix') runner.addCorrectionRecordMatrix(params);
-          else if (action === 'updateCorrectionMatrixCell') runner.updateCorrectionMatrixCell(params);
-          else if (action === 'updateHomeworkMetadata') runner.updateHomeworkMetadata(params.colIndex, params.unit, params.note, params.targetSheet);
-          else if (action === 'getGasWebAppUrl') runner.getGasWebAppUrl();
-          else reject(new Error('未知的 API: ' + action));
-        });
-      } else {
-        const cleanBase = (GAS_API_URL || '').replace(/\/a\/macros\/[a-zA-Z0-9.-]+\//, '/');
-        const url = new URL(cleanBase);
-        url.searchParams.set('action', action);
-        for (const [k, v] of Object.entries(params)) {
-          if (v !== undefined && v !== null) {
-            url.searchParams.set(k, String(v));
-          }
-        }
-        return await gasApiFetch(url.toString());
-      }
     }
 
     let currentMainView = 'register'; // 'register', 'query', 'matrix'
@@ -1284,22 +1117,7 @@
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
 
-      if (!isGas) {
-        // 在外部空間 (Neocities / 手機 PWA)：將 GAS API 網址自動帶入所有內部頁面連結中，確保換頁時永遠不用重新設定或跳彈窗！
-        if (GAS_API_URL && GAS_API_URL.startsWith('https://script.google.com')) {
-          const encApi = encodeURIComponent(GAS_API_URL);
-          const targetPages = ['scanner.html', 'index.html', 'correction.html', 'correction_scanner.html', 'StickerGenerator.html'];
-          document.querySelectorAll('a[href]').forEach(a => {
-            const href = a.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
-            const purePage = href.split('?')[0];
-            if (targetPages.includes(purePage)) {
-              a.href = `${purePage}?api_url=${encApi}`;
-            }
-          });
-        }
-        return;
-      }
+      if (!isGas) return;
 
       // 在 GAS 原生環境下，相機權限被 Google 沙箱封鎖，隱藏無效的相機掃碼按鈕
       document.querySelectorAll('a[href*="scanner.html"], a[href*="correction_scanner.html"]').forEach(btn => {
@@ -1338,7 +1156,7 @@
 
       let baseGasUrl = window._GAS_WEBAPP_URL;
       if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url') || localStorage.getItem('class_management_gas_api_url');
+        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
       }
       if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
         baseGasUrl = location.href.split('?')[0];
@@ -1353,84 +1171,19 @@
           if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
             window._GAS_WEBAPP_URL = serverUrl;
             localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
-            localStorage.setItem('class_management_gas_api_url', serverUrl);
             applyGasUrls(serverUrl);
           }
         }).getGasWebAppUrl();
       }
     }
 
-    // iOS PWA 獨立視窗保活：攔截同源 a 標籤點擊，改以 window.location.href 導航，避免跳出 PWA 進入 Safari
-    if (window.navigator.standalone === true) {
-      document.addEventListener('click', function(e) {
-        const a = e.target.closest('a');
-        if (!a) return;
-        const href = a.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.target === '_blank') return;
-        if (!href.startsWith('http://') && !href.startsWith('https://') || href.startsWith(window.location.origin)) {
-          e.preventDefault();
-          window.location.href = a.href;
-        }
-      }, false);
-    }
-
-    function renderInitialSeatButtons() {
-      const regGrid = document.getElementById('seat-grid-register');
-      const queryGrid = document.getElementById('seat-grid-query');
-      if (regGrid && regGrid.children.length === 0) {
-        regGrid.innerHTML = '';
-        for (let seatNum = 1; seatNum <= 30; seatNum++) {
-          const seatStr = String(seatNum).padStart(2, '0');
-          const btn = document.createElement('button');
-          btn.className = 'seat-btn clean';
-          btn.innerHTML = `<div>${seatStr}號</div><div class="badge-count badge-clean">⚪ 0</div>`;
-          btn.onclick = () => {
-            const subject = document.getElementById('reg-subject').value;
-            const category = document.getElementById('reg-category').value;
-            if (!hasUserSelectedSubjectCategory || !subject || !category) {
-              openSelectPromptModal();
-              return;
-            }
-            registerErrorForSeat(seatStr);
-          };
-          regGrid.appendChild(btn);
-        }
-      }
-      if (queryGrid && queryGrid.children.length === 0) {
-        queryGrid.innerHTML = '';
-        for (let seatNum = 1; seatNum <= 30; seatNum++) {
-          const seatStr = String(seatNum).padStart(2, '0');
-          const btn = document.createElement('button');
-          btn.className = 'seat-btn clean';
-          btn.innerHTML = `<div>${seatStr}號</div><div class="badge-count badge-clean">⚪ 0</div>`;
-          btn.onclick = () => openModalForSeat(seatStr);
-          queryGrid.appendChild(btn);
-        }
-      }
-    }
-
-    function initCorrectionPage() {
+    window.addEventListener('DOMContentLoaded', () => {
       adaptInternalLinks();
       checkIosPwaButton();
-      updateDynamicManifest(GAS_API_URL);
-      renderInitialSeatButtons();
-      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
-                    location.hostname.includes('script.google.com') ||
-                    location.hostname.includes('googleusercontent.com');
-      if (!isGas && !GAS_API_URL) {
-        showPairSetupModal();
-        return;
-      }
       hasUserSelectedSubjectCategory = false;
       onSubjectChange();   // 初始化種類選單
       fetchCorrectionMatrixData();
-    }
-
-    if (document.readyState === 'loading') {
-      window.addEventListener('DOMContentLoaded', initCorrectionPage);
-    } else {
-      initCorrectionPage();
-    }
+    });
 
     function openSelectPromptModal() {
       document.getElementById('select-prompt-modal').classList.remove('hidden');
@@ -1581,23 +1334,14 @@
 
       try {
         if (!colIndex) {
-          const createRes = await apiCallCorrection('addCorrectionRecordMatrix', {
-            seat: '01',
-            subject: subject,
-            category: category
-          });
+          const createRes = await gasApiFetch(`${GAS_API_URL}?action=addCorrectionRecordMatrix&seat=01&subject=${encodeURIComponent(subject)}&category=${encodeURIComponent(category)}`);
           if (createRes && createRes.success) {
             colIndex = createRes.colIndex;
           }
         }
 
         if (colIndex) {
-          const res = await apiCallCorrection('updateHomeworkMetadata', {
-            colIndex: colIndex,
-            unit: unitVal,
-            note: pageVal,
-            targetSheet: 'matrix'
-          });
+          const res = await gasApiFetch(`${GAS_API_URL}?action=updateHomeworkMetadata&colIndex=${colIndex}&unit=${encodeURIComponent(unitVal)}&note=${encodeURIComponent(pageVal)}&targetSheet=matrix`);
           if (res && res.success) {
             audioSuccess.play().catch(()=>{});
             showToastWithUndo(`🟢 已更新當日【${subject}${category}】說明為：${unitVal || '無單元'} ${pageVal ? '(P.' + pageVal + ')' : ''}`, null);
@@ -1784,14 +1528,11 @@
       if (act.type === 'register') {
         showToastWithUndo(`⏳ 正在復原 ${act.seat}號 的登記...`, null);
         try {
-          const res = await apiCallCorrection('updateCorrectionMatrixCell', {
-            colIndex: act.colIndex,
-            seat: act.seat,
-            status: ''
-          });
+          const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${act.colIndex}&seat=${act.seat}&status=`;
+          const res = await gasApiFetch(url);
           if (res.success) {
             audioSuccess.play().catch(()=>{});
-            showToastWithUndo(`↩ 已成功撤銷 ${act.seat}號【${act.subject || ''}${act.category || ''}】的這筆登記！`, null);
+            showToastWithUndo(`↩️ 已成功撤銷 ${act.seat}號【${act.subject || ''}${act.category || ''}】的這筆登記！`, null);
             fetchCorrectionMatrixData();
           } else {
             showToastWithUndo(`❌ 復原失敗：${res.message}`, null);
@@ -1802,14 +1543,11 @@
       } else if (act.type === 'clear') {
         showToastWithUndo(`⏳ 正在復原 ${act.seat}號 的銷案...`, null);
         try {
-          const res = await apiCallCorrection('updateCorrectionMatrixCell', {
-            colIndex: act.colIndex,
-            seat: act.seat,
-            status: act.prevStatus || 'X'
-          });
+          const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${act.colIndex}&seat=${act.seat}&status=${act.prevStatus || 'X'}`;
+          const res = await gasApiFetch(url);
           if (res.success) {
             audioSuccess.play().catch(()=>{});
-            showToastWithUndo(`↩ 已復原 ${act.seat}號 狀態為待訂正 (X)！`, null);
+            showToastWithUndo(`↩️ 已復原 ${act.seat}號 狀態為待訂正 (X)！`, null);
             fetchCorrectionMatrixData();
             if (document.getElementById('uncorrected-modal').classList.contains('show')) {
               openModalForSeat(act.seat);
@@ -1842,15 +1580,12 @@
       const colIndex = existingAssign.colIndex;
       showToastWithUndo(`⏳ 正在撤銷 ${seatStr}號 當日需訂正登記...`, null);
       try {
-        const res = await apiCallCorrection('updateCorrectionMatrixCell', {
-          colIndex: colIndex,
-          seat: seatStr,
-          status: ''
-        });
+        const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${colIndex}&seat=${seatStr}&status=`;
+        const res = await gasApiFetch(url);
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           fetchCorrectionMatrixData();
-          showToastWithUndo(`↩ 已撤銷 ${seatStr}號 當日【${subject}${category}】的需訂正登記`, {
+          showToastWithUndo(`↩️ 已撤銷 ${seatStr}號 當日【${subject}${category}】的需訂正登記`, {
             type: 'register',
             seat: seatStr,
             colIndex: colIndex,
@@ -1878,11 +1613,11 @@
 
       showToastWithUndo(`⏳ 正在為 ${seatStr}號 登錄【${subject}${category}】...`, null);
       try {
-        const params = { seat: seatStr, subject, category };
+        let url = `${GAS_API_URL}?action=addCorrectionRecordMatrix&seat=${seatStr}&subject=${encodeURIComponent(subject)}&category=${encodeURIComponent(category)}`;
         if (existingAssign && existingAssign.colIndex) {
-          params.colIndex = existingAssign.colIndex;
+          url += `&colIndex=${existingAssign.colIndex}`;
         }
-        const res = await apiCallCorrection('addCorrectionRecordMatrix', params);
+        const res = await gasApiFetch(url);
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           fetchCorrectionMatrixData();
@@ -1905,8 +1640,8 @@
     async function fetchCorrectionMatrixData() {
       document.getElementById('uncorrected-summary-badge').textContent = '更新中...';
       try {
-        const res = await apiCallCorrection('getCorrectionMatrixData');
-        if (res && res.success) {
+        const res = await gasApiFetch(`${GAS_API_URL}?action=getCorrectionMatrixData`);
+        if (res.success) {
           matrixData = res;
           updateCurrentMetaText();
           renderSeatButtons();
@@ -1915,11 +1650,8 @@
 
           const totalUncorrected = Object.values(res.seatSummary || {}).reduce((a,b)=>a+b, 0);
           document.getElementById('uncorrected-summary-badge').textContent = `全班未訂正共 ${totalUncorrected} 筆`;
-        } else {
-          document.getElementById('uncorrected-summary-badge').textContent = (res && res.message) ? res.message : '讀取失敗';
         }
       } catch (err) {
-        console.error('fetchCorrectionMatrixData error:', err);
         document.getElementById('uncorrected-summary-badge').textContent = '讀取失敗';
       }
     }
@@ -1927,7 +1659,8 @@
     // Modal Selection Box
     async function openModalForSeat(seatStr) {
       try {
-        const res = await apiCallCorrection('getStudentUncorrectedMatrix', { seat: seatStr });
+        const url = `${GAS_API_URL}?action=getStudentUncorrectedMatrix&seat=${seatStr}`;
+        const res = await gasApiFetch(url);
         if (res.success) {
           showUncorrectedModal(seatStr, res.records || []);
         }
@@ -1985,11 +1718,8 @@
     async function executeModalClear(colIndex, seatStr) {
       showToastWithUndo(`⏳ 正在為 ${seatStr}號 辦理銷案...`, null);
       try {
-        const res = await apiCallCorrection('updateCorrectionMatrixCell', {
-          colIndex: colIndex,
-          seat: seatStr,
-          status: 'O'
-        });
+        const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${colIndex}&seat=${seatStr}&status=O`;
+        const res = await gasApiFetch(url);
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           fetchCorrectionMatrixData();
@@ -2062,11 +1792,8 @@
           const actionLabel = nextStatus === 'O' ? '標已訂正 (O)' : '改回待訂正 (X)';
           showToastWithUndo(`⏳ 正在為 ${seatStr}號 ${actionLabel}...`, null);
           try {
-            const res = await apiCallCorrection('updateCorrectionMatrixCell', {
-              colIndex: colIndex,
-              seat: seatStr,
-              status: nextStatus
-            });
+            const url = `${GAS_API_URL}?action=updateCorrectionMatrixCell&colIndex=${colIndex}&seat=${seatStr}&status=${nextStatus}`;
+            const res = await gasApiFetch(url);
             if (res.success) {
               audioSuccess.play().catch(() => {});
               if (nextStatus === 'O') {

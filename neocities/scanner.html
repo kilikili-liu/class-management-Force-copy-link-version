@@ -12,7 +12,6 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <script>window._GAS_WEBAPP_URL = "<?= (typeof _GAS_WEBAPP_URL !== 'undefined') ? _GAS_WEBAPP_URL : '' ?>";</script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <style>
     :root {
@@ -368,13 +367,13 @@
     <div class="header-title-box">
       <div class="header-title">📱 班級作業 QR碼 速掃工具</div>
       <a href="correction_scanner.html" class="nav-btn" style="color:#38bdf8;">📱 訂正掃碼</a>
-      <a href="correction.html" class="nav-btn">✏ 錯題主頁</a>
+      <a href="correction.html" class="nav-btn">✏️ 錯題主頁</a>
     </div>
     <div class="header-controls">
       <button class="btn-icon" id="btn-pwa-install" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
       <a href="index.html" class="btn-icon" id="btn-mode-toggle" style="background:#0284c7; color:#fff; border-color:#38bdf8; text-decoration:none;">🎯 純按鈕清點</a>
       <button class="btn-icon" onclick="switchNextCamera()">🔄 切換鏡頭</button>
-      <button class="btn-icon" onclick="openMetaModal()"> 細節</button>
+      <button class="btn-icon" onclick="openMetaModal()">⚙️ 細節</button>
     </div>
   </header>
 
@@ -415,7 +414,7 @@
 
   <div id="meta-modal" class="modal-overlay hidden">
     <div class="modal-box">
-      <div class="modal-title"> 編輯作業細部說明</div>
+      <div class="modal-title">⚙️ 編輯作業細部說明</div>
       <div class="form-group">
         <label class="form-label">單元</label>
         <input type="text" id="modal-unit" class="input-txt" placeholder="例：第一課 或 第1單元">
@@ -503,10 +502,10 @@
             <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
             <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
             <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
-              <div>1. 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
-              <div>2. 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
-              <div>3. 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
-              <div>4. 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
+              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
+              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
+              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
+              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
             </div>
             <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
           </div>
@@ -517,13 +516,8 @@
       }
     }
 
-    function isIosOrIpad() {
-      return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
-             (navigator.userAgent.includes('Macintosh') && navigator.maxTouchPoints > 1);
-    }
-
     function checkIosPwaButton() {
-      const isIos = isIosOrIpad();
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
       const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
       if (isIos && !isStandalone) {
         const btn = document.getElementById('btn-pwa-install');
@@ -540,7 +534,8 @@
           if (btn) btn.style.display = 'none';
         });
       } else {
-        if (isIosOrIpad()) {
+        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (isIos) {
           showIosInstallModal();
         }
       }
@@ -554,18 +549,11 @@
       const urlParams = new URLSearchParams(window.location.search);
       const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
       if (paramGasUrl) {
-        try {
-          localStorage.setItem('class_management_gas_api_url', paramGasUrl);
-          localStorage.setItem('class_mgmt_gas_api_url', paramGasUrl);
-        } catch(e){}
+        try { localStorage.setItem('class_management_gas_api_url', paramGasUrl); } catch(e){}
         return paramGasUrl;
       }
 
-      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.startsWith('https://script.google.com')) {
-        return window._GAS_WEBAPP_URL;
-      }
-
-      const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
+      const stored = localStorage.getItem('class_management_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
         return stored;
       }
@@ -574,147 +562,18 @@
         return window.GAS_API_URL;
       }
 
-      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+      if (location.hostname.includes('googleusercontent.com') || location.hostname.includes('script.google.com')) {
         return location.href.split('?')[0];
       }
 
+      // 首次使用：提示輸入 GAS 網址並儲存，避免在程式碼中寫入機敏部署網址
+      const entered = prompt('⚙️ 首次設定\n請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
+      if (entered && entered.trim().startsWith('https://script.google.com')) {
+        localStorage.setItem('class_management_gas_api_url', entered.trim());
+        return entered.trim();
+      }
+      alert('❌ 網址格式不正確，請重新整理頁面並輸入正確的 GAS 網址。');
       return '';
-    }
-
-    let pairScannerObj = null;
-
-    function showPairSetupModal() {
-      let modal = document.getElementById('pair-setup-modal');
-      if (modal) {
-        modal.style.display = 'flex';
-        return;
-      }
-      modal = document.createElement('div');
-      modal.id = 'pair-setup-modal';
-      modal.className = 'modal-overlay';
-      modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.92); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(6px); padding:16px;';
-      modal.innerHTML = `
-        <div style="background:#1e293b; border:1px solid #38bdf8; border-radius:18px; max-width:440px; width:100%; padding:22px; box-shadow:0 16px 40px rgba(0,0,0,0.7); text-align:center; color:#f8fafc;">
-          <div style="font-size:2.8rem; margin-bottom:8px;">📱🔗</div>
-          <h3 style="font-size:1.2rem; font-weight:800; margin-bottom:10px; color:#38bdf8;">尚未連線至班級試算表</h3>
-          <p style="font-size:0.86rem; color:#cbd5e1; line-height:1.6; margin-bottom:14px; text-align:left; background:#0f172a; padding:12px; border-radius:10px; border:1px solid #334155;">
-            <strong>快速配對步驟：</strong><br>
-            1. 請在電腦開啟您的 Google 班級試算表。<br>
-            2. 點擊右上角<strong>「📱 手機相機速掃連線」</strong>顯示配對 QR Code。<br>
-            3. 點擊下方綠色按鈕開啟相機，對準電腦螢幕掃描即可自動綁定！
-          </p>
-
-          <div id="pair-camera-box" style="display:none; margin-bottom:14px; border-radius:12px; overflow:hidden; border:2px solid #22c55e;">
-            <div id="pair-qr-reader" style="width:100%; max-height:260px; background:#000;"></div>
-          </div>
-
-          <div style="display:flex; flex-direction:column; gap:10px;">
-            <button id="btn-start-pair-scan" onclick="startPairCameraScan()" style="background:#22c55e; color:#fff; border:none; padding:11px 18px; border-radius:10px; font-weight:700; cursor:pointer; font-size:0.95rem; display:flex; align-items:center; justify-content:center; gap:8px;">
-              📷 開啟相機掃描電腦螢幕 QR 碼配對
-            </button>
-
-            <button onclick="toggleManualPairInput()" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-size:0.84rem; cursor:pointer;">
-              ✏ 手動貼上 GAS 網址 (備用)
-            </button>
-
-            <div id="manual-pair-container" style="display:none; text-align:left; margin-top:6px;">
-              <input type="text" id="manual-gas-input" placeholder="貼上 GAS Web App exec 網址" style="width:100%; padding:9px 12px; border-radius:8px; background:#0f172a; border:1px solid #475569; color:#f8fafc; font-size:0.84rem; margin-bottom:8px;">
-              <button onclick="saveManualGasUrl()" style="width:100%; background:#0284c7; color:#fff; border:none; padding:9px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.88rem;">儲存並連線</button>
-            </div>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-    }
-
-    async function startPairCameraScan() {
-      const btn = document.getElementById('btn-start-pair-scan');
-      const box = document.getElementById('pair-camera-box');
-      if (box) box.style.display = 'block';
-      if (btn) btn.style.display = 'none';
-
-      if (typeof Html5Qrcode === 'undefined') {
-        alert('相機掃描元件載入中，請稍候重試或改用手動貼上。');
-        return;
-      }
-
-      try {
-        pairScannerObj = new Html5Qrcode('pair-qr-reader');
-        await pairScannerObj.start(
-          { facingMode: 'environment' },
-          { fps: 10, qrbox: { width: 220, height: 220 } },
-          (decodedText) => {
-            handleScannedPairUrl(decodedText);
-          },
-          () => {}
-        );
-      } catch (err) {
-        console.warn('Pair camera error:', err);
-        alert('無法開啟相機，請確認已授權相機權限，或改用下方手動貼上網址。');
-      }
-    }
-
-    function handleScannedPairUrl(decodedText) {
-      let gasUrl = '';
-      const match = decodedText.match(/[?&](?:api_url|gas|gas_url)=([^&]+)/);
-      if (match) {
-        try { gasUrl = decodeURIComponent(match[1]); } catch(e){ gasUrl = match[1]; }
-      } else if (decodedText.startsWith('https://script.google.com')) {
-        gasUrl = decodedText.trim();
-      }
-
-      if (gasUrl && gasUrl.startsWith('https://script.google.com')) {
-        if (pairScannerObj) {
-          pairScannerObj.stop().catch(() => {});
-        }
-        localStorage.setItem('class_management_gas_api_url', gasUrl);
-        localStorage.setItem('class_mgmt_gas_api_url', gasUrl);
-        alert('🎉 配對成功！已自動綁定班級試算表，即將進入系統！');
-        const pure = window.location.href.split('?')[0];
-        window.location.href = `${pure}?api_url=${encodeURIComponent(gasUrl)}`;
-      }
-    }
-
-    function toggleManualPairInput() {
-      const box = document.getElementById('manual-pair-container');
-      if (box) box.style.display = (box.style.display === 'none') ? 'block' : 'none';
-    }
-
-    function saveManualGasUrl() {
-      const val = (document.getElementById('manual-gas-input').value || '').trim();
-      if (val.startsWith('https://script.google.com')) {
-        localStorage.setItem('class_management_gas_api_url', val);
-        localStorage.setItem('class_mgmt_gas_api_url', val);
-        alert('🎉 儲存成功！即將進入系統！');
-        const pure = window.location.href.split('?')[0];
-        window.location.href = `${pure}?api_url=${encodeURIComponent(val)}`;
-      } else {
-        alert('❌ 網址格式不正確，需為 GAS Web App exec 網址');
-      }
-    }
-
-    function updateDynamicManifest(gasApiUrl) {
-      if (!gasApiUrl || !gasApiUrl.startsWith('https://script.google.com')) return;
-      const manifestLink = document.querySelector('link[rel="manifest"]');
-      if (!manifestLink) return;
-
-      const currentPath = window.location.pathname.split('/').pop() || 'scanner.html';
-      const startUrl = `./${currentPath}?api_url=${encodeURIComponent(gasApiUrl)}`;
-
-      fetch(manifestLink.href)
-        .then(res => res.json())
-        .then(data => {
-          data.start_url = startUrl;
-          if (Array.isArray(data.shortcuts)) {
-            data.shortcuts = data.shortcuts.map(s => {
-              const pure = s.url.split('?')[0];
-              return { ...s, url: `${pure}?api_url=${encodeURIComponent(gasApiUrl)}` };
-            });
-          }
-          const blob = new Blob([JSON.stringify(data)], { type: 'application/manifest+json' });
-          manifestLink.href = URL.createObjectURL(blob);
-        })
-        .catch(() => {});
     }
 
     const GAS_API_URL = getGasApiUrl();
@@ -829,22 +688,7 @@
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
 
-      if (!isGas) {
-        // 在外部空間 (Neocities / 手機 PWA)：將 GAS API 網址自動帶入所有內部頁面連結中，確保換頁時永遠不用重新設定或跳彈窗！
-        if (GAS_API_URL && GAS_API_URL.startsWith('https://script.google.com')) {
-          const encApi = encodeURIComponent(GAS_API_URL);
-          const targetPages = ['scanner.html', 'index.html', 'correction.html', 'correction_scanner.html', 'StickerGenerator.html'];
-          document.querySelectorAll('a[href]').forEach(a => {
-            const href = a.getAttribute('href');
-            if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
-            const purePage = href.split('?')[0];
-            if (targetPages.includes(purePage)) {
-              a.href = `${purePage}?api_url=${encApi}`;
-            }
-          });
-        }
-        return;
-      }
+      if (!isGas) return;
 
       function applyGasUrls(baseGasUrl) {
         if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
@@ -872,7 +716,7 @@
 
       let baseGasUrl = window._GAS_WEBAPP_URL;
       if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url') || localStorage.getItem('class_management_gas_api_url');
+        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
       }
       if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
         baseGasUrl = location.href.split('?')[0];
@@ -887,45 +731,19 @@
           if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
             window._GAS_WEBAPP_URL = serverUrl;
             localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
-            localStorage.setItem('class_management_gas_api_url', serverUrl);
             applyGasUrls(serverUrl);
           }
         }).getGasWebAppUrl();
       }
     }
 
-    // iOS PWA 獨立視窗保活：攔截同源 a 標籤點擊，改以 window.location.href 導航，避免跳出 PWA 進入 Safari
-    if (window.navigator.standalone === true) {
-      document.addEventListener('click', function(e) {
-        const a = e.target.closest('a');
-        if (!a) return;
-        const href = a.getAttribute('href');
-        if (!href || href.startsWith('#') || href.startsWith('javascript:') || a.target === '_blank') return;
-        if (!href.startsWith('http://') && !href.startsWith('https://') || href.startsWith(window.location.origin)) {
-          e.preventDefault();
-          window.location.href = a.href;
-        }
-      }, false);
-    }
-
-    function initScannerPage() {
+    window.addEventListener('DOMContentLoaded', () => {
       adaptInternalLinks();
       checkIosPwaButton();
-      updateDynamicManifest(GAS_API_URL);
-      if (!GAS_API_URL) {
-        showPairSetupModal();
-        return;
-      }
       initSeatGrid();
       fetchTodayData();
       startCameraWithFacingMode(currentFacingMode);
-    }
-
-    if (document.readyState === 'loading') {
-      window.addEventListener('DOMContentLoaded', initScannerPage);
-    } else {
-      initScannerPage();
-    }
+    });
 
     window.addEventListener('beforeunload', () => {
       if (html5QrCode) {
@@ -1077,7 +895,7 @@
 
     async function toggleSeatSubmission(seatNo) {
       if (!currentAssignKey) {
-        showToast(' 請先選擇作業項目', 'error');
+        showToast('⚠️ 請先選擇作業項目', 'error');
         return;
       }
       const curr = (scanDataCache.assignments || []).find(a => (a.key || `${a.subject}_${a.category}`) === currentAssignKey);
@@ -1162,7 +980,7 @@
                     location.hostname.includes('googleusercontent.com');
 
       if (isGas) {
-        showToast(' Google 原生網址封鎖相機權限，請切換純按鈕或使用手機 PWA', 'error');
+        showToast('⚠️ Google 原生網址封鎖相機權限，請切換純按鈕或使用手機 PWA', 'error');
         showGasCameraBlockedNotice();
         return;
       }
@@ -1211,7 +1029,7 @@
 
     function switchNextCamera() {
       if (availableCameras.length <= 1) {
-        showToast(' 本裝置只有一個相機', 'error');
+        showToast('⚠️ 本裝置只有一個相機', 'error');
         return;
       }
       currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
@@ -1255,7 +1073,7 @@
             }
             fetchTodayData();
           } else {
-            showToast(`ℹ ${res.message}`, 'success');
+            showToast(`ℹ️ ${res.message}`, 'success');
           }
         } else {
           triggerFeedback('error');
@@ -1276,7 +1094,7 @@
 
     function openMetaModal() {
       if (!currentAssignKey) {
-        showToast(' 目前尚無選取的作業可編輯細節', 'error');
+        showToast('⚠️ 目前尚無選取的作業可編輯細節', 'error');
         return;
       }
       const curr = (scanDataCache.assignments || []).find(a => a.key === currentAssignKey);
