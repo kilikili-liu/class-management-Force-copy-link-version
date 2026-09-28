@@ -605,8 +605,13 @@
 
     function cleanGasUrl(url) {
       if (!url || typeof url !== 'string') return '';
-      // 去除 Google Workspace 組織路徑 /a/domain.com/，轉為全域通用免登入格式
-      return url.replace(/https:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
+      let clean = url.trim();
+      try {
+        if (clean.includes('%3A') || clean.includes('%2F')) {
+          clean = decodeURIComponent(clean);
+        }
+      } catch(e){}
+      return clean.replace(/https?:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
     }
 
     function getGasApiUrl() {
@@ -789,13 +794,14 @@
             if (isSettled) return;
             console.warn('[GAS API] fetch 失敗或無法解析，改用 JSONP script 標籤備援:', fetchErr);
             scriptTag = document.createElement('script');
+            scriptTag.crossOrigin = 'anonymous';
             scriptTag.src = finalUrl;
             scriptTag.onerror = function() {
               if (isSettled) return;
               isSettled = true;
               clearTimeout(timeoutTimer);
               cleanup();
-              reject(new Error(fetchErr.message || '網路連線失敗'));
+              reject(new Error('跨域連線失敗 (可能被瀏覽器防追蹤或擴充功能阻擋)'));
             };
             document.head.appendChild(scriptTag);
           });
