@@ -1591,6 +1591,20 @@
       if (target === false) target = 'user';
 
       try {
+        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        if (!isIos && availableCameras.length === 0) {
+          try {
+            const cams = await Html5Qrcode.getCameras();
+            if (cams && cams.length > 0) availableCameras = cams;
+          } catch(e){}
+        }
+        if (!isIos && availableCameras.length > 0 && (target === 'environment' || target === true)) {
+          const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
+          const pickIdx = rearIdx >= 0 ? rearIdx : 0;
+          currentCameraIndex = pickIdx;
+          target = availableCameras[pickIdx].id;
+        }
+
         html5QrCode = new Html5Qrcode("reader", {
           verbose: false,
           experimentalFeatures: {
