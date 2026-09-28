@@ -1226,11 +1226,11 @@
         try {
           qrcodeIosObj = new QRCode(container, {
             text: iosUrl,
-            width: 180,
-            height: 180,
-            colorDark: '#0f172a',
+            width: 200,
+            height: 200,
+            colorDark: '#000000',
             colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
+            correctLevel: QRCode.CorrectLevel.L
           });
         } catch (e) {
           renderFallbackQrImg(container, iosUrl);
@@ -1329,7 +1329,7 @@
             text: finalUrl,
             width: 240,
             height: 240,
-            colorDark: '#0f172a',
+            colorDark: '#000000',
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.L
           });
