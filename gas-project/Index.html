@@ -445,11 +445,15 @@
       color: var(--text-sub);
       padding: 8px 6px;
       border-radius: 7px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
       text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
     .pair-ios-step-btn:hover {
       color: #fff;
@@ -458,6 +462,25 @@
       background: #0284c7;
       color: #ffffff;
       box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+    .pair-step-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      font-size: 0.92rem;
+      font-weight: 900;
+      color: #0f172a;
+      flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    }
+    .pair-step-badge-1 {
+      background: #facc15; /* 明亮醒目的黃金金黃色 */
+    }
+    .pair-step-badge-2 {
+      background: #38bdf8; /* 明亮醒目的青藍色 */
     }
     .pair-next-step-btn {
       width: 100%;
@@ -668,10 +691,10 @@
           <!-- 步驟切換器 -->
           <div class="pair-ios-steps">
             <button class="pair-ios-step-btn active" id="pair-ios-step1-btn" onclick="switchIosStep(1)">
-              1️⃣ 掃碼下載描述檔安裝 App
+              <span class="pair-step-badge pair-step-badge-1">1</span> 掃碼下載描述檔安裝 App
             </button>
             <button class="pair-ios-step-btn" id="pair-ios-step2-btn" onclick="switchIosStep(2)">
-              2️⃣ 掃連線碼綁定試算表
+              <span class="pair-step-badge pair-step-badge-2">2</span> 掃連線碼綁定試算表
             </button>
           </div>
 
@@ -710,8 +733,7 @@
           <!-- 步驟 2 內容：掃連線碼綁定試算表 -->
           <div id="pair-ios-step2-content" style="display:none; margin-top:12px;">
             <div style="background:rgba(168, 85, 247, 0.12); border:1px solid #9333ea; border-radius:8px; padding:9px 12px; font-size:0.82rem; color:#f3e8ff; line-height:1.45;">
-              ⚡ <strong>步驟 2：打開桌面 App 掃碼綁定試算表</strong><br>
-              此碼為純部署 ID（AKfy... 76字元），黑白格子最大化，iPhone / Safari 鏡頭靠過去即秒掃秒綁定！
+              ⚡ <strong>步驟 2：打開桌面 App 掃碼綁定試算表</strong>
             </div>
 
             <!-- 選擇目標工具 -->
@@ -1546,7 +1568,7 @@
 
       const previewEl = document.getElementById('pair-ios-bind-preview');
       if (previewEl) {
-        previewEl.innerHTML = `<span style="color:#c084fc; font-weight:700;">⚡ 純部署碼（${qrContent.length}字元・格子最大秒掃）：</span><br><code style="font-size:0.75rem; word-break:break-all;">${qrContent}</code>`;
+        previewEl.innerHTML = `<span style="color:#c084fc; font-weight:700;">部署碼：</span><br><code style="font-size:0.75rem; word-break:break-all;">${qrContent}</code>`;
       }
 
       const container = document.getElementById('pair-qrcode-ios-bind-container');
