@@ -1543,12 +1543,25 @@
       '其它': ['其它']
     };
 
-    window.addEventListener('DOMContentLoaded', () => {
-      adaptInternalLinks();
+    function initApp() {
+      try {
+        adaptInternalLinks();
+      } catch (err) {
+        console.warn('adaptInternalLinks note:', err);
+      }
       hasUserSelectedSubjectCategory = false;
       renderEmptySeatButtons();
-      document.getElementById('submitted-summary').textContent = '⚠️ 請先選擇上方【科目 | 種類】';
-    });
+      const summaryEl = document.getElementById('submitted-summary');
+      if (summaryEl) {
+        summaryEl.textContent = '⚠️ 請先選擇上方【科目 | 種類】';
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
 
     function openSelectPromptModal() {
       document.getElementById('select-prompt-modal').classList.remove('hidden');
