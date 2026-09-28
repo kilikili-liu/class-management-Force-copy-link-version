@@ -1288,6 +1288,15 @@
       }
     }
 
+    function extractGasDeploymentId(url) {
+      if (!url || typeof url !== 'string') return '';
+      const trimmed = url.trim();
+      const m = trimmed.match(/\/macros\/s\/([A-Za-z0-9_-]+)/);
+      if (m) return m[1];
+      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(trimmed)) return trimmed;
+      return '';
+    }
+
     function buildPairTargetUrl() {
       let gasUrl = document.getElementById('pair-gas-input').value.trim();
       if (!gasUrl) {
@@ -1314,11 +1323,36 @@
       return `${neoBase}/${toolFile}?api_url=${encodeURIComponent(gasUrl)}`;
     }
 
+    function getPairQrCodeContent() {
+      let gasUrl = document.getElementById('pair-gas-input').value.trim();
+      if (!gasUrl) {
+        gasUrl = location.href.split('?')[0];
+      }
+      gasUrl = cleanGasUrl(gasUrl);
+
+      if (currentPairMode === 'gas') {
+        // iOS 模式：提取純 Deployment ID，長度僅 76 字元，黑白格子最大化，iPhone 秒掃！
+        const depId = extractGasDeploymentId(gasUrl);
+        if (depId) return depId;
+        return gasUrl;
+      }
+
+      // PWA 模式 (Neocities 完整網址)
+      return buildPairTargetUrl();
+    }
+
     function updatePairQrCode() {
       const finalUrl = buildPairTargetUrl();
+      const qrContent = getPairQrCodeContent();
       const previewEl = document.getElementById('pair-url-preview');
       const linkEl = document.getElementById('pair-open-link');
-      if (previewEl) previewEl.textContent = finalUrl;
+      if (previewEl) {
+        if (currentPairMode === 'gas' && qrContent !== finalUrl) {
+          previewEl.innerHTML = `<span style="color:#38bdf8; font-weight:700;">⚡ 純部署碼（${qrContent.length}字元・格子最大秒掃）：</span><br><code style="font-size:0.75rem; word-break:break-all;">${qrContent}</code>`;
+        } else {
+          previewEl.textContent = finalUrl;
+        }
+      }
       if (linkEl) linkEl.href = finalUrl;
 
       const container = document.getElementById('pair-qrcode-container');
@@ -1328,7 +1362,7 @@
       if (typeof QRCode !== 'undefined') {
         try {
           qrcodeObj = new QRCode(container, {
-            text: finalUrl,
+            text: qrContent,
             width: 240,
             height: 240,
             colorDark: '#000000',
@@ -1336,10 +1370,10 @@
             correctLevel: QRCode.CorrectLevel.L
           });
         } catch (e) {
-          renderFallbackQrImg(container, finalUrl);
+          renderFallbackQrImg(container, qrContent);
         }
       } else {
-        renderFallbackQrImg(container, finalUrl);
+        renderFallbackQrImg(container, qrContent);
       }
     }
 
@@ -1355,14 +1389,16 @@
 
     function copyPairUrl() {
       const url = buildPairTargetUrl();
+      const qrContent = getPairQrCodeContent();
+      const textToCopy = (currentPairMode === 'gas') ? qrContent : url;
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(() => {
-          showToast('✅ 網址已複製至剪貼簿！');
+        navigator.clipboard.writeText(textToCopy).then(() => {
+          showToast('✅ 已複製連線碼至剪貼簿！');
         }).catch(() => {
-          prompt('請手動複製以下連線網址：', url);
+          prompt('請手動複製以下連線碼：', textToCopy);
         });
       } else {
-        prompt('請手動複製以下連線網址：', url);
+        prompt('請手動複製以下連線碼：', textToCopy);
       }
     }
 

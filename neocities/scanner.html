@@ -581,12 +581,16 @@
           clean = decodeURIComponent(clean);
         }
       } catch(e){}
+      // 若為純 Deployment ID (如 AKfycby...)
+      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
+        return `https://script.google.com/macros/s/${clean}/exec`;
+      }
       return clean.replace(/https?:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
     }
 
     function getGasApiUrl() {
       const urlParams = new URLSearchParams(window.location.search);
-      const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
+      const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url') || urlParams.get('gas_id');
       if (paramGasUrl) {
         const clean = cleanGasUrl(paramGasUrl);
         try { localStorage.setItem('class_management_gas_api_url', clean); } catch(e){}
@@ -618,7 +622,7 @@
     // 手動檢視或設定 GAS 網址
     function promptManualGasUrl() {
       const current = GAS_API_URL || '尚未設定';
-      const entered = prompt(`⚙️ 班級試算表連線設定\n目前綁定網址：\n${current}\n\n若需更改，請貼上新的 GAS Web App 網址 (以 https://script.google.com 開頭)：\n(清空並按確定可解除綁定)`, GAS_API_URL || '');
+      const entered = prompt(`⚙️ 班級試算表連線設定\n目前綁定網址：\n${current}\n\n若需更改，請貼上 GAS Web App 網址或純部署 ID (AKfy...)：\n(清空並按確定可解除綁定)`, GAS_API_URL || '');
       if (entered === null) return;
       if (entered.trim() === '') {
         localStorage.removeItem('class_management_gas_api_url');
@@ -629,8 +633,8 @@
         if (banner) banner.style.display = 'flex';
         return;
       }
-      if (entered.trim().includes('script.google.com')) {
-        const clean = cleanGasUrl(entered.trim());
+      const clean = cleanGasUrl(entered.trim());
+      if (clean.includes('script.google.com')) {
         localStorage.setItem('class_management_gas_api_url', clean);
         localStorage.setItem('class_mgmt_gas_api_url', clean);
         GAS_API_URL = clean;
@@ -639,28 +643,38 @@
         if (banner) banner.style.display = 'none';
         fetchTodayData();
       } else {
-        alert('❌ 網址格式不正確，必須以 https://script.google.com 開頭');
+        alert('❌ 格式不正確，請輸入完整 GAS 網址或純部署 ID (AKfy...)');
       }
     }
 
     // 智能配對偵測：掃描到試算表配對 QR Code 自動綁定
     function checkAndHandlePairCode(decodedText) {
       if (!decodedText || typeof decodedText !== 'string') return false;
+      const raw = decodedText.trim();
       let matchedUrl = '';
-      if (decodedText.includes('api_url=')) {
+
+      // 1. 純 Deployment ID (例如 AKfycby...)
+      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(raw)) {
+        matchedUrl = `https://script.google.com/macros/s/${raw}/exec`;
+      } else if (raw.startsWith('gas:') || raw.startsWith('gas_id:')) {
+        const id = raw.replace(/^gas(_id)?:/, '').trim();
+        if (/^AKfy[A-Za-z0-9_-]+$/.test(id)) {
+          matchedUrl = `https://script.google.com/macros/s/${id}/exec`;
+        }
+      } else if (raw.includes('api_url=')) {
         try {
-          const u = new URL(decodedText);
+          const u = new URL(raw);
           matchedUrl = u.searchParams.get('api_url') || '';
         } catch(e) {
-          const m = decodedText.match(/api_url=([^&]+)/);
+          const m = raw.match(/api_url=([^&]+)/);
           if (m) matchedUrl = decodeURIComponent(m[1]);
         }
-      } else if (decodedText.includes('script.google.com') && decodedText.includes('/exec')) {
-        matchedUrl = decodedText.trim();
-      } else if (decodedText.includes('gas=') || decodedText.includes('gas_url=')) {
+      } else if (raw.includes('script.google.com') && raw.includes('/exec')) {
+        matchedUrl = raw;
+      } else if (raw.includes('gas=') || raw.includes('gas_url=') || raw.includes('gas_id=')) {
         try {
-          const u = new URL(decodedText);
-          matchedUrl = u.searchParams.get('gas') || u.searchParams.get('gas_url') || '';
+          const u = new URL(raw);
+          matchedUrl = u.searchParams.get('gas') || u.searchParams.get('gas_url') || u.searchParams.get('gas_id') || '';
         } catch(e) {}
       }
 
