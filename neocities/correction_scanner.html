@@ -835,6 +835,7 @@
     let isProcessingScan = false;
     let lastScannedPayload = "";
     let lastScanTime = 0;
+    let currentFacingMode = 'environment'; // 'environment' (後置/螢幕背面) vs 'user' (前置/螢幕同側)
 
     // ── 雙環境路由自動適配 (Google Apps Script vs Neocities 靜態網頁) ──
     function adaptInternalLinks() {
@@ -896,7 +897,7 @@
       checkIosPwaButton();
       initSeatGrid();
       fetchMatrixData();
-      startCameraWithFacingMode(true);
+      startCameraWithFacingMode(currentFacingMode);
     });
 
     function getCurrAssign() {
@@ -1396,29 +1397,25 @@
     }
 
     let availableCameras = [];
-    let currentCameraIndex = 0;
+    let currentCameraIndex = -1;
 
-    async function stopAllMediaTracks() {
-      try {
-        if (html5QrCode) {
-          await html5QrCode.stop().catch(() => {});
-          html5QrCode = null;
-        }
-      } catch (e) {}
-
-      try {
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: true }).catch(() => null);
-          if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-          }
-        }
-      } catch (e) {}
+    async function stopActiveCamera() {
+      if (html5QrCode) {
+        try { await html5QrCode.stop(); } catch(e) {}
+        html5QrCode = null;
+      }
+      const videoEl = document.querySelector('#reader video');
+      if (videoEl && videoEl.srcObject) {
+        try {
+          videoEl.srcObject.getTracks().forEach(t => t.stop());
+        } catch(e) {}
+        videoEl.srcObject = null;
+      }
     }
 
-    async function startCameraWithFacingMode(preferRear) {
-      await stopAllMediaTracks();
-      await initAndStartCamera(preferRear !== false);
+    async function startCameraWithFacingMode(preferTarget) {
+      await stopActiveCamera();
+      await initAndStartCamera(preferTarget !== undefined ? preferTarget : currentFacingMode);
     }
 
     function showGasCameraBlockedNotice() {
@@ -1451,7 +1448,7 @@
       }
     }
 
-    async function initAndStartCamera(preferRear = true) {
+    async function initAndStartCamera(preferTarget = 'environment') {
       const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
@@ -1462,30 +1459,20 @@
         return;
       }
 
-      showToast('⏳ 正在啟動高清自動對焦相機...', 'success');
+      showToast('⏳ 正在啟動高清相機...', 'success');
+      await stopActiveCamera();
 
-      // 動態掃描框：支援平板與手機，自動按螢幕比例調整框大小（最小 250px，最大 480px）
+      // scanConfig 不傳入 videoConstraints 與 qrbox，讓瀏覽器以全畫面原生解析度啟動，避免 iOS WebKit 誤判限制
       const scanConfig = {
-        fps: 15,
-        qrbox: (viewfinderWidth, viewfinderHeight) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const edge = Math.max(250, Math.min(480, Math.floor(minEdge * 0.72)));
-          return { width: edge, height: edge };
-        },
-        aspectRatio: 1.0,
-        videoConstraints: {
-          facingMode: preferRear ? { ideal: "environment" } : { ideal: "user" },
-          focusMode: { ideal: "continuous" },
-          width: { min: 640, ideal: 1280, max: 1920 },
-          height: { min: 480, ideal: 720, max: 1080 },
-          advanced: [{ focusMode: "continuous" }]
-        }
+        fps: 15
       };
 
-      await stopAllMediaTracks();
+      let startedSuccess = false;
+      let target = preferTarget;
+      if (target === true) target = 'environment';
+      if (target === false) target = 'user';
 
       try {
-        // 啟用原生 Apple/Android 晶片級 BarcodeDetector 加速引擎
         html5QrCode = new Html5Qrcode("reader", {
           verbose: false,
           experimentalFeatures: {
@@ -1493,44 +1480,80 @@
           }
         });
 
-        // 策略 1：iPad/iPhone 優先以原生 { facingMode: "environment" } 啟動
-        // （iOS WebKit 會自動選中主廣角自動對焦鏡頭，避免誤選超廣角或前置）
-        if (preferRear) {
+        // 情況 A：指定 cameraId (由多鏡頭選取)
+        if (typeof target === 'string' && target !== 'environment' && target !== 'user') {
           try {
-            await html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess);
-            showToast('🟢 自動對焦訂正掃碼器就緒 (後置鏡頭)', 'success');
-            setupManualFocus();
-            refreshCameraListAsync();
-            return;
-          } catch (envErr) {
-            console.warn("[Camera] facingMode 啟動失敗，轉為設備清單選取:", envErr);
+            await html5QrCode.start(target, scanConfig, onScanSuccess);
+            startedSuccess = true;
+            const camObj = availableCameras.find(c => c.id === target);
+            const label = camObj ? (camObj.label || '指定相機') : '相機';
+            showToast(`🟢 訂正掃碼器就緒 (${label})`, 'success');
+          } catch (camErr) {
+            console.warn('[Camera] 指定 cameraId 啟動失敗，回退至 facingMode 模式:', camErr);
           }
         }
 
-        // 策略 2：枚舉相機設備清單啟動
-        if (availableCameras.length === 0) {
-          availableCameras = await Html5Qrcode.getCameras().catch(() => []);
+        // 情況 B：啟動後置相機 (螢幕背面)
+        if (!startedSuccess && target === 'environment') {
+          currentFacingMode = 'environment';
+          // 策略 B1: { facingMode: { exact: "environment" } } 強制鎖定後置鏡頭，避免 iOS 誤選前置
+          try {
+            await html5QrCode.start({ facingMode: { exact: "environment" } }, scanConfig, onScanSuccess);
+            startedSuccess = true;
+            showToast('🟢 訂正掃碼器就緒 (後置相機/螢幕背面)', 'success');
+          } catch (exactErr) {
+            console.warn('[Camera] exact environment 失敗，改用寬鬆 environment:', exactErr);
+            try {
+              await html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess);
+              startedSuccess = true;
+              showToast('🟢 訂正掃碼器就緒 (後置相機/螢幕背面)', 'success');
+            } catch (envErr) {
+              console.warn('[Camera] 寬鬆 environment 亦失敗:', envErr);
+            }
+          }
         }
 
-        if (availableCameras.length > 0) {
-          if (preferRear) {
-            const rearIdx = availableCameras.findIndex(c =>
-              /back|rear|environment|後|後置/i.test(c.label)
-            );
-            currentCameraIndex = rearIdx >= 0 ? rearIdx : 0;
+        // 情況 C：啟動前置相機 (螢幕同側)
+        if (!startedSuccess && target === 'user') {
+          currentFacingMode = 'user';
+          try {
+            await html5QrCode.start({ facingMode: "user" }, scanConfig, onScanSuccess);
+            startedSuccess = true;
+            showToast('🟢 訂正掃碼器就緒 (前置相機/螢幕同側)', 'success');
+          } catch (userErr) {
+            console.warn('[Camera] user facingMode 失敗:', userErr);
           }
-          const cameraId = availableCameras[currentCameraIndex].id;
-          await html5QrCode.start(cameraId, scanConfig, onScanSuccess);
-          const label = availableCameras[currentCameraIndex].label || `相機 ${currentCameraIndex + 1}`;
-          showToast(`🟢 訂正掃碼器就緒 (${label})`, 'success');
+        }
+
+        // 情況 D：終極回退 (枚舉可用設備)
+        if (!startedSuccess) {
+          if (availableCameras.length === 0) {
+            availableCameras = await Html5Qrcode.getCameras().catch(() => []);
+          }
+          if (availableCameras.length > 0) {
+            let pickIdx = 0;
+            if (currentFacingMode === 'environment') {
+              const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
+              if (rearIdx >= 0) pickIdx = rearIdx;
+            } else {
+              const frontIdx = availableCameras.findIndex(c => /front|user|前|自拍|selfie/i.test(c.label));
+              if (frontIdx >= 0) pickIdx = frontIdx;
+            }
+            currentCameraIndex = pickIdx;
+            const chosenId = availableCameras[pickIdx].id;
+            await html5QrCode.start(chosenId, scanConfig, onScanSuccess);
+            startedSuccess = true;
+            const label = availableCameras[pickIdx].label || `相機 ${pickIdx + 1}`;
+            showToast(`🟢 訂正掃碼器就緒 (${label})`, 'success');
+          }
+        }
+
+        if (startedSuccess) {
           setupManualFocus();
-          return;
+          refreshCameraListAsync();
+        } else {
+          showToast('❌ 無法啟動相機，請檢查瀏覽器相機權限', 'error');
         }
-
-        // 策略 3：前置/預設鏡頭備援
-        await html5QrCode.start({ facingMode: "user" }, scanConfig, onScanSuccess);
-        showToast('🟢 訂正掃碼器就緒 (前置/預設鏡頭)', 'success');
-        setupManualFocus();
 
       } catch (err) {
         showToast('❌ 相機啟動失敗: ' + (err.message || err), 'error');
@@ -1541,17 +1564,20 @@
       const readerEl = document.getElementById('reader');
       if (readerEl && !readerEl._hasTapFocus) {
         readerEl._hasTapFocus = true;
-        const doFocus = () => {
+        const doFocus = async () => {
           try {
             const video = document.querySelector('#reader video');
             if (video && video.srcObject) {
               const track = video.srcObject.getVideoTracks()[0];
-              if (track && track.applyConstraints) {
-                track.applyConstraints({
-                  advanced: [{ focusMode: 'continuous' }]
-                }).catch(() => {});
-                showToast('🎯 正在重新自動對焦...', 'info');
+              if (track && track.getCapabilities && track.applyConstraints) {
+                const caps = track.getCapabilities();
+                if (caps && caps.focusMode && caps.focusMode.includes('continuous')) {
+                  await track.applyConstraints({
+                    advanced: [{ focusMode: 'continuous' }]
+                  }).catch(() => {});
+                }
               }
+              showToast('🎯 正在重新自動對焦...', 'info');
             }
           } catch(e){}
         };
@@ -1565,19 +1591,45 @@
         const cams = await Html5Qrcode.getCameras();
         if (cams && cams.length > 0) {
           availableCameras = cams;
+          if (currentCameraIndex < 0) {
+            if (currentFacingMode === 'environment') {
+              const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
+              currentCameraIndex = rearIdx >= 0 ? rearIdx : 0;
+            } else {
+              const frontIdx = availableCameras.findIndex(c => /front|user|前|自拍|selfie/i.test(c.label));
+              currentCameraIndex = frontIdx >= 0 ? frontIdx : 0;
+            }
+          }
         }
       } catch(e){}
     }
 
-    function switchNextCamera() {
-      if (availableCameras.length <= 1) {
-        showToast('⚠️ 本裝置只有一個相機', 'error');
-        return;
+    async function switchNextCamera() {
+      showToast('⏳ 正在切換相機鏡頭...', 'info');
+      await stopActiveCamera();
+
+      if (availableCameras.length === 0) {
+        availableCameras = await Html5Qrcode.getCameras().catch(() => []);
       }
-      currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-      const label = availableCameras[currentCameraIndex].label || `相機 ${currentCameraIndex + 1}`;
-      showToast(`🔄 切換到: ${label}`, 'success');
-      startCameraWithFacingMode(false);
+
+      if (availableCameras.length > 1) {
+        currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+        const nextCam = availableCameras[currentCameraIndex];
+        const label = nextCam.label || `相機 ${currentCameraIndex + 1}`;
+        if (/front|user|前|自拍|selfie/i.test(label)) {
+          currentFacingMode = 'user';
+        } else {
+          currentFacingMode = 'environment';
+        }
+        showToast(`🔄 已切換至：${label}`, 'success');
+        await initAndStartCamera(nextCam.id);
+      } else {
+        // 若只有 1 個相機或系統未回傳多個 ID，直接切換 facingMode
+        currentFacingMode = (currentFacingMode === 'environment' ? 'user' : 'environment');
+        const modeLabel = currentFacingMode === 'environment' ? '後置相機 (螢幕背面)' : '前置相機 (螢幕同側)';
+        showToast(`🔄 已切換至：${modeLabel}`, 'success');
+        await initAndStartCamera(currentFacingMode);
+      }
     }
 
     function showToast(msg, type = 'success') {
