@@ -554,6 +554,24 @@
   </div>
 
   <script>
+    // ── 關鍵底層補丁：在任何 video 標籤建立時，強制注入 iOS Safari WebKit 必備屬性 ──
+    (function patchVideoElementCreation() {
+      const _orig = document.createElement;
+      document.createElement = function(tagName, options) {
+        const el = _orig.call(document, tagName, options);
+        if (tagName && typeof tagName === 'string' && tagName.toLowerCase() === 'video') {
+          el.setAttribute('playsinline', 'true');
+          el.setAttribute('webkit-playsinline', 'true');
+          el.setAttribute('autoplay', 'true');
+          el.setAttribute('muted', 'true');
+          el.playsInline = true;
+          el.muted = true;
+          el.autoplay = true;
+        }
+        return el;
+      };
+    })();
+
     // ── PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
     let deferredInstallPrompt = null;
     const hadPriorController = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
@@ -963,7 +981,10 @@
       checkIosPwaButton();
       initSeatGrid();
       fetchMatrixData();
-      startCameraWithFacingMode(currentFacingMode);
+      // 給予 iOS Safari 釋放底層 AVCaptureSession 充裕的緩衝時間 (150ms)
+      setTimeout(() => {
+        startCameraWithFacingMode(currentFacingMode);
+      }, 150);
     });
 
     function getCurrAssign() {
@@ -1646,6 +1667,15 @@
           [100, 300, 600, 1200].forEach(delay => {
             setTimeout(ensureVideoPlayback, delay);
           });
+          // 1500ms 畫面監測看門狗：若 iOS 視訊處於停滯/黑屏狀態，再次主動喚醒
+          setTimeout(() => {
+            const video = document.querySelector('#reader video');
+            if (video && (video.paused || video.videoWidth === 0 || video.currentTime === 0)) {
+              console.warn('[Camera] 偵測到視訊可能停滯，嘗試再次喚醒...');
+              ensureVideoPlayback();
+              if (video.paused) video.play().catch(() => {});
+            }
+          }, 1500);
           setupManualFocus();
           refreshCameraListAsync();
         } else {
@@ -1673,36 +1703,38 @@
     }
 
     function setupManualFocus() {
-      const readerEl = document.getElementById('reader');
-      if (readerEl && !readerEl._hasTapFocus) {
-        readerEl._hasTapFocus = true;
-        const doFocus = async () => {
+      const cameraBox = document.querySelector('.camera-wrapper') || document.getElementById('reader');
+      if (cameraBox && !cameraBox._hasTapFocus) {
+        cameraBox._hasTapFocus = true;
+        const doFocusOrRestart = async (e) => {
           try {
             const video = document.querySelector('#reader video');
-            if (video) {
-              ensureVideoPlayback();
-              if (video.paused) {
-                await video.play().catch(() => {});
-              }
-              if (video.srcObject) {
-                const track = video.srcObject.getVideoTracks()[0];
-                if (track && track.getCapabilities && track.applyConstraints) {
-                  const caps = track.getCapabilities();
-                  if (caps && caps.focusMode && caps.focusMode.includes('continuous')) {
-                    await track.applyConstraints({
-                      advanced: [{ focusMode: 'continuous' }]
-                    }).catch(() => {});
-                  }
+            // 若無 video、串流未就緒、處於暫停、無畫面尺寸或時間軸未走動，直接手勢喚醒重啟鏡頭
+            const isStalled = !video || !video.srcObject || video.paused || video.readyState < 2 || video.videoWidth === 0;
+            if (isStalled) {
+              showToast('🔄 偵測到畫面停滯，正在手勢喚醒重啟鏡頭...', 'info');
+              await startCameraWithFacingMode(currentFacingMode);
+              return;
+            }
+            ensureVideoPlayback();
+            if (video.srcObject) {
+              const track = video.srcObject.getVideoTracks()[0];
+              if (track && track.getCapabilities && track.applyConstraints) {
+                const caps = track.getCapabilities();
+                if (caps && caps.focusMode && caps.focusMode.includes('continuous')) {
+                  await track.applyConstraints({
+                    advanced: [{ focusMode: 'continuous' }]
+                  }).catch(() => {});
                 }
               }
-              showToast('🎯 正在重新自動對焦...', 'info');
-            } else {
-              startCameraWithFacingMode(currentFacingMode);
             }
-          } catch(e){}
+            showToast('🎯 正在重新自動對焦...', 'info');
+          } catch(e){
+            startCameraWithFacingMode(currentFacingMode);
+          }
         };
-        readerEl.addEventListener('click', doFocus);
-        readerEl.addEventListener('touchend', doFocus);
+        cameraBox.addEventListener('click', doFocusOrRestart);
+        cameraBox.addEventListener('touchend', doFocusOrRestart);
       }
     }
 
@@ -1742,21 +1774,33 @@
           currentFacingMode = 'environment';
         }
         showToast(`🔄 已切換至：${label}`, 'success');
-        await initAndStartCamera(nextCam.id);
+        await startCameraWithFacingMode(nextCam.id);
       } else {
         // 若只有 1 個相機或系統未回傳多個 ID，直接切換 facingMode
         currentFacingMode = (currentFacingMode === 'environment' ? 'user' : 'environment');
         const modeLabel = currentFacingMode === 'environment' ? '後置相機 (螢幕背面)' : '前置相機 (螢幕同側)';
         showToast(`🔄 已切換至：${modeLabel}`, 'success');
-        await initAndStartCamera(currentFacingMode);
+        await startCameraWithFacingMode(currentFacingMode);
       }
     }
 
     // ── 頁面跳轉與生命週期管理（防止 iOS Safari 鏡頭佔用與黑屏） ──
-    document.addEventListener('click', (e) => {
+    let isNavigatingAway = false;
+    document.addEventListener('click', async (e) => {
       const link = e.target.closest('a');
-      if (link && link.href && !link.href.startsWith('javascript:')) {
-        stopAllMediaTracksSync();
+      if (!link || !link.href || link.href.startsWith('javascript:') || link.target === '_blank') return;
+      if (isNavigatingAway) return;
+      const href = link.getAttribute('href');
+      if (href && (href.includes('scanner') || href.includes('correction') || href.includes('index') || href.includes('Sticker'))) {
+        e.preventDefault();
+        e.stopPropagation();
+        isNavigatingAway = true;
+        showToast('⏳ 正在釋放鏡頭並切換頁面...', 'info');
+        try {
+          await stopActiveCamera();
+        } catch(err){}
+        await new Promise(r => setTimeout(r, 180));
+        window.location.href = link.href;
       }
     }, true);
 
