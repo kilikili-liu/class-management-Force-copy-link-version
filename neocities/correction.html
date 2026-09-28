@@ -1021,41 +1021,42 @@
       }
     }
 
+    function cleanGasUrl(url) {
+      if (!url || typeof url !== 'string') return '';
+      // 去除 Google Workspace 組織路徑 /a/domain.com/，轉為全域通用免登入格式
+      return url.replace(/https:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
+    }
+
     function getGasApiUrl() {
       const urlParams = new URLSearchParams(window.location.search);
       const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
       if (paramGasUrl) {
-        try { localStorage.setItem('class_management_gas_api_url', paramGasUrl); } catch(e){}
-        return paramGasUrl;
+        const clean = cleanGasUrl(paramGasUrl);
+        try { localStorage.setItem('class_management_gas_api_url', clean); } catch(e){}
+        return clean;
       }
 
-      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.startsWith('https://script.google.com')) {
-        return window._GAS_WEBAPP_URL;
+      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.includes('script.google.com')) {
+        return cleanGasUrl(window._GAS_WEBAPP_URL);
       }
-      if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL && window.GAS_API_URL.startsWith('https://script.google.com')) {
-        return window.GAS_API_URL;
+      if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL && window.GAS_API_URL.includes('script.google.com')) {
+        return cleanGasUrl(window.GAS_API_URL);
       }
 
       const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
-        return stored;
+        return cleanGasUrl(stored);
       }
 
       if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
-        return location.href.split('?')[0];
+        return cleanGasUrl(location.href.split('?')[0]);
       }
 
-      // 首次使用：提示輸入 GAS 網址並儲存，避免在程式碼中寫入機敏部署網址
-      const entered = prompt('⚙️ 首次設定\n請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
-      if (entered && entered.trim().startsWith('https://script.google.com')) {
-        localStorage.setItem('class_management_gas_api_url', entered.trim());
-        return entered.trim();
-      }
-      alert('❌ 網址格式不正確，請重新整理頁面並輸入正確的 GAS 網址。');
+      // 首次使用：若無網址參數且無 localStorage，不跳出阻擋性 prompt，返回空字串
       return '';
     }
 
-    const GAS_API_URL = getGasApiUrl();
+    let GAS_API_URL = getGasApiUrl();
 
     async function apiCallCorrection(action, params = {}) {
       if (typeof google !== 'undefined' && google.script && google.script.run) {
@@ -1066,7 +1067,7 @@
             .handleScannerApiAction(action, params);
         });
       } else {
-        const cleanBase = (GAS_API_URL || '').replace(/\/a\/macros\/[a-zA-Z0-9.-]+\//, '/');
+        const cleanBase = cleanGasUrl(GAS_API_URL);
         const url = new URL(cleanBase);
         url.searchParams.set('action', action);
         for (const [k, v] of Object.entries(params)) {
@@ -1097,7 +1098,7 @@
 
     function singleGasApiFetch(url, timeoutMs = 18000) {
       return new Promise((resolve, reject) => {
-        const cleanUrl = String(url).replace(/\/a\/macros\/[a-zA-Z0-9.-]+\//, '/');
+        const cleanUrl = cleanGasUrl(String(url));
         const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
         const sep = cleanUrl.includes('?') ? '&' : '?';
         const finalUrl = cleanUrl + sep + 'callback=' + callbackName + '&_t=' + Date.now();
