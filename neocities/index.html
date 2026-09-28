@@ -555,15 +555,15 @@
             </div>
           </div>
 
-          <!-- 連線方式切換 -->
+          <!-- 連線方式切換：OS 分流 -->
           <div style="margin-top:10px;">
-            <div class="pair-section-label">🌐 掃碼情境與模式：</div>
+            <div class="pair-section-label">📲 選擇手機系統 / 掃碼情境：</div>
             <div class="pair-mode-selector">
-              <button class="pair-mode-btn active" id="pair-mode-gas" onclick="setPairMode('gas')">⚡ 已開 App 掃碼綁定 (純 GAS・格子超大秒掃)</button>
-              <button class="pair-mode-btn" id="pair-mode-pwa" onclick="setPairMode('pwa')">🌟 首次安裝/系統相機 (PWA 完整網址)</button>
+              <button class="pair-mode-btn active" id="pair-mode-gas" onclick="setPairMode('gas')">🍎 iOS App 已裝・掃碼綁定（格子超大・Safari 可掃）</button>
+              <button class="pair-mode-btn" id="pair-mode-pwa" onclick="setPairMode('pwa')">🤖 Android 手機掃碼（PWA 完整網址・一步到位）</button>
             </div>
             <div style="font-size:0.78rem; color:#38bdf8; margin-top:5px; line-height:1.4;">
-              💡 <strong>已開 App 者請直接掃上方 QR Code</strong>（黑白格子加大 50%，0.1 秒秒掃）；或在手機頂部點「⌨️ 手動輸入網址」直接貼上！
+              💡 <strong>iOS</strong>：桌面 App 已裝好後，打開 App 對準 QR Code 掃一次即完成綁定。&nbsp;｜&nbsp;<strong>Android</strong>：直接用相機掃 PWA 完整網址，首次點「安裝 App」加到主畫面。
             </div>
           </div>
 
@@ -594,11 +594,13 @@
 
           <!-- 說明指引 -->
           <div class="pair-instruction-steps" style="margin-top:12px;">
-            <div style="font-weight:700; color:#38bdf8; margin-bottom:4px;">🤖 Android 系統：</div>
-            <div>• 打開相機直接掃描上方 QR Code 即可連線使用，並可點擊頁面頂部「📲 安裝 App」加到主畫面。</div>
-            <div style="font-weight:700; color:#a78bfa; margin-top:8px; margin-bottom:4px;">🍎 iOS (iPhone / iPad) 系統：</div>
-            <div>• <strong>已安裝 App：</strong> 打開 iPhone 桌面的「作業速掃」App，將鏡頭對準上方 QR Code 掃描一次，即自動完成綁定！</div>
-            <div>• <strong>尚未安裝 App：</strong> 請點選上方「🍎 iOS 桌面 App 描述檔」標籤安裝免簽名原生 App。</div>
+            <div style="font-weight:700; color:#a78bfa; margin-bottom:4px;">🍎 iOS (iPhone / iPad) — 選「iOS App 已裝・掃碼綁定」：</div>
+            <div>① 在電腦端點選上方「🍎 iOS 桌面 App 描述檔」標籤，掃描安裝免簽名 App。</div>
+            <div>② App 裝好後，切回「📱 試算表連線碼」→「<strong>🍎 iOS App 已裝・掃碼綁定</strong>」（純 GAS 短碼，格子超大，Safari 可掃）。</div>
+            <div>③ 打開桌面 App，對準 QR Code 掃一次，即自動完成試算表綁定！</div>
+            <div style="font-weight:700; color:#38bdf8; margin-top:8px; margin-bottom:4px;">🤖 Android 手機 — 選「Android 手機掃碼」：</div>
+            <div>① 選「<strong>🤖 Android 手機掃碼</strong>」模式，Neocities PWA 完整網址 QR Code 將自動更新。</div>
+            <div>② 打開 Android 相機或 Google Lens，掃描 QR Code，網頁開啟後點「📲 安裝 App」加到主畫面即完成。</div>
           </div>
         </div>
 
