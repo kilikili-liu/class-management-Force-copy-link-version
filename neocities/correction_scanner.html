@@ -12,9 +12,8 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
-  <!-- Html5Qrcode & jsQR Libraries -->
+  <!-- Html5Qrcode Library -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -570,24 +569,6 @@
           el.autoplay = true;
         }
         return el;
-      };
-    })();
-
-    // ── 防禦補丁：防止 html5-qrcode 在 iOS 視頻尚未就緒時呼叫 drawImage 拋出 IndexSizeError 導致掃描中斷 ──
-    (function patchDrawImageCreation() {
-      const _origDrawImage = CanvasRenderingContext2D.prototype.drawImage;
-      CanvasRenderingContext2D.prototype.drawImage = function(image, ...args) {
-        if (image instanceof HTMLVideoElement) {
-          if (!image.videoWidth || !image.videoHeight || image.readyState < 2) {
-            return;
-          }
-          if (args.length >= 4 && (args[2] <= 0 || args[3] <= 0)) {
-            return;
-          }
-        }
-        try {
-          return _origDrawImage.apply(this, [image, ...args]);
-        } catch(e) {}
       };
     })();
 
@@ -1508,60 +1489,7 @@
     let availableCameras = [];
     let currentCameraIndex = -1;
 
-    // ── 雙核心掃碼引擎：jsQR 獨立高速影像掃描協同引擎 ──
-    let jsQrTimer = null;
-    let jsQrCanvas = null;
-    let jsQrCtx = null;
-
-    function startJsQrTurboEngine() {
-      stopJsQrTurboEngine();
-      if (typeof jsQR === 'undefined') return;
-
-      if (!jsQrCanvas) {
-        jsQrCanvas = document.createElement('canvas');
-        jsQrCtx = jsQrCanvas.getContext('2d', { willReadFrequently: true });
-      }
-
-      const scanFrame = () => {
-        const video = document.querySelector('#reader video');
-        if (video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
-          try {
-            const maxDim = 800;
-            let w = video.videoWidth;
-            let h = video.videoHeight;
-            if (w > maxDim || h > maxDim) {
-              const scale = maxDim / Math.max(w, h);
-              w = Math.floor(w * scale);
-              h = Math.floor(h * scale);
-            }
-            if (jsQrCanvas.width !== w || jsQrCanvas.height !== h) {
-              jsQrCanvas.width = w;
-              jsQrCanvas.height = h;
-            }
-            jsQrCtx.drawImage(video, 0, 0, w, h);
-            const imgData = jsQrCtx.getImageData(0, 0, w, h);
-            const result = jsQR(imgData.data, imgData.width, imgData.height, {
-              inversionAttempts: "dontInvert"
-            });
-            if (result && result.data && result.data.trim()) {
-              onScanSuccess(result.data.trim());
-            }
-          } catch(e) {}
-        }
-      };
-
-      jsQrTimer = setInterval(scanFrame, 90);
-    }
-
-    function stopJsQrTurboEngine() {
-      if (jsQrTimer) {
-        clearInterval(jsQrTimer);
-        jsQrTimer = null;
-      }
-    }
-
     async function stopActiveCamera() {
-      stopJsQrTurboEngine();
       if (html5QrCode) {
         try {
           if (html5QrCode.isScanning) {
@@ -1644,20 +1572,14 @@
       // 小幅緩衝 80ms，給予 iOS WebKit / AVCaptureSession 釋放前一鏡頭實例的空間
       await new Promise(r => setTimeout(r, 80));
 
-      let target = preferTarget;
-      if (target === true) target = 'environment';
-      if (target === false) target = 'user';
-
       const scanConfig = {
-        fps: 15,
-        videoConstraints: {
-          facingMode: target === 'user' ? 'user' : 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
+        fps: 15
       };
 
       let startedSuccess = false;
+      let target = preferTarget;
+      if (target === true) target = 'environment';
+      if (target === false) target = 'user';
 
       try {
         html5QrCode = new Html5Qrcode("reader", { verbose: false });
@@ -1739,7 +1661,6 @@
           ensureVideoPlayback();
           setupManualFocus();
           refreshCameraListAsync();
-          startJsQrTurboEngine();
         } else {
           showToast('❌ 無法啟動相機，請點擊螢幕重試或檢查相機權限', 'error');
         }

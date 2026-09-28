@@ -440,8 +440,8 @@
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       display: inline-block;
-      min-width: 220px;
-      min-height: 220px;
+      min-width: 240px;
+      min-height: 240px;
     }
     .pair-qr-display canvas {
       display: block;
@@ -557,10 +557,13 @@
 
           <!-- 連線方式切換 -->
           <div style="margin-top:10px;">
-            <div class="pair-section-label">🌐 連線載具模式：</div>
+            <div class="pair-section-label">🌐 掃碼情境與模式：</div>
             <div class="pair-mode-selector">
-              <button class="pair-mode-btn active" id="pair-mode-pwa" onclick="setPairMode('pwa')">🌟 Neocities PWA (建議・全螢幕可安裝)</button>
-              <button class="pair-mode-btn" id="pair-mode-gas" onclick="setPairMode('gas')">⚡ GAS 原生網址 (直接開啟)</button>
+              <button class="pair-mode-btn active" id="pair-mode-pwa" onclick="setPairMode('pwa')">🌟 首次安裝/系統相機 (PWA 完整網址)</button>
+              <button class="pair-mode-btn" id="pair-mode-gas" onclick="setPairMode('gas')">⚡ 已開 App 掃碼綁定 (純 GAS・格子超大秒掃)</button>
+            </div>
+            <div style="font-size:0.78rem; color:#38bdf8; margin-top:5px; line-height:1.4;">
+              💡 <strong>手機已打開 App 者：</strong>建議點選<strong>「⚡ 已開 App 掃碼綁定」</strong>，QR 黑白格子大 50%，對著電腦螢幕 0.1 秒秒掃！或在手機頂部點擊「⌨️ 手動輸入網址」直接貼上！
             </div>
           </div>
 
@@ -1324,8 +1327,8 @@
         try {
           qrcodeObj = new QRCode(container, {
             text: finalUrl,
-            width: 220,
-            height: 220,
+            width: 240,
+            height: 240,
             colorDark: '#0f172a',
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.L
@@ -1341,10 +1344,10 @@
     function renderFallbackQrImg(container, url) {
       container.innerHTML = '';
       const img = document.createElement('img');
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(url)}`;
       img.alt = 'QR Code';
-      img.style.width = '220px';
-      img.style.height = '220px';
+      img.style.width = '240px';
+      img.style.height = '240px';
       container.appendChild(img);
     }
 
