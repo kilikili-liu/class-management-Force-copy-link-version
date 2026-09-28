@@ -640,7 +640,8 @@
       if (matchedUrl && matchedUrl.includes('script.google.com') && matchedUrl.includes('/exec')) {
         matchedUrl = cleanGasUrl(matchedUrl);
         if (GAS_API_URL && cleanGasUrl(GAS_API_URL) === matchedUrl) {
-          showToast('ℹ️ 目前已連線至此試算表', 'info');
+          showToast('ℹ️ 已重新連線至此試算表，正在同步資料...', 'info');
+          fetchTodayData();
           return true;
         }
         localStorage.setItem('class_management_gas_api_url', matchedUrl);
@@ -652,7 +653,7 @@
         if (banner) banner.style.display = 'none';
         setTimeout(() => {
           fetchTodayData();
-        }, 600);
+        }, 500);
         return true;
       }
       return false;
@@ -692,7 +693,7 @@
         }, timeoutMs);
 
         function cleanup() {
-          delete window[callbackName];
+          try { delete window[callbackName]; } catch(e){}
           if (scriptTag && scriptTag.parentNode) {
             scriptTag.parentNode.removeChild(scriptTag);
           }
@@ -706,29 +707,35 @@
           resolve(data);
         };
 
-        fetch(finalUrl, { method: 'GET', redirect: 'follow' })
+        // 1. 優先嘗試 fetch（加入 credentials: 'omit' 避免 Google 多帳號 Cookie 衝突）
+        fetch(finalUrl, { method: 'GET', redirect: 'follow', credentials: 'omit' })
           .then(res => {
             if (!res.ok) throw new Error('HTTP ' + res.status);
             return res.text();
           })
           .then(text => {
             if (isSettled) return;
+            const trimmed = (text || '').trim();
             let parsedData = null;
-            if (text.startsWith(callbackName + '(') && text.endsWith(')')) {
-              const jsonStr = text.substring(callbackName.length + 1, text.length - 1);
-              parsedData = JSON.parse(jsonStr);
-            } else if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
-              parsedData = JSON.parse(text);
+            if (trimmed.startsWith(callbackName + '(')) {
+              // 支援結尾有分號、換行等情況
+              const inner = trimmed.substring(callbackName.length + 1).replace(/\);?$/, '');
+              try { parsedData = JSON.parse(inner); } catch(e){}
+            } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+              try { parsedData = JSON.parse(trimmed); } catch(e){}
             }
             if (parsedData) {
               isSettled = true;
               clearTimeout(timeoutTimer);
               cleanup();
               resolve(parsedData);
+            } else {
+              throw new Error('無法解析伺服器回應格式');
             }
           })
-          .catch(() => {
+          .catch(fetchErr => {
             if (isSettled) return;
+            console.warn('[GAS API] fetch 失敗或無法解析，改用 JSONP script 標籤備援:', fetchErr);
             scriptTag = document.createElement('script');
             scriptTag.src = finalUrl;
             scriptTag.onerror = function() {
@@ -736,7 +743,7 @@
               isSettled = true;
               clearTimeout(timeoutTimer);
               cleanup();
-              reject(new Error('網路連線失敗'));
+              reject(new Error(fetchErr.message || '網路連線失敗'));
             };
             document.head.appendChild(scriptTag);
           });
@@ -890,16 +897,16 @@
       try {
         showToast('⏳ 正在同步試算表收繳狀態...', 'success');
         const res = await gasApi('getTodayScanData');
-        if (res && (res.success || res.todayStr)) {
+        if (res && (res.success || res.todayStr || res.todayDate)) {
           scanDataCache = res;
           renderAssignDropdown();
           renderSeatGrid();
-          showToast(`🟢 同步成功 (${res.todayStr || '今日'})`, 'success');
+          showToast(`🟢 同步成功 (${res.todayDate || res.todayStr || '今日'})`, 'success');
         } else {
-          showToast('❌ 無法取得點收資料', 'error');
+          showToast('❌ 無法取得點收資料: ' + (res ? (res.message || '未知狀態') : '伺服器無回應'), 'error');
         }
       } catch (err) {
-        showToast('❌ 連線異常，請稍後重試', 'error');
+        showToast('❌ 連線異常: ' + (err.message || '請稍後重試'), 'error');
       }
     }
 

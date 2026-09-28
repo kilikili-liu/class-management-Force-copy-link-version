@@ -1114,7 +1114,7 @@
         }, timeoutMs);
 
         function cleanup() {
-          delete window[callbackName];
+          try { delete window[callbackName]; } catch(e){}
           if (scriptTag && scriptTag.parentNode) {
             scriptTag.parentNode.removeChild(scriptTag);
           }
@@ -1128,31 +1128,35 @@
           resolve(data);
         };
 
-        // 1. 優先嘗試標準 fetch (跨域處理)
-        fetch(finalUrl, { method: 'GET', redirect: 'follow' })
+        // 1. 優先嘗試 fetch（加入 credentials: 'omit' 避免 Google 多帳號 Cookie 衝突）
+        fetch(finalUrl, { method: 'GET', redirect: 'follow', credentials: 'omit' })
           .then(res => {
             if (!res.ok) throw new Error('HTTP ' + res.status);
             return res.text();
           })
           .then(text => {
             if (isSettled) return;
+            const trimmed = (text || '').trim();
             let parsedData = null;
-            if (text.startsWith(callbackName + '(') && text.endsWith(')')) {
-              const jsonStr = text.substring(callbackName.length + 1, text.length - 1);
-              parsedData = JSON.parse(jsonStr);
-            } else if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
-              parsedData = JSON.parse(text);
+            if (trimmed.startsWith(callbackName + '(')) {
+              // 支援結尾有分號、換行等情況
+              const inner = trimmed.substring(callbackName.length + 1).replace(/\);?$/, '');
+              try { parsedData = JSON.parse(inner); } catch(e){}
+            } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+              try { parsedData = JSON.parse(trimmed); } catch(e){}
             }
             if (parsedData) {
               isSettled = true;
               clearTimeout(timeoutTimer);
               cleanup();
               resolve(parsedData);
+            } else {
+              throw new Error('無法解析伺服器回應格式');
             }
           })
-          .catch(() => {
-            // 2. fetch 被受限時，無縫切換 JSONP 動態 <script> 載入
+          .catch(fetchErr => {
             if (isSettled) return;
+            console.warn('[GAS API] fetch 失敗或無法解析，改用 JSONP script 標籤備援:', fetchErr);
             scriptTag = document.createElement('script');
             scriptTag.src = finalUrl;
             scriptTag.onerror = function() {
@@ -1160,7 +1164,7 @@
               isSettled = true;
               clearTimeout(timeoutTimer);
               cleanup();
-              reject(new Error('網路連線失敗'));
+              reject(new Error(fetchErr.message || '網路連線失敗'));
             };
             document.head.appendChild(scriptTag);
           });
