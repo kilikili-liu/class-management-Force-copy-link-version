@@ -14,6 +14,26 @@
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <!-- 本機開發用設定檔（已被 .gitignore 排除，Neocities 上不存在此檔案，onerror 靜默略過）-->
   <script src="local_config.js" onerror="void 0"></script>
+  <script>
+    // 🛡️ 安全 Storage 存取器（防止 Brave Shields / Safari 隱私沙箱丟出 DOMException 阻斷程式執行）
+    const safeStorage = {
+      getItem: (k) => { try { return localStorage.getItem(k); } catch(e) { return null; } },
+      setItem: (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} },
+      removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) {} }
+    };
+
+    window.addEventListener('error', function(e) {
+      console.error('Global Error caught:', e);
+      var b = document.getElementById('debug-err-bar');
+      if (!b) {
+        b = document.createElement('div');
+        b.id = 'debug-err-bar';
+        b.style.cssText = 'position:fixed; bottom:0; left:0; width:100%; background:#b91c1c; color:#fff; font-size:12px; z-index:99999999; padding:8px 12px; word-break:break-all; box-shadow:0 -2px 10px rgba(0,0,0,0.5);';
+        (document.body) ? document.body.appendChild(b) : window.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(b); });
+      }
+      b.innerHTML += '<div>⚠️ 系統錯誤: ' + (e.message || e.error || e) + ' (行號: ' + e.lineno + ')</div>';
+    });
+  </script>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -792,10 +812,39 @@
       <div class="seat-grid-container">
         <div class="seat-grid-header">
           <span>點擊座號按鈕切換【🟢 已繳 / 🔴 未繳】：</span>
-          <span id="submitted-summary" style="color:var(--accent-blue); font-weight:700;">載入中...</span>
+          <span id="submitted-summary" style="color:var(--accent-blue); font-weight:700;">⚠️ 請先選擇上方【科目 | 種類】</span>
         </div>
         <div class="seat-grid" id="seat-grid">
-          <!-- Rendered dynamically -->
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(1)"><div>01號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(2)"><div>02號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(3)"><div>03號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(4)"><div>04號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(5)"><div>05號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(6)"><div>06號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(7)"><div>07號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(8)"><div>08號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(9)"><div>09號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(10)"><div>10號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(11)"><div>11號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(12)"><div>12號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(13)"><div>13號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(14)"><div>14號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(15)"><div>15號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(16)"><div>16號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(17)"><div>17號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(18)"><div>18號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(19)"><div>19號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(20)"><div>20號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(21)"><div>21號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(22)"><div>22號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(23)"><div>23號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(24)"><div>24號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(25)"><div>25號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(26)"><div>26號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(27)"><div>27號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(28)"><div>28號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(29)"><div>29號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
+          <button class="seat-btn unsubmitted" onclick="onSeatButtonClick(30)"><div>30號</div><span class="status-badge unsubmitted">🔴 未繳</span></button>
         </div>
       </div>
     </div>
@@ -1021,7 +1070,7 @@
 
       let baseGasUrl = window._GAS_WEBAPP_URL;
       if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
+        baseGasUrl = safeStorage.getItem('class_mgmt_gas_api_url');
       }
       if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
         baseGasUrl = location.href.split('?')[0];
@@ -1035,7 +1084,7 @@
         google.script.run.withSuccessHandler(serverUrl => {
           if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
             window._GAS_WEBAPP_URL = serverUrl;
-            localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+            safeStorage.setItem('class_mgmt_gas_api_url', serverUrl);
             applyGasUrls(serverUrl);
           }
         }).getGasWebAppUrl();
@@ -1060,8 +1109,8 @@
       if (paramGasUrl) {
         const clean = cleanGasUrl(paramGasUrl);
         try {
-          localStorage.setItem('class_management_gas_api_url', clean);
-          localStorage.setItem('class_mgmt_gas_api_url', clean);
+          safeStorage.setItem('class_management_gas_api_url', clean);
+          safeStorage.setItem('class_mgmt_gas_api_url', clean);
         } catch(e){}
         return clean;
       }
@@ -1073,7 +1122,7 @@
         return cleanGasUrl(window.GAS_API_URL);
       }
 
-      const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
+      const stored = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
         return cleanGasUrl(stored);
       }
@@ -1182,8 +1231,8 @@
       if (!GAS_API_URL) {
         GAS_API_URL = prompt('⚙️ 請輸入您的 GAS 網頁應用程式網址 (GAS_API_URL)：\n\n格式：https://script.google.com/macros/s/.../exec');
         if (GAS_API_URL) {
-          localStorage.setItem('class_management_gas_api_url', GAS_API_URL.trim());
-          localStorage.setItem('class_mgmt_gas_api_url', GAS_API_URL.trim());
+          safeStorage.setItem('class_management_gas_api_url', GAS_API_URL.trim());
+          safeStorage.setItem('class_mgmt_gas_api_url', GAS_API_URL.trim());
         } else {
           throw new Error('未設定 GAS API 網址');
         }
@@ -1235,7 +1284,7 @@
 
     function openPairModal() {
       // 載入記住的 neocities 網址，預設為 https://zaca006.neocities.org/scanner
-      const savedNeo = localStorage.getItem('class_mgmt_neocities_url') || 'https://zaca006.neocities.org/scanner';
+      const savedNeo = safeStorage.getItem('class_mgmt_neocities_url') || 'https://zaca006.neocities.org/scanner';
       const neoInput = document.getElementById('pair-neocities-input');
       if (neoInput) neoInput.value = savedNeo;
 
@@ -1244,7 +1293,7 @@
       const gasInput = document.getElementById('pair-gas-input');
       if (gasInput) gasUrl = gasInput.value;
       if (!gasUrl || !gasUrl.startsWith('https://script.google.com')) {
-        gasUrl = window._GAS_WEBAPP_URL || localStorage.getItem('class_mgmt_gas_api_url') || '';
+        gasUrl = window._GAS_WEBAPP_URL || safeStorage.getItem('class_mgmt_gas_api_url') || '';
       }
       if (!gasUrl) {
         if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
@@ -1260,7 +1309,7 @@
             if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
               const clean = cleanGasUrl(serverUrl);
               if (gasInput) gasInput.value = clean;
-              localStorage.setItem('class_mgmt_gas_api_url', clean);
+              safeStorage.setItem('class_mgmt_gas_api_url', clean);
               refreshActiveQrCodes();
             }
           }).getGasWebAppUrl();
@@ -1342,11 +1391,11 @@
     function onPairParamChange() {
       const neoVal = document.getElementById('pair-neocities-input') ? document.getElementById('pair-neocities-input').value.trim() : '';
       if (neoVal) {
-        localStorage.setItem('class_mgmt_neocities_url', neoVal);
+        safeStorage.setItem('class_mgmt_neocities_url', neoVal);
       }
       const gasVal = document.getElementById('pair-gas-input') ? document.getElementById('pair-gas-input').value.trim() : '';
       if (gasVal) {
-        localStorage.setItem('class_mgmt_gas_api_url', gasVal);
+        safeStorage.setItem('class_mgmt_gas_api_url', gasVal);
       }
       refreshActiveQrCodes();
     }
@@ -1363,7 +1412,7 @@
     function getBaseGasUrl() {
       let gasUrl = document.getElementById('pair-gas-input') ? document.getElementById('pair-gas-input').value.trim() : '';
       if (!gasUrl) {
-        gasUrl = window._GAS_WEBAPP_URL || localStorage.getItem('class_mgmt_gas_api_url') || location.href.split('?')[0];
+        gasUrl = window._GAS_WEBAPP_URL || safeStorage.getItem('class_mgmt_gas_api_url') || location.href.split('?')[0];
       }
       return cleanGasUrl(gasUrl);
     }
