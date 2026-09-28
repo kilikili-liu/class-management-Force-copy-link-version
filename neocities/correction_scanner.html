@@ -113,25 +113,87 @@
       height: 100%;
     }
 
-    .viewfinder-box {
+    .camera-wrapper {
       width: 100%;
       flex: 1;
       background: #000;
       border-radius: 10px;
       overflow: hidden;
       position: relative;
-      border: 2px solid #334155;
       display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #334155;
+    }
+
+    #reader { width: 100% !important; height: 100% !important; border: none !important; }
+    #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; }
+
+    .scanner-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
     }
 
-    #reader { width: 100% !important; height: 100% !important; object-fit: cover; }
-    #reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+    .viewfinder-box {
+      width: min(220px, 70vw, 42vh);
+      height: min(220px, 70vw, 42vh);
+      border-radius: 14px;
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65);
+      position: relative;
+      transition: all 0.2s ease;
+    }
 
-    /* 相機效果邊框 */
-    .viewfinder-box.status-register-effect { border-color: #f97316; box-shadow: 0 0 16px rgba(249, 115, 22, 0.6); }
-    .viewfinder-box.status-clear-effect { border-color: #38bdf8; box-shadow: 0 0 16px rgba(56, 189, 248, 0.6); }
+    .viewfinder-box::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; height: 2px;
+      animation: scan-line 2s ease-in-out infinite alternate;
+    }
+    @keyframes scan-line {
+      0%   { top: 5%; }
+      100% { top: 95%; }
+    }
+
+    /* 相機效果邊框 (橘色登記 vs 藍色銷案) */
+    .viewfinder-box.status-register-effect {
+      border: 3px solid #f97316;
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65), 0 0 16px rgba(249, 115, 22, 0.6);
+    }
+    .viewfinder-box.status-register-effect::after {
+      background: #f97316;
+      box-shadow: 0 0 8px #f97316;
+    }
+
+    .viewfinder-box.status-clear-effect {
+      border: 3px solid #38bdf8;
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65), 0 0 16px rgba(56, 189, 248, 0.6);
+    }
+    .viewfinder-box.status-clear-effect::after {
+      background: #38bdf8;
+      box-shadow: 0 0 8px #38bdf8;
+    }
+
+    .viewfinder-box.success {
+      border-color: #22c55e !important;
+      box-shadow: 0 0 0 4000px rgba(34, 197, 94, 0.35), 0 0 30px #22c55e !important;
+      background: rgba(34, 197, 94, 0.25) !important;
+    }
+
+    .viewfinder-tip {
+      margin-top: 10px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 16px;
+      font-size: 0.75rem;
+      border: 1px solid #334155;
+      white-space: nowrap;
+    }
 
     /* 模式切換按鈕區 */
     .mode-switch-box {
@@ -409,9 +471,13 @@
         </button>
       </div>
 
-      <!-- 相機畫框 -->
-      <div id="viewfinder" class="viewfinder-box status-register-effect">
+      <!-- 相機畫框與掃描標記 -->
+      <div class="camera-wrapper">
         <div id="reader"></div>
+        <div class="scanner-overlay">
+          <div id="viewfinder" class="viewfinder-box status-register-effect"></div>
+          <div id="viewfinder-tip-txt" class="viewfinder-tip">🎯 作業本 QR碼 置於框內 登記錯題</div>
+        </div>
       </div>
 
       <!-- 相機按鈕 -->
@@ -939,16 +1005,19 @@
       const btnReg = document.getElementById('btn-mode-reg');
       const btnClear = document.getElementById('btn-mode-clear');
       const vf = document.getElementById('viewfinder');
+      const tip = document.getElementById('viewfinder-tip-txt');
 
       if (mode === 'register') {
         btnReg.className = 'mode-btn active-register';
         btnClear.className = 'mode-btn';
-        vf.className = 'viewfinder-box status-register-effect';
+        if (vf) vf.className = 'viewfinder-box status-register-effect';
+        if (tip) tip.textContent = '🎯 作業本 QR碼 置於框內 登記錯題';
         showToast('已切換為：🟧 登記錯題模式 (標為 X)', 'orange');
       } else {
         btnReg.className = 'mode-btn';
         btnClear.className = 'mode-btn active-clear';
-        vf.className = 'viewfinder-box status-clear-effect';
+        if (vf) vf.className = 'viewfinder-box status-clear-effect';
+        if (tip) tip.textContent = '🎯 作業本 QR碼 置於框內 錯題銷案';
         showToast('已切換為：🟦 錯題銷案模式 (標為 O)', 'success');
       }
     }
@@ -1401,15 +1470,32 @@
 
     async function stopActiveCamera() {
       if (html5QrCode) {
-        try { await html5QrCode.stop(); } catch(e) {}
+        try {
+          if (html5QrCode.isScanning) {
+            await html5QrCode.stop();
+          }
+          html5QrCode.clear();
+        } catch(e) {}
         html5QrCode = null;
       }
-      const videoEl = document.querySelector('#reader video');
-      if (videoEl && videoEl.srcObject) {
-        try {
-          videoEl.srcObject.getTracks().forEach(t => t.stop());
-        } catch(e) {}
-        videoEl.srcObject = null;
+      stopAllMediaTracksSync();
+    }
+
+    function stopAllMediaTracksSync() {
+      try {
+        const videos = document.querySelectorAll('video');
+        videos.forEach(v => {
+          if (v.srcObject) {
+            try {
+              v.srcObject.getTracks().forEach(t => t.stop());
+            } catch(e){}
+            v.srcObject = null;
+          }
+        });
+      } catch(e){}
+      const readerEl = document.getElementById('reader');
+      if (readerEl) {
+        readerEl.innerHTML = '';
       }
     }
 
@@ -1462,7 +1548,9 @@
       showToast('⏳ 正在啟動高清相機...', 'success');
       await stopActiveCamera();
 
-      // scanConfig 不傳入 videoConstraints 與 qrbox，讓瀏覽器以全畫面原生解析度啟動，避免 iOS WebKit 誤判限制
+      // 小幅緩衝 80ms，給予 iOS WebKit / AVCaptureSession 釋放前一鏡頭實例的空間
+      await new Promise(r => setTimeout(r, 80));
+
       const scanConfig = {
         fps: 15
       };
@@ -1525,7 +1613,20 @@
           }
         }
 
-        // 情況 D：終極回退 (枚舉可用設備)
+        // 情況 D：自動緩衝重試 (處理 iOS 切頁後的短暫硬體衝突)
+        if (!startedSuccess) {
+          console.warn('[Camera] 首次啟動未成功，等待 500ms 自動重試一次...');
+          await new Promise(r => setTimeout(r, 500));
+          try {
+            await html5QrCode.start({ facingMode: currentFacingMode }, scanConfig, onScanSuccess);
+            startedSuccess = true;
+            showToast(`🟢 訂正掃碼器就緒 (${currentFacingMode === 'environment' ? '後置相機/螢幕背面' : '前置相機/螢幕同側'})`, 'success');
+          } catch (retryErr) {
+            console.warn('[Camera] 重試依然失敗，嘗試枚舉設備:', retryErr);
+          }
+        }
+
+        // 情況 E：終極回退 (枚舉可用設備)
         if (!startedSuccess) {
           if (availableCameras.length === 0) {
             availableCameras = await Html5Qrcode.getCameras().catch(() => []);
@@ -1552,7 +1653,7 @@
           setupManualFocus();
           refreshCameraListAsync();
         } else {
-          showToast('❌ 無法啟動相機，請檢查瀏覽器相機權限', 'error');
+          showToast('❌ 無法啟動相機，請點擊螢幕重試或檢查相機權限', 'error');
         }
 
       } catch (err) {
@@ -1578,6 +1679,8 @@
                 }
               }
               showToast('🎯 正在重新自動對焦...', 'info');
+            } else {
+              startCameraWithFacingMode(currentFacingMode);
             }
           } catch(e){}
         };
@@ -1631,6 +1734,42 @@
         await initAndStartCamera(currentFacingMode);
       }
     }
+
+    // ── 頁面跳轉與生命週期管理（防止 iOS Safari 鏡頭佔用與黑屏） ──
+    document.addEventListener('click', (e) => {
+      const link = e.target.closest('a');
+      if (link && link.href && !link.href.startsWith('javascript:')) {
+        stopAllMediaTracksSync();
+      }
+    }, true);
+
+    window.addEventListener('pagehide', () => {
+      stopAllMediaTracksSync();
+    });
+
+    window.addEventListener('beforeunload', () => {
+      stopAllMediaTracksSync();
+    });
+
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        console.log('[Camera] 頁面自快存 (bfcache) 恢復，重新啟動相機...');
+        stopAllMediaTracksSync();
+        setTimeout(() => {
+          startCameraWithFacingMode(currentFacingMode);
+        }, 300);
+      }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        const video = document.querySelector('#reader video');
+        if (!video || !video.srcObject || video.readyState === 0 || video.paused) {
+          console.log('[Camera] 頁面切回前景且畫面未就緒，自動重啟鏡頭...');
+          startCameraWithFacingMode(currentFacingMode);
+        }
+      }
+    });
 
     function showToast(msg, type = 'success') {
       const banner = document.getElementById('toast-banner');
