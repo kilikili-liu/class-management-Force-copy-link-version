@@ -1996,6 +1996,11 @@
         });
     }
 
+    function executeUndo() {
+      const undoBtn = document.getElementById('toast-undo-btn');
+      if (undoBtn) undoBtn.style.display = 'none';
+    }
+
     // 🌐 將所有 HTML inline 呼叫的函數明確掛載至 window 全域，防止 GAS Caja/沙箱閉包隔離
     window.openPairModal = openPairModal;
     window.closePairModal = closePairModal;
