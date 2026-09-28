@@ -1223,48 +1223,7 @@
       }
     }
 
-    // ── 📱 手機掃碼連線 (QR Code 綁定 PWA / iOS App) 邏輯 ──
-    let currentPairTool = { page: 'scanner.html', gaspage: 'scanner' };
-    let currentPairMode = 'gas'; // 'gas' (超大格子極速秒掃) | 'pwa' (完整安裝網址)
-    let currentPairView = 'connect'; // 'connect' | 'ios'
-    let qrcodeObj = null;
-    let qrcodeIosObj = null;
 
-    function openPairModal() {
-      // 載入記住的 neocities 網址，預設為 https://zaca006.neocities.org/scanner
-      const savedNeo = localStorage.getItem('class_mgmt_neocities_url') || 'https://zaca006.neocities.org/scanner';
-      document.getElementById('pair-neocities-input').value = savedNeo;
-
-      // 取得 GAS API 網址
-      let gasUrl = document.getElementById('pair-gas-input').value;
-      if (!gasUrl || !gasUrl.startsWith('https://script.google.com')) {
-        gasUrl = window._GAS_WEBAPP_URL || localStorage.getItem('class_mgmt_gas_api_url') || '';
-      }
-      if (!gasUrl) {
-        if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
-          gasUrl = location.href.split('?')[0];
-        }
-      }
-      document.getElementById('pair-gas-input').value = cleanGasUrl(gasUrl);
-
-      // 嘗試透過 GAS 後端取得正式 Web App URL
-      try {
-        if (typeof google !== 'undefined' && google.script && google.script.run) {
-          google.script.run.withSuccessHandler(serverUrl => {
-            if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
-              const clean = cleanGasUrl(serverUrl);
-              document.getElementById('pair-gas-input').value = clean;
-              localStorage.setItem('class_mgmt_gas_api_url', clean);
-              updatePairQrCode();
-            }
-          }).getGasWebAppUrl();
-        }
-      } catch(e) {}
-
-      switchPairView('connect');
-      updatePairQrCode();
-      document.getElementById('pair-modal').classList.remove('hidden');
-    }
 
     // ── 📱 手機掃碼連線 (Android / iOS 雙系統分流) 邏輯 ──
     let currentPairTool = { page: 'scanner.html', gaspage: 'scanner' };
