@@ -559,16 +559,16 @@
           <div style="margin-top:10px;">
             <div class="pair-section-label">🌐 掃碼情境與模式：</div>
             <div class="pair-mode-selector">
-              <button class="pair-mode-btn active" id="pair-mode-pwa" onclick="setPairMode('pwa')">🌟 首次安裝/系統相機 (PWA 完整網址)</button>
-              <button class="pair-mode-btn" id="pair-mode-gas" onclick="setPairMode('gas')">⚡ 已開 App 掃碼綁定 (純 GAS・格子超大秒掃)</button>
+              <button class="pair-mode-btn active" id="pair-mode-gas" onclick="setPairMode('gas')">⚡ 已開 App 掃碼綁定 (純 GAS・格子超大秒掃)</button>
+              <button class="pair-mode-btn" id="pair-mode-pwa" onclick="setPairMode('pwa')">🌟 首次安裝/系統相機 (PWA 完整網址)</button>
             </div>
             <div style="font-size:0.78rem; color:#38bdf8; margin-top:5px; line-height:1.4;">
-              💡 <strong>手機已打開 App 者：</strong>建議點選<strong>「⚡ 已開 App 掃碼綁定」</strong>，QR 黑白格子大 50%，對著電腦螢幕 0.1 秒秒掃！或在手機頂部點擊「⌨️ 手動輸入網址」直接貼上！
+              💡 <strong>已開 App 者請直接掃上方 QR Code</strong>（黑白格子加大 50%，0.1 秒秒掃）；或在手機頂部點「⌨️ 手動輸入網址」直接貼上！
             </div>
           </div>
 
           <!-- Neocities 外部代管網址輸入 (僅在 PWA 模式顯示) -->
-          <div id="pair-neocities-box" class="pair-input-group" style="margin-top:10px;">
+          <div id="pair-neocities-box" class="pair-input-group" style="display:none; margin-top:10px;">
             <label class="pair-section-label" for="pair-neocities-input">🏠 您的 Neocities 網站網址 (Base URL)：</label>
             <input type="text" id="pair-neocities-input" placeholder="例如：https://zaca006.neocities.org/scanner" oninput="onPairParamChange()">
             <span style="font-size:0.75rem; color:#94a3b8;">💡 預設為 https://zaca006.neocities.org/scanner，若有更換站點可自行修改</span>
@@ -1132,7 +1132,7 @@
 
     // ── 📱 手機掃碼連線 (QR Code 綁定 PWA / iOS App) 邏輯 ──
     let currentPairTool = { page: 'scanner.html', gaspage: 'scanner' };
-    let currentPairMode = 'pwa'; // 'pwa' | 'gas'
+    let currentPairMode = 'gas'; // 'gas' (超大格子極速秒掃) | 'pwa' (完整安裝網址)
     let currentPairView = 'connect'; // 'connect' | 'ios'
     let qrcodeObj = null;
     let qrcodeIosObj = null;
