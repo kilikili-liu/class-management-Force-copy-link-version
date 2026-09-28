@@ -1584,20 +1584,12 @@
         // 情況 B：啟動後置相機 (螢幕背面)
         if (!startedSuccess && target === 'environment') {
           currentFacingMode = 'environment';
-          // 策略 B1: { facingMode: { exact: "environment" } } 強制鎖定後置鏡頭，避免 iOS 誤選前置
           try {
-            await html5QrCode.start({ facingMode: { exact: "environment" } }, scanConfig, onScanSuccess);
+            await html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess);
             startedSuccess = true;
             showToast('🟢 訂正掃碼器就緒 (後置相機/螢幕背面)', 'success');
-          } catch (exactErr) {
-            console.warn('[Camera] exact environment 失敗，改用寬鬆 environment:', exactErr);
-            try {
-              await html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess);
-              startedSuccess = true;
-              showToast('🟢 訂正掃碼器就緒 (後置相機/螢幕背面)', 'success');
-            } catch (envErr) {
-              console.warn('[Camera] 寬鬆 environment 亦失敗:', envErr);
-            }
+          } catch (envErr) {
+            console.warn('[Camera] facingMode environment 啟動失敗:', envErr);
           }
         }
 
@@ -1650,6 +1642,10 @@
         }
 
         if (startedSuccess) {
+          ensureVideoPlayback();
+          [100, 300, 600, 1200].forEach(delay => {
+            setTimeout(ensureVideoPlayback, delay);
+          });
           setupManualFocus();
           refreshCameraListAsync();
         } else {
@@ -1661,6 +1657,21 @@
       }
     }
 
+    function ensureVideoPlayback() {
+      const video = document.querySelector('#reader video');
+      if (video) {
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('autoplay', 'true');
+        video.setAttribute('muted', 'true');
+        video.muted = true;
+        video.playsInline = true;
+        if (video.paused) {
+          video.play().catch(e => console.warn('[Video] auto play error:', e));
+        }
+      }
+    }
+
     function setupManualFocus() {
       const readerEl = document.getElementById('reader');
       if (readerEl && !readerEl._hasTapFocus) {
@@ -1668,14 +1679,20 @@
         const doFocus = async () => {
           try {
             const video = document.querySelector('#reader video');
-            if (video && video.srcObject) {
-              const track = video.srcObject.getVideoTracks()[0];
-              if (track && track.getCapabilities && track.applyConstraints) {
-                const caps = track.getCapabilities();
-                if (caps && caps.focusMode && caps.focusMode.includes('continuous')) {
-                  await track.applyConstraints({
-                    advanced: [{ focusMode: 'continuous' }]
-                  }).catch(() => {});
+            if (video) {
+              ensureVideoPlayback();
+              if (video.paused) {
+                await video.play().catch(() => {});
+              }
+              if (video.srcObject) {
+                const track = video.srcObject.getVideoTracks()[0];
+                if (track && track.getCapabilities && track.applyConstraints) {
+                  const caps = track.getCapabilities();
+                  if (caps && caps.focusMode && caps.focusMode.includes('continuous')) {
+                    await track.applyConstraints({
+                      advanced: [{ focusMode: 'continuous' }]
+                    }).catch(() => {});
+                  }
                 }
               }
               showToast('🎯 正在重新自動對焦...', 'info');
