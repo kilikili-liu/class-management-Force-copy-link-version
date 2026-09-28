@@ -409,6 +409,53 @@
       color: var(--accent-green);
       font-weight: 700;
     }
+    .pair-ios-steps {
+      display: flex;
+      gap: 6px;
+      background: #0f172a;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+    .pair-ios-step-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-sub);
+      padding: 8px 6px;
+      border-radius: 7px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .pair-ios-step-btn:hover {
+      color: #fff;
+    }
+    .pair-ios-step-btn.active {
+      background: #0284c7;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.4);
+    }
+    .pair-next-step-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #ffffff;
+      border: 1px solid #38bdf8;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      margin-top: 10px;
+    }
+    .pair-next-step-btn:hover {
+      background: linear-gradient(135deg, #0369a1, #075985);
+      transform: translateY(-1px);
+    }
     .pair-input-group {
       display: flex;
       flex-direction: column;
@@ -536,16 +583,20 @@
         <button class="pair-modal-close" onclick="closePairModal()">&times;</button>
       </div>
       <div class="pair-modal-content">
-        <!-- 頂部分頁切換：📱 試算表連線碼 vs 🍎 iOS App 描述檔 -->
+        <!-- 頂部分頁切換：🤖 Android 手機 vs 🍎 iOS 手機 -->
         <div class="pair-view-tabs">
-          <button class="pair-view-tab active" id="pair-tab-connect" onclick="switchPairView('connect')">📱 試算表連線碼 (Android 掃碼 / iOS 綁定)</button>
-          <button class="pair-view-tab" id="pair-tab-ios" onclick="switchPairView('ios')">🍎 iOS 桌面 App 描述檔</button>
+          <button class="pair-view-tab active" id="pair-tab-android" onclick="switchPairSystem('android')">🤖 Android 手機</button>
+          <button class="pair-view-tab" id="pair-tab-ios" onclick="switchPairSystem('ios')">🍎 iOS (iPhone / iPad) 手機</button>
         </div>
 
-        <!-- 區塊 A：試算表連線碼內容 -->
-        <div id="pair-view-connect-content">
+        <!-- 區塊 A：🤖 Android 手機完整流程 -->
+        <div id="pair-view-android-content">
+          <div style="background:rgba(34, 197, 94, 0.12); border:1px solid #16a34a; border-radius:8px; padding:9px 12px; font-size:0.82rem; color:#dcfce7; line-height:1.45;">
+            🤖 <strong>Android 流程：</strong>選好功能頁面 ➔ 相機直接掃碼開啟 ➔ 點頂部「📲 安裝 App」加入桌面即可！
+          </div>
+
           <!-- 選擇目標工具 -->
-          <div>
+          <div style="margin-top:12px;">
             <div class="pair-section-label">🎯 選擇手機開啟的功能頁面：</div>
             <div class="pair-tool-chips" style="grid-template-columns: repeat(2, 1fr);">
               <button class="pair-chip-btn active" data-page="scanner.html" data-gaspage="scanner" onclick="selectPairTool(this)">📥 作業收繳速掃</button>
@@ -555,32 +606,7 @@
             </div>
           </div>
 
-          <!-- 連線方式切換：OS 分流 -->
-          <div style="margin-top:10px;">
-            <div class="pair-section-label">📲 選擇手機系統 / 掃碼情境：</div>
-            <div class="pair-mode-selector">
-              <button class="pair-mode-btn active" id="pair-mode-gas" onclick="setPairMode('gas')">🍎 iOS App 已裝・掃碼綁定（格子超大・Safari 可掃）</button>
-              <button class="pair-mode-btn" id="pair-mode-pwa" onclick="setPairMode('pwa')">🤖 Android 手機掃碼（PWA 完整網址・一步到位）</button>
-            </div>
-            <div style="font-size:0.78rem; color:#38bdf8; margin-top:5px; line-height:1.4;">
-              💡 <strong>iOS</strong>：桌面 App 已裝好後，打開 App 對準 QR Code 掃一次即完成綁定。&nbsp;｜&nbsp;<strong>Android</strong>：直接用相機掃 PWA 完整網址，首次點「安裝 App」加到主畫面。
-            </div>
-          </div>
-
-          <!-- Neocities 外部代管網址輸入 (僅在 PWA 模式顯示) -->
-          <div id="pair-neocities-box" class="pair-input-group" style="display:none; margin-top:10px;">
-            <label class="pair-section-label" for="pair-neocities-input">🏠 您的 Neocities 網站網址 (Base URL)：</label>
-            <input type="text" id="pair-neocities-input" placeholder="例如：https://zaca006.neocities.org/scanner" oninput="onPairParamChange()">
-            <span style="font-size:0.75rem; color:#94a3b8;">💡 預設為 https://zaca006.neocities.org/scanner，若有更換站點可自行修改</span>
-          </div>
-
-          <!-- GAS API 網址 (自動偵測) -->
-          <div class="pair-input-group" style="margin-top:10px;">
-            <label class="pair-section-label" for="pair-gas-input">🔗 目前試算表 GAS API 網址：</label>
-            <input type="text" id="pair-gas-input" placeholder="自動偵測中..." oninput="onPairParamChange()">
-          </div>
-
-          <!-- 動態生成的 QR Code 預覽區 -->
+          <!-- 動態生成的 QR Code 預覽區 (PWA 完整網址) -->
           <div class="pair-qr-wrapper" style="margin-top:12px;">
             <div class="pair-qr-display" id="pair-qrcode-container"></div>
             <div class="pair-url-box">
@@ -594,46 +620,112 @@
 
           <!-- 說明指引 -->
           <div class="pair-instruction-steps" style="margin-top:12px;">
-            <div style="font-weight:700; color:#a78bfa; margin-bottom:4px;">🍎 iOS (iPhone / iPad) — 選「iOS App 已裝・掃碼綁定」：</div>
-            <div>① 在電腦端點選上方「🍎 iOS 桌面 App 描述檔」標籤，掃描安裝免簽名 App。</div>
-            <div>② App 裝好後，切回「📱 試算表連線碼」→「<strong>🍎 iOS App 已裝・掃碼綁定</strong>」（純 GAS 短碼，格子超大，Safari 可掃）。</div>
-            <div>③ 打開桌面 App，對準 QR Code 掃一次，即自動完成試算表綁定！</div>
-            <div style="font-weight:700; color:#38bdf8; margin-top:8px; margin-bottom:4px;">🤖 Android 手機 — 選「Android 手機掃碼」：</div>
-            <div>① 選「<strong>🤖 Android 手機掃碼</strong>」模式，Neocities PWA 完整網址 QR Code 將自動更新。</div>
-            <div>② 打開 Android 相機或 Google Lens，掃描 QR Code，網頁開啟後點「📲 安裝 App」加到主畫面即完成。</div>
-          </div>
-        </div>
-
-        <!-- 區塊 B：iOS 描述檔內容 (預設隱藏) -->
-        <div id="pair-view-ios-content" style="display:none;">
-          <div style="background:rgba(56, 189, 248, 0.1); border:1px solid #0284c7; border-radius:8px; padding:10px 12px; font-size:0.82rem; color:#e0f2fe; line-height:1.5;">
-            🍎 <strong>iOS 專屬免簽名桌面 App 描述檔 (.mobileconfig)</strong><br>
-            安裝後即可在 iPhone / iPad 主畫面獲得與原生 App 一樣的全螢幕體驗（無上方網址列與下方工具列），且永不過期。
+            <div style="font-weight:700; color:#38bdf8; margin-bottom:4px;">📲 Android 掃碼與安裝步驟：</div>
+            <div>① 打開 Android 手機相機或 Google Lens，直接掃描上方 QR Code 開啟網頁。</div>
+            <div>② 網頁開啟後，點擊頁面頂部的「<strong>📲 安裝 App</strong>」或瀏覽器選單「加到主畫面」。</div>
+            <div>③ 往後直接從手機桌面點開即可使用，完全不用再重複掃碼！</div>
           </div>
 
-          <!-- iOS QR Code 預覽區 -->
-          <div class="pair-qr-wrapper" style="margin-top:12px;">
-            <div class="pair-qr-display" id="pair-qrcode-ios-container"></div>
-            <div class="pair-url-box">
-              <span class="pair-url-text" id="pair-ios-url-preview">產生中...</span>
-              <div class="pair-url-actions">
-                <button class="pair-sm-btn" onclick="copyIosProfileUrl()">📋 複製</button>
-                <a href="#" target="_blank" id="pair-ios-dl-link" download="class_app.mobileconfig" class="pair-sm-btn" style="background:#0284c7; color:#fff; border-color:#38bdf8;">📥 下載描述檔</a>
+          <!-- 展開進階伺服器網址設定 -->
+          <details style="margin-top:10px; font-size:0.78rem; color:#94a3b8; background:#0f172a; padding:8px 10px; border-radius:6px; border:1px solid #334155;">
+            <summary style="cursor:pointer; font-weight:600; color:#cbd5e1;">⚙️ 伺服器網址設定 (一般情況無需修改)</summary>
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:8px;">
+              <div>
+                <label>Neocities 外部代管網址：</label>
+                <input type="text" id="pair-neocities-input" style="width:100%; background:#1e293b; border:1px solid #475569; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.75rem;" placeholder="https://zaca006.neocities.org/scanner" oninput="onPairParamChange()">
+              </div>
+              <div>
+                <label>GAS Web App API 網址：</label>
+                <input type="text" id="pair-gas-input" style="width:100%; background:#1e293b; border:1px solid #475569; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.75rem;" placeholder="自動偵測中..." oninput="onPairParamChange()">
               </div>
             </div>
+          </details>
+        </div>
+
+        <!-- 區塊 B：🍎 iOS 手機完整流程 (預設隱藏) -->
+        <div id="pair-view-ios-content" style="display:none;">
+          <!-- 步驟切換器 -->
+          <div class="pair-ios-steps">
+            <button class="pair-ios-step-btn active" id="pair-ios-step1-btn" onclick="switchIosStep(1)">
+              1️⃣ 掃碼下載描述檔安裝 App
+            </button>
+            <button class="pair-ios-step-btn" id="pair-ios-step2-btn" onclick="switchIosStep(2)">
+              2️⃣ 掃連線碼綁定試算表
+            </button>
           </div>
 
-          <!-- iOS 安裝 3 步教學 -->
-          <div class="pair-instruction-steps" style="margin-top:12px;">
-            <div style="font-weight:700; color:#38bdf8; margin-bottom:6px;">📲 iOS 3 步驟安裝與綁定教學：</div>
-            <div><strong>步驟 1：下載描述檔</strong><br>用 iPhone 相機掃描上方 QR Code（或在 Safari 開啟），點選「允許」下載描述檔。</div>
-            <div style="margin-top:6px;"><strong>步驟 2：前往系統設定安裝</strong><br>打開 iPhone「設定」➔ 點選最上方「已下載描述檔」➔ 點右上角「安裝」➔ 輸入手機解鎖密碼即可完成。</div>
-            <div style="margin-top:6px;"><strong>步驟 3：桌面點開 App 掃碼綁定</strong><br>回到 iPhone 主畫面點開「作業速掃」App，將鏡頭切換對準「📱 試算表連線碼」掃描一次，永久完成自動綁定！</div>
+          <!-- 步驟 1 內容：下載與安裝描述檔 -->
+          <div id="pair-ios-step1-content" style="margin-top:12px;">
+            <div style="background:rgba(56, 189, 248, 0.1); border:1px solid #0284c7; border-radius:8px; padding:9px 12px; font-size:0.82rem; color:#e0f2fe; line-height:1.45;">
+              🍎 <strong>步驟 1：安裝免簽名原生全螢幕桌面 App</strong><br>
+              安裝後即可在 iPhone / iPad 主畫面獲得與原生 App 一樣的全螢幕體驗（無上方網址列與下方工具列），且永不過期。
+            </div>
+
+            <!-- iOS 描述檔 QR Code 預覽區 -->
+            <div class="pair-qr-wrapper" style="margin-top:12px;">
+              <div class="pair-qr-display" id="pair-qrcode-ios-container"></div>
+              <div class="pair-url-box">
+                <span class="pair-url-text" id="pair-ios-url-preview">產生中...</span>
+                <div class="pair-url-actions">
+                  <button class="pair-sm-btn" onclick="copyIosProfileUrl()">📋 複製</button>
+                  <a href="#" target="_blank" id="pair-ios-dl-link" download="class_app.mobileconfig" class="pair-sm-btn" style="background:#0284c7; color:#fff; border-color:#38bdf8;">📥 下載</a>
+                </div>
+              </div>
+            </div>
+
+            <!-- iOS 安裝教學 -->
+            <div class="pair-instruction-steps" style="margin-top:12px;">
+              <div style="font-weight:700; color:#38bdf8; margin-bottom:4px;">📲 安裝 3 步驟：</div>
+              <div>① 用 iPhone 原生相機掃描上方碼（或在 Safari 開啟），點「允許」下載描述檔。</div>
+              <div>② 打開 iPhone「設定」➔ 最上方點「已下載描述檔」➔ 右上角點「安裝」並輸入密碼。</div>
+              <div>③ iPhone 主畫面即出現免簽名全螢幕「作業速掃」App！</div>
+            </div>
+
+            <button class="pair-next-step-btn" onclick="switchIosStep(2)">
+              👉 App 已安裝完成？進入「步驟 2：掃連線碼綁定」➔
+            </button>
           </div>
 
-          <div style="margin-top:12px; text-align:center;">
-            <button class="pair-chip-btn active" style="width:100%; padding:10px; font-size:0.88rem;" onclick="switchPairView('connect')">
-              👉 安裝完成？點此切換回「📱 試算表連線碼」供手機掃碼綁定
+          <!-- 步驟 2 內容：掃連線碼綁定試算表 -->
+          <div id="pair-ios-step2-content" style="display:none; margin-top:12px;">
+            <div style="background:rgba(168, 85, 247, 0.12); border:1px solid #9333ea; border-radius:8px; padding:9px 12px; font-size:0.82rem; color:#f3e8ff; line-height:1.45;">
+              ⚡ <strong>步驟 2：打開桌面 App 掃碼綁定試算表</strong><br>
+              此碼為純部署 ID（AKfy... 76字元），黑白格子最大化，iPhone / Safari 鏡頭靠過去即秒掃秒綁定！
+            </div>
+
+            <!-- 選擇目標工具 -->
+            <div style="margin-top:10px;">
+              <div class="pair-section-label">🎯 選擇手機開啟的功能頁面：</div>
+              <div class="pair-tool-chips" style="grid-template-columns: repeat(2, 1fr);">
+                <button class="pair-chip-btn active" data-page="scanner.html" data-gaspage="scanner" onclick="selectPairTool(this)">📥 作業收繳速掃</button>
+                <button class="pair-chip-btn" data-page="index.html" data-gaspage="" onclick="selectPairTool(this)">🎯 純按鈕點收主頁</button>
+                <button class="pair-chip-btn" data-page="correction_scanner.html" data-gaspage="correction_scanner" onclick="selectPairTool(this)">📱 訂正掃碼工具</button>
+                <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏️ 錯題訂正主頁</button>
+              </div>
+            </div>
+
+            <!-- 純部署 ID QR Code 預覽區 -->
+            <div class="pair-qr-wrapper" style="margin-top:12px;">
+              <div class="pair-qr-display" id="pair-qrcode-ios-bind-container"></div>
+              <div class="pair-url-box">
+                <span class="pair-url-text" id="pair-ios-bind-preview">產生連線碼中...</span>
+                <div class="pair-url-actions">
+                  <button class="pair-sm-btn" onclick="copyPairUrl()">📋 複製</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 說明指引 -->
+            <div class="pair-instruction-steps" style="margin-top:12px;">
+              <div style="font-weight:700; color:#c084fc; margin-bottom:4px;">📲 綁定連線步驟：</div>
+              <div>① 打開 iPhone 桌面剛安裝的「作業速掃」App。</div>
+              <div>② 鏡頭對準上方 QR Code 掃描一次，App 顯示「🎉 試算表綁定成功」！</div>
+              <div>③ 往後每次打開 App 自動連線此試算表，永久不需再掃碼。</div>
+              <div style="color:#94a3b8; margin-top:4px;">💡 亦可在手機 App 頂部點「⌨️ 手動輸入網址」，貼上此連線碼直接完成綁定。</div>
+            </div>
+
+            <button class="pair-chip-btn" style="width:100%; padding:8px; margin-top:10px; font-size:0.8rem;" onclick="switchIosStep(1)">
+              ⬅️ 返回「步驟 1：下載安裝描述檔」
             </button>
           </div>
         </div>
@@ -1175,31 +1267,194 @@
       document.getElementById('pair-modal').classList.remove('hidden');
     }
 
+    // ── 📱 手機掃碼連線 (Android / iOS 雙系統分流) 邏輯 ──
+    let currentPairTool = { page: 'scanner.html', gaspage: 'scanner' };
+    let currentPairSystem = 'android'; // 'android' | 'ios'
+    let currentIosStep = 1; // 1 (下載安裝描述檔) | 2 (掃連線碼綁定)
+    let qrcodeAndroidObj = null;
+    let qrcodeIosObj = null;
+    let qrcodeIosBindObj = null;
+
+    function openPairModal() {
+      // 載入記住的 neocities 網址，預設為 https://zaca006.neocities.org/scanner
+      const savedNeo = localStorage.getItem('class_mgmt_neocities_url') || 'https://zaca006.neocities.org/scanner';
+      const neoInput = document.getElementById('pair-neocities-input');
+      if (neoInput) neoInput.value = savedNeo;
+
+      // 取得 GAS API 網址
+      let gasUrl = '';
+      const gasInput = document.getElementById('pair-gas-input');
+      if (gasInput) gasUrl = gasInput.value;
+      if (!gasUrl || !gasUrl.startsWith('https://script.google.com')) {
+        gasUrl = window._GAS_WEBAPP_URL || localStorage.getItem('class_mgmt_gas_api_url') || '';
+      }
+      if (!gasUrl) {
+        if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+          gasUrl = location.href.split('?')[0];
+        }
+      }
+      if (gasInput) gasInput.value = cleanGasUrl(gasUrl);
+
+      // 嘗試透過 GAS 後端取得正式 Web App URL
+      try {
+        if (typeof google !== 'undefined' && google.script && google.script.run) {
+          google.script.run.withSuccessHandler(serverUrl => {
+            if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
+              const clean = cleanGasUrl(serverUrl);
+              if (gasInput) gasInput.value = clean;
+              localStorage.setItem('class_mgmt_gas_api_url', clean);
+              refreshActiveQrCodes();
+            }
+          }).getGasWebAppUrl();
+        }
+      } catch(e) {}
+
+      switchPairSystem(currentPairSystem || 'android');
+      document.getElementById('pair-modal').classList.remove('hidden');
+    }
+
     function closePairModal() {
       document.getElementById('pair-modal').classList.add('hidden');
     }
 
-    function switchPairView(view) {
-      currentPairView = view;
-      const tabConnect = document.getElementById('pair-tab-connect');
+    function switchPairSystem(sys) {
+      currentPairSystem = sys;
+      const tabAndroid = document.getElementById('pair-tab-android');
       const tabIos = document.getElementById('pair-tab-ios');
-      const viewConnect = document.getElementById('pair-view-connect-content');
+      const viewAndroid = document.getElementById('pair-view-android-content');
       const viewIos = document.getElementById('pair-view-ios-content');
 
-      if (tabConnect) tabConnect.classList.toggle('active', view === 'connect');
-      if (tabIos) tabIos.classList.toggle('active', view === 'ios');
-      if (viewConnect) viewConnect.style.display = (view === 'connect') ? 'block' : 'none';
-      if (viewIos) viewIos.style.display = (view === 'ios') ? 'block' : 'none';
+      if (tabAndroid) tabAndroid.classList.toggle('active', sys === 'android');
+      if (tabIos) tabIos.classList.toggle('active', sys === 'ios');
+      if (viewAndroid) viewAndroid.style.display = (sys === 'android') ? 'block' : 'none';
+      if (viewIos) viewIos.style.display = (sys === 'ios') ? 'block' : 'none';
 
-      if (view === 'ios') {
+      if (sys === 'android') {
+        updateAndroidQrCode();
+      } else {
+        switchIosStep(currentIosStep || 1);
+      }
+    }
+
+    function switchIosStep(step) {
+      currentIosStep = step;
+      const btn1 = document.getElementById('pair-ios-step1-btn');
+      const btn2 = document.getElementById('pair-ios-step2-btn');
+      const content1 = document.getElementById('pair-ios-step1-content');
+      const content2 = document.getElementById('pair-ios-step2-content');
+
+      if (btn1) btn1.classList.toggle('active', step === 1);
+      if (btn2) btn2.classList.toggle('active', step === 2);
+      if (content1) content1.style.display = (step === 1) ? 'block' : 'none';
+      if (content2) content2.style.display = (step === 2) ? 'block' : 'none';
+
+      if (step === 1) {
         updateIosProfileQrCode();
       } else {
-        updatePairQrCode();
+        updateIosBindQrCode();
+      }
+    }
+
+    function selectPairTool(btn) {
+      const page = btn.getAttribute('data-page');
+      const gaspage = btn.getAttribute('data-gaspage');
+      document.querySelectorAll('.pair-chip-btn').forEach(b => {
+        if (b.getAttribute('data-page') === page) {
+          b.classList.add('active');
+        } else {
+          b.classList.remove('active');
+        }
+      });
+      currentPairTool = { page, gaspage };
+      refreshActiveQrCodes();
+    }
+
+    function refreshActiveQrCodes() {
+      if (currentPairSystem === 'android') {
+        updateAndroidQrCode();
+      } else {
+        if (currentIosStep === 1) {
+          updateIosProfileQrCode();
+        } else {
+          updateIosBindQrCode();
+        }
+      }
+    }
+
+    function onPairParamChange() {
+      const neoVal = document.getElementById('pair-neocities-input') ? document.getElementById('pair-neocities-input').value.trim() : '';
+      if (neoVal) {
+        localStorage.setItem('class_mgmt_neocities_url', neoVal);
+      }
+      const gasVal = document.getElementById('pair-gas-input') ? document.getElementById('pair-gas-input').value.trim() : '';
+      if (gasVal) {
+        localStorage.setItem('class_mgmt_gas_api_url', gasVal);
+      }
+      refreshActiveQrCodes();
+    }
+
+    function extractGasDeploymentId(url) {
+      if (!url || typeof url !== 'string') return '';
+      const trimmed = url.trim();
+      const m = trimmed.match(/\/macros\/s\/([A-Za-z0-9_-]+)/);
+      if (m) return m[1];
+      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(trimmed)) return trimmed;
+      return '';
+    }
+
+    function getBaseGasUrl() {
+      let gasUrl = document.getElementById('pair-gas-input') ? document.getElementById('pair-gas-input').value.trim() : '';
+      if (!gasUrl) {
+        gasUrl = window._GAS_WEBAPP_URL || localStorage.getItem('class_mgmt_gas_api_url') || location.href.split('?')[0];
+      }
+      return cleanGasUrl(gasUrl);
+    }
+
+    function buildAndroidPairUrl() {
+      const gasUrl = getBaseGasUrl();
+      let neoBase = document.getElementById('pair-neocities-input') ? document.getElementById('pair-neocities-input').value.trim() : '';
+      if (!neoBase) {
+        neoBase = 'https://zaca006.neocities.org/scanner';
+      }
+      if (!/^https?:\/\//i.test(neoBase)) {
+        neoBase = 'https://' + neoBase;
+      }
+      neoBase = neoBase.replace(/\/+$/, '');
+      const toolFile = currentPairTool.page || 'scanner.html';
+      return `${neoBase}/${toolFile}?api_url=${encodeURIComponent(gasUrl)}`;
+    }
+
+    function updateAndroidQrCode() {
+      const finalUrl = buildAndroidPairUrl();
+      const previewEl = document.getElementById('pair-url-preview');
+      const linkEl = document.getElementById('pair-open-link');
+      if (previewEl) previewEl.textContent = finalUrl;
+      if (linkEl) linkEl.href = finalUrl;
+
+      const container = document.getElementById('pair-qrcode-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (typeof QRCode !== 'undefined') {
+        try {
+          qrcodeAndroidObj = new QRCode(container, {
+            text: finalUrl,
+            width: 240,
+            height: 240,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.L
+          });
+        } catch (e) {
+          renderFallbackQrImg(container, finalUrl);
+        }
+      } else {
+        renderFallbackQrImg(container, finalUrl);
       }
     }
 
     function getIosProfileUrl() {
-      let neoBase = document.getElementById('pair-neocities-input').value.trim();
+      let neoBase = document.getElementById('pair-neocities-input') ? document.getElementById('pair-neocities-input').value.trim() : '';
       if (!neoBase) {
         neoBase = 'https://zaca006.neocities.org/scanner';
       }
@@ -1228,8 +1483,8 @@
         try {
           qrcodeIosObj = new QRCode(container, {
             text: iosUrl,
-            width: 200,
-            height: 200,
+            width: 210,
+            height: 210,
             colorDark: '#000000',
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.L
@@ -1255,113 +1510,23 @@
       }
     }
 
-    function selectPairTool(btn) {
-      document.querySelectorAll('.pair-chip-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      currentPairTool = {
-        page: btn.getAttribute('data-page'),
-        gaspage: btn.getAttribute('data-gaspage')
-      };
-      updatePairQrCode();
-    }
+    function updateIosBindQrCode() {
+      const gasUrl = getBaseGasUrl();
+      const depId = extractGasDeploymentId(gasUrl);
+      const qrContent = depId || gasUrl;
 
-    function setPairMode(mode) {
-      currentPairMode = mode;
-      document.getElementById('pair-mode-pwa').classList.toggle('active', mode === 'pwa');
-      document.getElementById('pair-mode-gas').classList.toggle('active', mode === 'gas');
-      document.getElementById('pair-neocities-box').style.display = (mode === 'pwa') ? 'flex' : 'none';
-      updatePairQrCode();
-    }
-
-    function onPairParamChange() {
-      const neoVal = document.getElementById('pair-neocities-input').value.trim();
-      if (neoVal) {
-        localStorage.setItem('class_mgmt_neocities_url', neoVal);
-      }
-      const gasVal = document.getElementById('pair-gas-input').value.trim();
-      if (gasVal) {
-        localStorage.setItem('class_mgmt_gas_api_url', gasVal);
-      }
-      updatePairQrCode();
-      if (currentPairView === 'ios') {
-        updateIosProfileQrCode();
-      }
-    }
-
-    function extractGasDeploymentId(url) {
-      if (!url || typeof url !== 'string') return '';
-      const trimmed = url.trim();
-      const m = trimmed.match(/\/macros\/s\/([A-Za-z0-9_-]+)/);
-      if (m) return m[1];
-      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(trimmed)) return trimmed;
-      return '';
-    }
-
-    function buildPairTargetUrl() {
-      let gasUrl = document.getElementById('pair-gas-input').value.trim();
-      if (!gasUrl) {
-        gasUrl = location.href.split('?')[0];
-      }
-      gasUrl = cleanGasUrl(gasUrl);
-
-      if (currentPairMode === 'gas') {
-        if (!currentPairTool.gaspage) return gasUrl;
-        return `${gasUrl}?page=${encodeURIComponent(currentPairTool.gaspage)}`;
-      }
-
-      // PWA 模式 (Neocities)
-      let neoBase = document.getElementById('pair-neocities-input').value.trim();
-      if (!neoBase) {
-        neoBase = 'https://zaca006.neocities.org/scanner';
-      }
-      if (!/^https?:\/\//i.test(neoBase)) {
-        neoBase = 'https://' + neoBase;
-      }
-      neoBase = neoBase.replace(/\/+$/, '');
-      const toolFile = currentPairTool.page || 'scanner.html';
-
-      return `${neoBase}/${toolFile}?api_url=${encodeURIComponent(gasUrl)}`;
-    }
-
-    function getPairQrCodeContent() {
-      let gasUrl = document.getElementById('pair-gas-input').value.trim();
-      if (!gasUrl) {
-        gasUrl = location.href.split('?')[0];
-      }
-      gasUrl = cleanGasUrl(gasUrl);
-
-      if (currentPairMode === 'gas') {
-        // iOS 模式：提取純 Deployment ID，長度僅 76 字元，黑白格子最大化，iPhone 秒掃！
-        const depId = extractGasDeploymentId(gasUrl);
-        if (depId) return depId;
-        return gasUrl;
-      }
-
-      // PWA 模式 (Neocities 完整網址)
-      return buildPairTargetUrl();
-    }
-
-    function updatePairQrCode() {
-      const finalUrl = buildPairTargetUrl();
-      const qrContent = getPairQrCodeContent();
-      const previewEl = document.getElementById('pair-url-preview');
-      const linkEl = document.getElementById('pair-open-link');
+      const previewEl = document.getElementById('pair-ios-bind-preview');
       if (previewEl) {
-        if (currentPairMode === 'gas' && qrContent !== finalUrl) {
-          previewEl.innerHTML = `<span style="color:#38bdf8; font-weight:700;">⚡ 純部署碼（${qrContent.length}字元・格子最大秒掃）：</span><br><code style="font-size:0.75rem; word-break:break-all;">${qrContent}</code>`;
-        } else {
-          previewEl.textContent = finalUrl;
-        }
+        previewEl.innerHTML = `<span style="color:#c084fc; font-weight:700;">⚡ 純部署碼（${qrContent.length}字元・格子最大秒掃）：</span><br><code style="font-size:0.75rem; word-break:break-all;">${qrContent}</code>`;
       }
-      if (linkEl) linkEl.href = finalUrl;
 
-      const container = document.getElementById('pair-qrcode-container');
+      const container = document.getElementById('pair-qrcode-ios-bind-container');
       if (!container) return;
       container.innerHTML = '';
 
       if (typeof QRCode !== 'undefined') {
         try {
-          qrcodeObj = new QRCode(container, {
+          qrcodeIosBindObj = new QRCode(container, {
             text: qrContent,
             width: 240,
             height: 240,
@@ -1377,20 +1542,16 @@
       }
     }
 
-    function renderFallbackQrImg(container, url) {
-      container.innerHTML = '';
-      const img = document.createElement('img');
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(url)}`;
-      img.alt = 'QR Code';
-      img.style.width = '240px';
-      img.style.height = '240px';
-      container.appendChild(img);
-    }
-
     function copyPairUrl() {
-      const url = buildPairTargetUrl();
-      const qrContent = getPairQrCodeContent();
-      const textToCopy = (currentPairMode === 'gas') ? qrContent : url;
+      let textToCopy = '';
+      if (currentPairSystem === 'android') {
+        textToCopy = buildAndroidPairUrl();
+      } else {
+        const gasUrl = getBaseGasUrl();
+        const depId = extractGasDeploymentId(gasUrl);
+        textToCopy = depId || gasUrl;
+      }
+
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(textToCopy).then(() => {
           showToast('✅ 已複製連線碼至剪貼簿！');
@@ -1400,6 +1561,16 @@
       } else {
         prompt('請手動複製以下連線碼：', textToCopy);
       }
+    }
+
+    function renderFallbackQrImg(container, url) {
+      container.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(url)}`;
+      img.alt = 'QR Code';
+      img.style.width = '240px';
+      img.style.height = '240px';
+      container.appendChild(img);
     }
 
     const subjectCategoryMap = {
