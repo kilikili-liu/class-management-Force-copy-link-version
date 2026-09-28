@@ -744,7 +744,7 @@
       <a href="StickerGenerator.html" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none;">🏷️ 條碼貼紙</a>
       <a href="scanner.html" id="nav-btn-scanner" class="nav-btn" style="background:#0284c7; color:#fff; border:1px solid #38bdf8; text-decoration:none;">📷 作業速掃</a>
       <a href="correction.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">✏️ 錯題訂正</a>
-      <button id="nav-btn-pair" class="btn-phone-pair" style="display:none;" onclick="openPairModal()">📱 手機相機速掃連線</button>
+      <button id="nav-btn-pair" class="btn-phone-pair" onclick="openPairModal()">📱 連結碼</button>
     </div>
   </header>
 
@@ -979,19 +979,18 @@
       const scanBtn = document.getElementById('nav-btn-scanner') || document.querySelector('a[href*="scanner.html"]');
       const pairBtn = document.getElementById('nav-btn-pair') || document.querySelector('.btn-phone-pair');
 
+      if (pairBtn) {
+        pairBtn.style.display = 'inline-flex';
+        pairBtn.innerHTML = '📱 連結碼';
+        pairBtn.title = '點擊查看手機連線 QR Code（Android / iOS 掃碼綁定）';
+      }
+
       if (isGas) {
-        // 在 GAS 原生環境下：相機被 Google 沙箱封鎖，隱藏作業速掃按鈕，並顯示「手機相機速掃連線」供手機配對
+        // 在 GAS 原生環境下：相機被 Google 沙箱封鎖，隱藏無法啟動相機的作業速掃按鈕
         if (scanBtn) scanBtn.style.display = 'none';
-        if (pairBtn) {
-          pairBtn.style.display = 'inline-flex';
-          pairBtn.innerHTML = '📱 手機相機速掃連線';
-          pairBtn.title = '點擊查看手機連線 QR Code（手機開啟外部空間即可使用相機速掃）';
-          pairBtn.style.boxShadow = '0 0 12px rgba(14, 165, 233, 0.7)';
-        }
       } else {
-        // 在外部空間 (Neocities / 手機 PWA)：本機直接可啟用相機，顯示作業速掃，隱藏不需配對的手機連線按鈕
+        // 在外部空間 (Neocities / 手機 PWA)：本機直接可啟用相機
         if (scanBtn) scanBtn.style.display = 'inline-flex';
-        if (pairBtn) pairBtn.style.display = 'none';
         checkIosPwaButton();
         return;
       }
