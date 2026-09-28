@@ -1582,12 +1582,7 @@
       if (target === false) target = 'user';
 
       try {
-        html5QrCode = new Html5Qrcode("reader", {
-          verbose: false,
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          }
-        });
+        html5QrCode = new Html5Qrcode("reader", { verbose: false });
 
         // 情況 A：指定 cameraId (由多鏡頭選取)
         if (typeof target === 'string' && target !== 'environment' && target !== 'user') {
@@ -1642,7 +1637,7 @@
         // 情況 E：終極回退 (枚舉可用設備)
         if (!startedSuccess) {
           if (availableCameras.length === 0) {
-            availableCameras = await Html5Qrcode.getCameras().catch(() => []);
+            await refreshCameraListAsync();
           }
           if (availableCameras.length > 0) {
             let pickIdx = 0;
@@ -1664,18 +1659,6 @@
 
         if (startedSuccess) {
           ensureVideoPlayback();
-          [100, 300, 600, 1200].forEach(delay => {
-            setTimeout(ensureVideoPlayback, delay);
-          });
-          // 1500ms 畫面監測看門狗：若 iOS 視訊處於停滯/黑屏狀態，再次主動喚醒
-          setTimeout(() => {
-            const video = document.querySelector('#reader video');
-            if (video && (video.paused || video.videoWidth === 0 || video.currentTime === 0)) {
-              console.warn('[Camera] 偵測到視訊可能停滯，嘗試再次喚醒...');
-              ensureVideoPlayback();
-              if (video.paused) video.play().catch(() => {});
-            }
-          }, 1500);
           setupManualFocus();
           refreshCameraListAsync();
         } else {
@@ -1690,10 +1673,8 @@
     function ensureVideoPlayback() {
       const video = document.querySelector('#reader video');
       if (video) {
-        video.setAttribute('playsinline', 'true');
-        video.setAttribute('webkit-playsinline', 'true');
-        video.setAttribute('autoplay', 'true');
-        video.setAttribute('muted', 'true');
+        if (!video.hasAttribute('playsinline')) video.setAttribute('playsinline', 'true');
+        if (!video.hasAttribute('webkit-playsinline')) video.setAttribute('webkit-playsinline', 'true');
         video.muted = true;
         video.playsInline = true;
         if (video.paused) {
@@ -1709,7 +1690,6 @@
         const doFocusOrRestart = async (e) => {
           try {
             const video = document.querySelector('#reader video');
-            // 若無 video、串流未就緒、處於暫停、無畫面尺寸或時間軸未走動，直接手勢喚醒重啟鏡頭
             const isStalled = !video || !video.srcObject || video.paused || video.readyState < 2 || video.videoWidth === 0;
             if (isStalled) {
               showToast('🔄 偵測到畫面停滯，正在手勢喚醒重啟鏡頭...', 'info');
@@ -1717,18 +1697,7 @@
               return;
             }
             ensureVideoPlayback();
-            if (video.srcObject) {
-              const track = video.srcObject.getVideoTracks()[0];
-              if (track && track.getCapabilities && track.applyConstraints) {
-                const caps = track.getCapabilities();
-                if (caps && caps.focusMode && caps.focusMode.includes('continuous')) {
-                  await track.applyConstraints({
-                    advanced: [{ focusMode: 'continuous' }]
-                  }).catch(() => {});
-                }
-              }
-            }
-            showToast('🎯 正在重新自動對焦...', 'info');
+            showToast('🎯 鏡頭就緒對焦中', 'info');
           } catch(e){
             startCameraWithFacingMode(currentFacingMode);
           }
@@ -1740,16 +1709,22 @@
 
     async function refreshCameraListAsync() {
       try {
-        const cams = await Html5Qrcode.getCameras();
-        if (cams && cams.length > 0) {
-          availableCameras = cams;
-          if (currentCameraIndex < 0) {
-            if (currentFacingMode === 'environment') {
-              const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
-              currentCameraIndex = rearIdx >= 0 ? rearIdx : 0;
-            } else {
-              const frontIdx = availableCameras.findIndex(c => /front|user|前|自拍|selfie/i.test(c.label));
-              currentCameraIndex = frontIdx >= 0 ? frontIdx : 0;
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(d => d.kind === 'videoinput');
+          if (videoDevices.length > 0) {
+            availableCameras = videoDevices.map(d => ({
+              id: d.deviceId,
+              label: d.label || ''
+            }));
+            if (currentCameraIndex < 0) {
+              if (currentFacingMode === 'environment') {
+                const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
+                currentCameraIndex = rearIdx >= 0 ? rearIdx : 0;
+              } else {
+                const frontIdx = availableCameras.findIndex(c => /front|user|前|自拍|selfie/i.test(c.label));
+                currentCameraIndex = frontIdx >= 0 ? frontIdx : 0;
+              }
             }
           }
         }
@@ -1761,7 +1736,7 @@
       await stopActiveCamera();
 
       if (availableCameras.length === 0) {
-        availableCameras = await Html5Qrcode.getCameras().catch(() => []);
+        await refreshCameraListAsync();
       }
 
       if (availableCameras.length > 1) {
