@@ -1462,53 +1462,111 @@
         return;
       }
 
-      showToast('⏳ 正在啟動相機...', 'success');
-      const config = { fps: 10, qrbox: { width: 180, height: 180 } };
+      showToast('⏳ 正在啟動高清自動對焦相機...', 'success');
+
+      // 動態掃描框：支援平板與手機，自動按螢幕比例調整框大小（最小 250px，最大 480px）
+      const scanConfig = {
+        fps: 15,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const edge = Math.max(250, Math.min(480, Math.floor(minEdge * 0.72)));
+          return { width: edge, height: edge };
+        },
+        aspectRatio: 1.0,
+        videoConstraints: {
+          facingMode: preferRear ? { ideal: "environment" } : { ideal: "user" },
+          focusMode: { ideal: "continuous" },
+          width: { min: 640, ideal: 1280, max: 1920 },
+          height: { min: 480, ideal: 720, max: 1080 },
+          advanced: [{ focusMode: "continuous" }]
+        }
+      };
 
       await stopAllMediaTracks();
 
       try {
+        // 啟用原生 Apple/Android 晶片級 BarcodeDetector 加速引擎
+        html5QrCode = new Html5Qrcode("reader", {
+          verbose: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
+        });
+
+        // 策略 1：iPad/iPhone 優先以原生 { facingMode: "environment" } 啟動
+        // （iOS WebKit 會自動選中主廣角自動對焦鏡頭，避免誤選超廣角或前置）
+        if (preferRear) {
+          try {
+            await html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess);
+            showToast('🟢 自動對焦訂正掃碼器就緒 (後置鏡頭)', 'success');
+            setupManualFocus();
+            refreshCameraListAsync();
+            return;
+          } catch (envErr) {
+            console.warn("[Camera] facingMode 啟動失敗，轉為設備清單選取:", envErr);
+          }
+        }
+
+        // 策略 2：枚舉相機設備清單啟動
         if (availableCameras.length === 0) {
           availableCameras = await Html5Qrcode.getCameras().catch(() => []);
         }
 
-        if (availableCameras && availableCameras.length > 0) {
+        if (availableCameras.length > 0) {
           if (preferRear) {
-            const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|後置/i.test(c.label));
-            currentCameraIndex = rearIdx >= 0 ? rearIdx : availableCameras.length - 1;
+            const rearIdx = availableCameras.findIndex(c =>
+              /back|rear|environment|後|後置/i.test(c.label)
+            );
+            currentCameraIndex = rearIdx >= 0 ? rearIdx : 0;
           }
-
           const cameraId = availableCameras[currentCameraIndex].id;
-          html5QrCode = new Html5Qrcode("reader");
-
-          try {
-            await html5QrCode.start(cameraId, config, onScanSuccess);
-            const label = availableCameras[currentCameraIndex].label || `相機 ${currentCameraIndex + 1}`;
-            showToast(`🟢 訂正掃碼器就緒 (${label})`, 'success');
-            return;
-          } catch (camIdErr) {
-            console.warn("使用 cameraId 啟動失敗，嘗試 facingMode 備援...", camIdErr);
-          }
-        }
-
-        // 備援 1: { facingMode: "environment" }
-        html5QrCode = new Html5Qrcode("reader");
-        try {
-          await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess);
-          showToast('🟢 訂正掃碼器就緒 (後置相機)', 'success');
+          await html5QrCode.start(cameraId, scanConfig, onScanSuccess);
+          const label = availableCameras[currentCameraIndex].label || `相機 ${currentCameraIndex + 1}`;
+          showToast(`🟢 訂正掃碼器就緒 (${label})`, 'success');
+          setupManualFocus();
           return;
-        } catch (envErr) {
-          console.warn("後置相機備援失敗，嘗試前置/預設相機...", envErr);
         }
 
-        // 備援 2: { facingMode: "user" }
-        html5QrCode = new Html5Qrcode("reader");
-        await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess);
-        showToast('🟢 訂正掃碼器就緒 (前置相機)', 'success');
+        // 策略 3：前置/預設鏡頭備援
+        await html5QrCode.start({ facingMode: "user" }, scanConfig, onScanSuccess);
+        showToast('🟢 訂正掃碼器就緒 (前置/預設鏡頭)', 'success');
+        setupManualFocus();
 
       } catch (err) {
         showToast('❌ 相機啟動失敗: ' + (err.message || err), 'error');
       }
+    }
+
+    function setupManualFocus() {
+      const readerEl = document.getElementById('reader');
+      if (readerEl && !readerEl._hasTapFocus) {
+        readerEl._hasTapFocus = true;
+        const doFocus = () => {
+          try {
+            const video = document.querySelector('#reader video');
+            if (video && video.srcObject) {
+              const track = video.srcObject.getVideoTracks()[0];
+              if (track && track.applyConstraints) {
+                track.applyConstraints({
+                  advanced: [{ focusMode: 'continuous' }]
+                }).catch(() => {});
+                showToast('🎯 正在重新自動對焦...', 'info');
+              }
+            }
+          } catch(e){}
+        };
+        readerEl.addEventListener('click', doFocus);
+        readerEl.addEventListener('touchend', doFocus);
+      }
+    }
+
+    async function refreshCameraListAsync() {
+      try {
+        const cams = await Html5Qrcode.getCameras();
+        if (cams && cams.length > 0) {
+          availableCameras = cams;
+        }
+      } catch(e){}
     }
 
     function switchNextCamera() {
