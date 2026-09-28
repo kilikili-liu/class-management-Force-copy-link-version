@@ -16,11 +16,12 @@
   <script src="local_config.js" onerror="void 0"></script>
   <script>
     // 🛡️ 安全 Storage 存取器（防止 Brave Shields / Safari 隱私沙箱丟出 DOMException 阻斷程式執行）
-    const safeStorage = {
-      getItem: (k) => { try { return localStorage.getItem(k); } catch(e) { return null; } },
-      setItem: (k, v) => { try { localStorage.setItem(k, v); } catch(e) {} },
-      removeItem: (k) => { try { localStorage.removeItem(k); } catch(e) {} }
+    window.safeStorage = {
+      getItem: function(k) { try { return localStorage.getItem(k); } catch(e) { return null; } },
+      setItem: function(k, v) { try { localStorage.setItem(k, v); } catch(e) {} },
+      removeItem: function(k) { try { localStorage.removeItem(k); } catch(e) {} }
     };
+    var safeStorage = window.safeStorage;
 
     window.addEventListener('error', function(e) {
       console.error('Global Error caught:', e);
@@ -904,6 +905,13 @@
   </div>
 
   <script>
+    var safeStorage = window.safeStorage || {
+      getItem: function(k) { try { return localStorage.getItem(k); } catch(e) { return null; } },
+      setItem: function(k, v) { try { localStorage.setItem(k, v); } catch(e) {} },
+      removeItem: function(k) { try { localStorage.removeItem(k); } catch(e) {} }
+    };
+    window.safeStorage = safeStorage;
+
     let todayData = null;
     let lastAction = null;
     let toastTimer = null;
@@ -1987,6 +1995,29 @@
           if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
         });
     }
+
+    // 🌐 將所有 HTML inline 呼叫的函數明確掛載至 window 全域，防止 GAS Caja/沙箱閉包隔離
+    window.openPairModal = openPairModal;
+    window.closePairModal = closePairModal;
+    window.switchPairSystem = switchPairSystem;
+    window.switchIosStep = switchIosStep;
+    window.selectPairTool = selectPairTool;
+    window.copyPairUrl = copyPairUrl;
+    window.copyIosProfileUrl = copyIosProfileUrl;
+    window.switchView = switchView;
+    window.onSubjectChange = onSubjectChange;
+    window.onCategoryChange = onCategoryChange;
+    window.saveHomeworkMeta = saveHomeworkMeta;
+    window.openSelectPromptModal = openSelectPromptModal;
+    window.closeSelectPromptModal = closeSelectPromptModal;
+    window.onSeatButtonClick = onSeatButtonClick;
+    window.executeUndo = executeUndo;
+    window.filterReminderBySubject = filterReminderBySubject;
+    window.loadReminderData = loadReminderData;
+    window.toggleSelectAll = toggleSelectAll;
+    window.updateMakeUpSubmitBtn = updateMakeUpSubmitBtn;
+    window.submitMakeUpChecked = submitMakeUpChecked;
+    window.triggerPwaInstall = triggerPwaInstall;
   </script>
 </body>
 </html>
