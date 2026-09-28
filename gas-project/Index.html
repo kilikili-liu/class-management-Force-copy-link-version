@@ -440,8 +440,8 @@
       border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       display: inline-block;
-      min-width: 180px;
-      min-height: 180px;
+      min-width: 220px;
+      min-height: 220px;
     }
     .pair-qr-display canvas {
       display: block;
@@ -1306,7 +1306,7 @@
       neoBase = neoBase.replace(/\/+$/, '');
       const toolFile = currentPairTool.page || 'scanner.html';
 
-      return `${neoBase}/${toolFile}?api_url=${encodeURIComponent(gasUrl)}&_t=${Date.now()}`;
+      return `${neoBase}/${toolFile}?api_url=${encodeURIComponent(gasUrl)}`;
     }
 
     function updatePairQrCode() {
@@ -1324,11 +1324,11 @@
         try {
           qrcodeObj = new QRCode(container, {
             text: finalUrl,
-            width: 180,
-            height: 180,
+            width: 220,
+            height: 220,
             colorDark: '#0f172a',
             colorLight: '#ffffff',
-            correctLevel: QRCode.CorrectLevel.M
+            correctLevel: QRCode.CorrectLevel.L
           });
         } catch (e) {
           renderFallbackQrImg(container, finalUrl);
@@ -1341,10 +1341,10 @@
     function renderFallbackQrImg(container, url) {
       container.innerHTML = '';
       const img = document.createElement('img');
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(url)}`;
       img.alt = 'QR Code';
-      img.style.width = '180px';
-      img.style.height = '180px';
+      img.style.width = '220px';
+      img.style.height = '220px';
       container.appendChild(img);
     }
 
