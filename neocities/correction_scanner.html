@@ -144,10 +144,10 @@
     }
 
     .viewfinder-box {
-      width: min(220px, 70vw, 42vh);
-      height: min(220px, 70vw, 42vh);
+      width: 90%;
+      height: 86%;
       border-radius: 14px;
-      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65);
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.25);
       position: relative;
       transition: all 0.2s ease;
     }
@@ -166,7 +166,7 @@
     /* 相機效果邊框 (橘色登記 vs 藍色銷案) */
     .viewfinder-box.status-register-effect {
       border: 3px solid #f97316;
-      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65), 0 0 16px rgba(249, 115, 22, 0.6);
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.25), 0 0 16px rgba(249, 115, 22, 0.6);
     }
     .viewfinder-box.status-register-effect::after {
       background: #f97316;
@@ -175,7 +175,7 @@
 
     .viewfinder-box.status-clear-effect {
       border: 3px solid #38bdf8;
-      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65), 0 0 16px rgba(56, 189, 248, 0.6);
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.25), 0 0 16px rgba(56, 189, 248, 0.6);
     }
     .viewfinder-box.status-clear-effect::after {
       background: #38bdf8;
@@ -1590,13 +1590,11 @@
       // 小幅緩衝 80ms，給予 iOS WebKit / AVCaptureSession 釋放前一鏡頭實例的空間
       await new Promise(r => setTimeout(r, 80));
 
+      // 🚀 滿版全畫面取樣優化：
+      // 不限制小尺寸 qrbox，啟用整幅視訊畫面全像素解碼（Full Frame Sampling）
+      // 支援羅技 C270 等固定對焦 (Fixed Focus) Webcam 在 35~50cm 最佳景深處秒掃，無需湊近防模糊！
       const scanConfig = {
-        fps: 15,
-        qrbox: (viewfinderWidth, viewfinderHeight) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const edge = Math.max(180, Math.min(300, Math.floor(minEdge * 0.8)));
-          return { width: edge, height: edge };
-        }
+        fps: 20
       };
 
       let startedSuccess = false;
