@@ -1058,17 +1058,21 @@
       const scanBtn = document.getElementById('nav-btn-scanner') || document.querySelector('a[href*="scanner.html"]');
       const pairBtn = document.getElementById('nav-btn-pair') || document.querySelector('.btn-phone-pair');
 
-      if (pairBtn) {
-        pairBtn.style.display = 'inline-flex';
-        pairBtn.innerHTML = '📱 連結碼';
-        pairBtn.title = '點擊查看手機連線 QR Code（Android / iOS 掃碼綁定）';
-      }
-
       if (isGas) {
-        // 在 GAS 原生環境下：相機被 Google 沙箱封鎖，隱藏無法啟動相機的作業速掃按鈕
+        // 在 GAS 原生環境下（電腦主控台）：顯示 📱 連結碼，供手機掃碼綁定
+        if (pairBtn) {
+          pairBtn.style.display = 'inline-flex';
+          pairBtn.innerHTML = '📱 連結碼';
+          pairBtn.title = '點擊查看手機連線 QR Code（Android / iOS 掃碼綁定）';
+        }
+        // 相機被 Google 沙箱封鎖，隱藏無法啟動相機的作業速掃按鈕
         if (scanBtn) scanBtn.style.display = 'none';
       } else {
-        // 在外部空間 (Neocities / 手機 PWA)：本機直接可啟用相機
+        // 在外部空間 (Neocities / 手機 PWA)：隱藏連結碼按鈕（避免手機端抓不到或混淆使用者）
+        if (pairBtn) {
+          pairBtn.style.display = 'none';
+        }
+        // 本機直接可啟用相機
         if (scanBtn) scanBtn.style.display = 'inline-flex';
         checkIosPwaButton();
 
