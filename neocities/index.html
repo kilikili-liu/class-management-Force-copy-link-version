@@ -1071,6 +1071,23 @@
         // 在外部空間 (Neocities / 手機 PWA)：本機直接可啟用相機
         if (scanBtn) scanBtn.style.display = 'inline-flex';
         checkIosPwaButton();
+
+        // 適配外部靜態檔案連結（將 ?page= 轉為對應的 .html 靜態檔案）
+        document.querySelectorAll('a[href]').forEach(a => {
+          const href = a.getAttribute('href');
+          if (!href) return;
+          const currentApi = (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) ? GAS_API_URL : (safeStorage.getItem('class_mgmt_gas_api_url') || '');
+          const apiParam = currentApi ? `?api_url=${encodeURIComponent(currentApi)}` : '';
+          if (href.includes('page=scanner')) {
+            a.href = `scanner.html${apiParam}`;
+          } else if (href.includes('page=correction_scanner')) {
+            a.href = `correction_scanner.html${apiParam}`;
+          } else if (href.includes('page=correction')) {
+            a.href = `correction.html${apiParam}`;
+          } else if (href.includes('page=sticker')) {
+            a.href = `StickerGenerator.html${apiParam}`;
+          }
+        });
         return;
       }
 
