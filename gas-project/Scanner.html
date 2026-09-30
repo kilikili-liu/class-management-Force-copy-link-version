@@ -146,13 +146,19 @@
     }
 
     .viewfinder-box {
-      width: min(290px, 72vw, 72vh);
-      height: min(290px, 72vw, 72vh);
+      width: min(300px, 75vw, 75vh);
+      height: min(300px, 75vw, 75vh);
       border: 3px solid var(--accent-blue);
       border-radius: 16px;
       box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65);
       position: relative;
       transition: all 0.2s ease;
+    }
+    @media (min-width: 768px) {
+      .viewfinder-box {
+        width: min(380px, 75vw, 75vh);
+        height: min(380px, 75vw, 75vh);
+      }
     }
 
     .viewfinder-box::after {
@@ -1166,10 +1172,12 @@
       await new Promise(r => setTimeout(r, 80));
 
       const scanConfig = {
-        fps: 15,
+        fps: 10,
         qrbox: (viewfinderWidth, viewfinderHeight) => {
           const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const edge = Math.max(200, Math.min(320, Math.floor(minEdge * 0.8)));
+          // 大螢幕 (iPad/平板/PC) 採用 380px，手機採用 280~300px
+          // 確保 12字 CMS 碼 (160ms) 與 89x89 超高密度大碼 (116ms) 皆達最優採樣點數
+          const edge = minEdge >= 480 ? 380 : Math.max(240, Math.min(300, Math.floor(minEdge * 0.85)));
           return { width: edge, height: edge };
         }
       };
@@ -1180,15 +1188,27 @@
       if (target === false) target = 'user';
 
       try {
-        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        if (!isIos && availableCameras.length === 0) {
+        if (availableCameras.length === 0) {
           try {
             const cams = await Html5Qrcode.getCameras();
             if (cams && cams.length > 0) availableCameras = cams;
           } catch(e){}
         }
-        if (!isIos && availableCameras.length > 0 && (target === 'environment' || target === true)) {
-          const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
+        if (availableCameras.length > 0 && (target === 'environment' || target === true)) {
+          // 優先找後置主鏡頭（特別針對 iPhone/iPad 多鏡頭，避開 Ultra Wide 超廣角）
+          let rearIdx = availableCameras.findIndex(c =>
+            /back.*wide|wide.*back|後置.*廣角/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
+          );
+          if (rearIdx < 0) {
+            rearIdx = availableCameras.findIndex(c =>
+              /back|rear|environment|後|後置|主|標準/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
+            );
+          }
+          if (rearIdx < 0) {
+            rearIdx = availableCameras.findIndex(c =>
+              /back|rear|environment|後|後置|主|標準/i.test(c.label)
+            );
+          }
           const pickIdx = rearIdx >= 0 ? rearIdx : 0;
           currentCameraIndex = pickIdx;
           target = availableCameras[pickIdx].id;
@@ -1343,7 +1363,9 @@
             }));
             if (currentCameraIndex < 0) {
               if (currentFacingMode === 'environment') {
-                const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
+                let rearIdx = availableCameras.findIndex(c => /back.*wide|wide.*back|後置.*廣角/i.test(c.label) && !/ultra|超廣角/i.test(c.label));
+                if (rearIdx < 0) rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|後置|主|標準/i.test(c.label) && !/ultra|超廣角/i.test(c.label));
+                if (rearIdx < 0) rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|後置|主|標準/i.test(c.label));
                 currentCameraIndex = rearIdx >= 0 ? rearIdx : 0;
               } else {
                 const frontIdx = availableCameras.findIndex(c => /front|user|前|自拍|selfie/i.test(c.label));

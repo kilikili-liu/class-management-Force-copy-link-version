@@ -1594,7 +1594,7 @@
       // 不限制小尺寸 qrbox，啟用整幅視訊畫面全像素解碼（Full Frame Sampling）
       // 支援羅技 C270 等固定對焦 (Fixed Focus) Webcam 在 35~50cm 最佳景深處秒掃，無需湊近防模糊！
       const scanConfig = {
-        fps: 20
+        fps: 10
       };
 
       let startedSuccess = false;
@@ -1603,15 +1603,27 @@
       if (target === false) target = 'user';
 
       try {
-        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        if (!isIos && availableCameras.length === 0) {
+        if (availableCameras.length === 0) {
           try {
             const cams = await Html5Qrcode.getCameras();
             if (cams && cams.length > 0) availableCameras = cams;
           } catch(e){}
         }
-        if (!isIos && availableCameras.length > 0 && (target === 'environment' || target === true)) {
-          const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
+        if (availableCameras.length > 0 && (target === 'environment' || target === true)) {
+          // 優先找後置主鏡頭（特別針對 iPhone/iPad 多鏡頭，避開 Ultra Wide 超廣角）
+          let rearIdx = availableCameras.findIndex(c =>
+            /back.*wide|wide.*back|後置.*廣角/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
+          );
+          if (rearIdx < 0) {
+            rearIdx = availableCameras.findIndex(c =>
+              /back|rear|environment|後|後置|主|標準/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
+            );
+          }
+          if (rearIdx < 0) {
+            rearIdx = availableCameras.findIndex(c =>
+              /back|rear|environment|後|後置|主|標準/i.test(c.label)
+            );
+          }
           const pickIdx = rearIdx >= 0 ? rearIdx : 0;
           currentCameraIndex = pickIdx;
           target = availableCameras[pickIdx].id;
@@ -1759,7 +1771,9 @@
             }));
             if (currentCameraIndex < 0) {
               if (currentFacingMode === 'environment') {
-                const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
+                let rearIdx = availableCameras.findIndex(c => /back.*wide|wide.*back|後置.*廣角/i.test(c.label) && !/ultra|超廣角/i.test(c.label));
+                if (rearIdx < 0) rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|後置|主|標準/i.test(c.label) && !/ultra|超廣角/i.test(c.label));
+                if (rearIdx < 0) rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|後置|主|標準/i.test(c.label));
                 currentCameraIndex = rearIdx >= 0 ? rearIdx : 0;
               } else {
                 const frontIdx = availableCameras.findIndex(c => /front|user|前|自拍|selfie/i.test(c.label));
