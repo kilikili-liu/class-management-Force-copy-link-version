@@ -142,25 +142,50 @@ flowchart LR
 
 ---
 
-### 步驟 4：手機秒速掃碼配對（免手動貼網址）與安裝 PWA App
+### 步驟 4：手機掃碼連線與安裝 App (Android / iOS)
 
-系統已全面升級為**智慧 QR Code 配對技術**，再也不需要手動複製貼上落落長的 GAS 網址！
+在電腦瀏覽器打開系統主頁（GAS 部署網址），點擊右上角按鈕 **「📱 連結碼」** 開啟連線視窗，依照您的手機系統進行操作：
 
-1. **電腦端開啟配對視窗**：
-   在電腦瀏覽器打開剛剛的系統主頁（GAS 部署網址），點擊右上角藍色按鈕 **「📱 手機掃碼連線」**。
-2. **選擇您要使用的工具**：
-   在彈出視窗上方點選您想在手機上使用的功能（預設為「📥 作業收繳速掃」）。
-3. **手機相機一掃即連**：
-   拿起手機打開**內建相機**，對準電腦螢幕上的 QR Code 掃描開啟。
-   - ✨ **自動完成綁定**：網頁開啟時已自動完成 `GAS_API_URL` 綁定，全站各功能（速掃、按鈕點收、錯題訂正）全域共享，免手動設定！
-4. **一鍵安裝為 PWA App（推薦 Android Chrome）**：
-   - 點擊網頁頂部藍色的 **「📲 安裝 App」** 按鈕（或點擊手機瀏覽器選單「**加到主畫面**」）。
-   - 手機桌面即會產生獨立的「作業管理」App 圖示，點開即享全螢幕橫向鎖定、無瀏覽器網址列干擾的原生 App 體驗！
-   - ⚠️ **注意**：本系統之 PWA「安裝 App 到主畫面」功能**不支援 iPhone / iPad**（iOS Safari 環境限制），請使用 Android 手機/平板以獲得完整 PWA 體驗。
+---
+
+#### 🤖 Android 手機安裝步驟
+
+1. 在視窗上方切換至 **「🤖 Android 手機」**，點選想開啟的功能頁面（預設為「作業收繳速掃」）。
+2. 使用 Android 手機內建相機或 Google 智慧鏡頭（Google Lens），直接掃描螢幕上的 QR Code 開啟網頁。
+3. 網頁開啟後，點擊頁面頂部的 **「📲 安裝 App」**（或瀏覽器選單的「加到主畫面」）。
+4. 安裝完成後，直接從手機桌面點開 App 即可開始使用！
 
 <div align="center">
-  <img src="docs/images/mobile_pairing_modal.jpg" alt="手機掃碼連線配對視窗範例" width="360" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
-  <p><em>▲ 電腦端「📱 手機掃碼連線」彈窗：直接手機掃描即可自動綁定 API 網址並啟用 PWA</em></p>
+  <img src="docs/images/pairing_android.jpg" alt="Android 掃碼與安裝步驟" width="340" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+  <p><em>▲ Android 手機連線視窗：相機掃碼開啟後，點擊「安裝 App」即可加入桌面</em></p>
+</div>
+
+---
+
+#### 🍎 iOS (iPhone / iPad) 安裝與綁定步驟
+
+iOS 裝置只需簡單兩步驟即可完成全螢幕 App 安裝與試算表綁定：
+
+##### 【第 1 步】掃碼下載描述檔安裝 App
+1. 在連線視窗切換至 **「🍎 iOS (iPhone / iPad) 手機」** 標籤，點選 **「❶ 掃碼下載描述檔安裝 App」**。
+2. 使用 iPhone 內建相機掃描螢幕上的 QR Code，點擊彈出的「允許」下載描述檔。
+3. 打開 iPhone 的 **「設定」 ➔ 最上方點擊「已下載描述檔」 ➔ 點擊右上角「安裝」** 並輸入手機解鎖密碼。
+4. iPhone 主畫面即會出現全螢幕「作業速掃」App 圖示！
+
+<div align="center">
+  <img src="docs/images/pairing_ios_step1.png" alt="iOS 步驟 1：掃碼下載描述檔安裝 App" width="340" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+  <p><em>▲ iOS 步驟 1：使用 iPhone 原生相機掃碼下載描述檔，免簽名安裝全螢幕 App</em></p>
+</div>
+
+##### 【第 2 步】掃連線碼綁定試算表
+1. 打開剛剛出現在 iPhone 主畫面的 **「作業速掃」App**。
+2. 在電腦螢幕連線視窗點選 **「❷ 掃連線碼綁定試算表」**。
+3. 拿起手機，使用 App 內的掃碼鏡頭對準螢幕上的 QR Code 掃描一次。
+4. 手機畫面顯示 **「🎉 試算表綁定成功！」** 即完成所有設定，隨時可以開始高速清點作業！
+
+<div align="center">
+  <img src="docs/images/pairing_ios_step2.jpg" alt="iOS 步驟 2：掃連線碼綁定試算表" width="340" style="border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+  <p><em>▲ iOS 步驟 2：打開 App 掃描部署碼，瞬間完成試算表資料庫綁定</em></p>
 </div>
 
 ---
@@ -247,7 +272,9 @@ flowchart LR
 │   └── images/                # 📸 文件圖檔
 │       ├── logo.png                        # 標誌與商標圖示
 │       ├── spreadsheet_sample.png          # 試算表學生名單與空號設定範例圖
-│       ├── mobile_pairing_modal.jpg        # 手機掃碼連線快速綁定彈窗範例圖
+│       ├── pairing_android.jpg             # Android 掃碼連線彈窗圖
+│       ├── pairing_ios_step1.png           # iOS 步驟1下載描述檔彈窗圖
+│       ├── pairing_ios_step2.jpg           # iOS 步驟2掃碼綁定試算表彈窗圖
 │       ├── operation_button_check.jpg      # 純按鈕作業點收實際運作圖
 │       ├── operation_qr_scan.jpg           # 作業 QR Code 速掃實際運作圖
 │       ├── operation_matrix_call.jpg       # 全班未繳催繳矩陣列表實際運作圖
