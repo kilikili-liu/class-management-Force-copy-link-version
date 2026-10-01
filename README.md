@@ -136,6 +136,11 @@ flowchart LR
 
 6. 部署成功後，畫面會顯示 **「網頁應用程式網址」 (Web App URL)**，請點擊 **「複製」** 備用（格式如：`https://script.google.com/macros/s/AKfycb.../exec`）。
 
+<div align="center">
+  <img src="docs/images/gas_deploy_success.png" alt="部署成功並複製網頁應用程式網址" width="480" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
+  <p><em>▲ 部署成功畫面：點擊紅框處「複製」按鈕取得網頁應用程式網址（Web App URL）</em></p>
+</div>
+
 > 🎉 **電腦端已可直接使用**：  
 > 直接在電腦瀏覽器開啟剛剛複製的網址，即可在電腦大螢幕上使用「純按鈕作業點收與缺交催繳矩陣」！
 
@@ -301,6 +306,7 @@ iOS 裝置只需簡單兩步驟即可完成全螢幕 App 安裝與試算表綁�
 │       ├── gas_auth_step1.png              # 部署與授予存取權步驟圖
 │       ├── gas_auth_step2.png              # 點選前往專案(不安全)步驟圖
 │       ├── gas_auth_step3.png              # 點選 Continue 允許步驟圖
+│       ├── gas_deploy_success.png          # 部署成功並複製網頁應用程式網址圖
 │       ├── pairing_android.jpg             # Android 掃碼連線彈窗圖
 │       ├── pairing_ios_step1.png           # iOS 步驟1下載描述檔彈窗圖
 │       ├── pairing_ios_step2.jpg           # iOS 步驟2掃碼綁定試算表彈窗圖
