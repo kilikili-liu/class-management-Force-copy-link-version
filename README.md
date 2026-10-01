@@ -176,6 +176,11 @@ flowchart LR
 
 在電腦瀏覽器打開系統主頁（GAS 部署網址），點擊右上角按鈕 **「📱 連結碼」** 開啟連線視窗，依照您的手機系統進行操作：
 
+<div align="center">
+  <img src="docs/images/pair_btn_location.png" alt="點擊系統右上角的連結碼按鈕" width="480" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
+  <p><em>▲ 電腦主控台畫面：點擊右上角紅圈處的「📱 連結碼」按鈕開啟配對視窗</em></p>
+</div>
+
 ---
 
 #### 🤖 Android 手機安裝步驟
@@ -307,6 +312,7 @@ iOS 裝置只需簡單兩步驟即可完成全螢幕 App 安裝與試算表綁�
 │       ├── gas_auth_step2.png              # 點選前往專案(不安全)步驟圖
 │       ├── gas_auth_step3.png              # 點選 Continue 允許步驟圖
 │       ├── gas_deploy_success.png          # 部署成功並複製網頁應用程式網址圖
+│       ├── pair_btn_location.png           # 電腦主控台點選連結碼按鈕圖
 │       ├── pairing_android.jpg             # Android 掃碼連線彈窗圖
 │       ├── pairing_ios_step1.png           # iOS 步驟1下載描述檔彈窗圖
 │       ├── pairing_ios_step2.jpg           # iOS 步驟2掃碼綁定試算表彈窗圖
