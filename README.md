@@ -18,9 +18,6 @@ flowchart LR
     C --> D["4. 手機掃碼連線<br/>(自動綁定 + 安裝App)"]
 ```
 
-> ⚠️ **重要裝置相容性提示**：  
-> 本系統之「安裝 PWA App 到主畫面」功能**不支援 iPhone / iPad**（iOS / iPadOS 系統之 Safari / WebKit 核心對於 PWA 與背景更新/沙盒支援有限制）。  
-> 建議使用 **Android 手機 / 平板**（搭配 Chrome）或 **Windows / Mac 電腦瀏覽器** 獲得最佳且完整的體驗！
 
 ---
 
@@ -102,13 +99,41 @@ flowchart LR
 ### 步驟 2：新增 Google Apps Script (GAS) 部署作業
 1. 開啟剛剛建立的試算表副本。
 2. 點選上方選單 **「擴充功能」 ➔ 「Apps Script」**。
-3. 點擊右上角藍色的 **「部署」 ➔ 「新增部署作業」**。
+
+<div align="center">
+  <img src="docs/images/gas_menu_extensions.png" alt="點選擴充功能中的 Apps Script" width="480" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
+  <p><em>▲ 點選試算表選單的「擴充功能」 ➔ 「Apps Script」進入後端編輯器</em></p>
+</div>
+
+3. 進入 Apps Script 後，點擊右上角藍色的 **「部署」 ➔ 「新增部署作業」**。
 4. 部署設定如下：
    * **選取類型**：點擊齒輪圖示，選擇 **「網頁應用程式」 (Web App)**
    * **說明**：可自由輸入（如：`班級作業系統正式版`）
    * **執行身份** (Execute as)：選擇 **`我 (您的 Google 帳號)`**
    * **誰有存取權** (Who has access)：選擇 **`所有人 (Anyone)`**
-5. 點擊 **「部署」** 按鈕，依照畫面指示完成 Google 帳號權限授權。
+5. 點擊 **「部署」** 按鈕，依照畫面指示完成 Google 安全性授權（此為 Google 對自建腳本之標準安全防護機制）：
+   * **① 點擊右上角「部署」** ➔ **② 跳出視窗點選「授予存取權」** 選擇您的 Google 帳號。
+   * Google 會顯示「Google hasn't verified this app（Google 尚未驗證這個應用程式）」，請點擊左下角 **③「Advanced（進階）」**。
+
+<div align="center">
+  <img src="docs/images/gas_auth_step1.png" alt="步驟 1~3：部署、授予存取權與點選進階" width="480" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
+  <p><em>▲ 依序點擊「部署」 ➔ 「授予存取權」 ➔ 點選「Advanced（進階）」展開隱藏選項</em></p>
+</div>
+
+   * 展開說明後，點選最底部的 **❺「Go to 未命名的專案 (unsafe)（前往專案/不安全）」**。
+
+<div align="center">
+  <img src="docs/images/gas_auth_step2.png" alt="步驟 5：點擊前往專案" width="480" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
+  <p><em>▲ 點擊底部的「Go to 未命名的專案 (unsafe)」繼續授權</em></p>
+</div>
+
+   * 進入最後確認畫面，滾動到最下方點擊 **❻「Continue（繼續 / 允許）」**。
+
+<div align="center">
+  <img src="docs/images/gas_auth_step3.png" alt="步驟 6：點擊 Continue 允許" width="280" style="border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" />
+  <p><em>▲ 點選右下角「Continue」確認允許存取試算表</em></p>
+</div>
+
 6. 部署成功後，畫面會顯示 **「網頁應用程式網址」 (Web App URL)**，請點擊 **「複製」** 備用（格式如：`https://script.google.com/macros/s/AKfycb.../exec`）。
 
 > 🎉 **電腦端已可直接使用**：  
@@ -272,6 +297,10 @@ iOS 裝置只需簡單兩步驟即可完成全螢幕 App 安裝與試算表綁�
 │   └── images/                # 📸 文件圖檔
 │       ├── logo.png                        # 標誌與商標圖示
 │       ├── spreadsheet_sample.png          # 試算表學生名單與空號設定範例圖
+│       ├── gas_menu_extensions.png         # 試算表選單點選 Apps Script 圖
+│       ├── gas_auth_step1.png              # 部署與授予存取權步驟圖
+│       ├── gas_auth_step2.png              # 點選前往專案(不安全)步驟圖
+│       ├── gas_auth_step3.png              # 點選 Continue 允許步驟圖
 │       ├── pairing_android.jpg             # Android 掃碼連線彈窗圖
 │       ├── pairing_ios_step1.png           # iOS 步驟1下載描述檔彈窗圖
 │       ├── pairing_ios_step2.jpg           # iOS 步驟2掃碼綁定試算表彈窗圖
