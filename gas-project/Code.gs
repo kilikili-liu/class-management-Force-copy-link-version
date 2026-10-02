@@ -152,9 +152,25 @@ function handleScannerApiAction(action, params) {
 function getHwSheet() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(HOMEWORK_TAB_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(HOMEWORK_TAB_NAME);
+  if (sheet) return sheet;
+
+  // 嘗試常見分頁名稱（避免使用者修改分頁名稱導致找不到）
+  const candidates = ["作業清點", "清點", "作業點收", "點收", "Sheet1", "作業收繳", "收繳"];
+  for (let i = 0; i < candidates.length; i++) {
+    sheet = ss.getSheetByName(candidates[i]);
+    if (sheet) return sheet;
   }
+
+  // 自動尋找第一個非「訂正」的分頁作為清點分頁
+  const allSheets = ss.getSheets();
+  for (let i = 0; i < allSheets.length; i++) {
+    const name = allSheets[i].getName();
+    if (name !== CORRECTION_MATRIX_TAB && !name.includes("訂正")) {
+      return allSheets[i];
+    }
+  }
+
+  sheet = ss.insertSheet(HOMEWORK_TAB_NAME);
   return sheet;
 }
 
@@ -175,10 +191,17 @@ function extractSeatNo(cellVal, rowIndex) {
 
 function normalizeDateString(rawDate) {
   if (!rawDate) return "";
+  if (rawDate instanceof Date) {
+    return Utilities.formatDate(rawDate, "Asia/Taipei", "yyyy/MM/dd");
+  }
   let str = String(rawDate).trim().replace(/-/g, "/").replace(/\./g, "/");
   const parts = str.split("/");
   if (parts.length === 3) {
     return `${parts[0]}/${parts[1].padStart(2, "0")}/${parts[2].padStart(2, "0")}`;
+  }
+  if (parts.length === 2) {
+    const y = new Date().getFullYear();
+    return `${y}/${parts[0].padStart(2, "0")}/${parts[1].padStart(2, "0")}`;
   }
   return str;
 }

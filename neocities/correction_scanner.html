@@ -550,7 +550,7 @@
         <span id="other-page-modal-title">📑 選擇作業單元 (它頁)</span>
         <button onclick="closeOtherPageModal()" style="background:none; border:none; color:#94a3b8; font-size:1.3rem; cursor:pointer; line-height:1;">&times;</button>
       </div>
-      <div style="font-size:0.78rem; color:#94a3b8; margin:0 4px 6px 4px;">
+      <div id="other-page-modal-hint" style="font-size:0.78rem; color:#94a3b8; margin:0 4px 6px 4px;">
         💡 從「作業清點表」讀取，由最新收繳依序排列：
       </div>
       <div id="other-page-list" class="modal-body" style="max-height: 240px; padding: 2px;">
@@ -563,7 +563,7 @@
       </div>
       <div class="modal-footer" style="margin-top:6px; border-top:1px solid #334155; padding-top:10px;">
         <button class="btn-modal-close" onclick="closeOtherPageModal()">取消</button>
-        <button class="btn-modal-clear" onclick="confirmOtherPageSelection()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:7px 16px; border-radius:6px; font-weight:700; cursor:pointer;">✔️ 確定切換</button>
+        <button id="btn-confirm-other-page" class="btn-modal-clear" onclick="confirmOtherPageSelection()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:7px 16px; border-radius:6px; font-weight:700; cursor:pointer;">✔️ 確定切換</button>
       </div>
     </div>
   </div>
@@ -1282,19 +1282,39 @@
     }
 
     let tempSelectedOtherPageScanner = null;
+    let pendingScanData = null;
 
-    function openOtherPageModal() {
-      const curr = getCurrAssign();
-      const subject = curr ? curr.subject : '國語';
-      const category = curr ? curr.category : '甲本';
+    function openOtherPageModal(isAutoPrompt = false, targetSub = null, targetCat = null, seatStr = null) {
+      let subject = targetSub;
+      let category = targetCat;
+      if (!subject || !category) {
+        const curr = getCurrAssign();
+        subject = curr ? curr.subject : '國語';
+        category = curr ? curr.category : '甲本';
+      }
 
-      document.getElementById('other-page-modal-title').textContent = `📑 選擇作業單元 (它頁) — 【${subject} ${category}】`;
+      const modalTitle = document.getElementById('other-page-modal-title');
+      const modalHint = document.getElementById('other-page-modal-hint');
+      const confirmBtn = document.getElementById('btn-confirm-other-page');
+
+      if (isAutoPrompt && seatStr) {
+        if (modalTitle) modalTitle.textContent = `📑 請選擇作業單元 — 【${subject} ${category}】`;
+        if (modalHint) modalHint.innerHTML = `🎯 已掃描 <strong>${seatStr}</strong> 號！請選擇欲登錄的作業單元：`;
+        if (confirmBtn) confirmBtn.textContent = `✔️ 確定切換並登錄 ${seatStr}號`;
+      } else {
+        if (modalTitle) modalTitle.textContent = `📑 選擇作業單元 (它頁) — 【${subject} ${category}】`;
+        if (modalHint) modalHint.innerHTML = `💡 從「作業清點表」讀取，由最新收繳依序排列：`;
+        if (confirmBtn) confirmBtn.textContent = `✔️ 確定切換`;
+      }
+
       const listEl = document.getElementById('other-page-list');
       listEl.innerHTML = '';
 
       const checkinAll = matrixDataCache.checkinAssignments || [];
       const checkinList = checkinAll.filter(item => item.subject === subject && item.category === category);
       const assignments = matrixDataCache.assignments || [];
+
+      tempSelectedOtherPageScanner = null;
 
       if (checkinList.length === 0) {
         listEl.innerHTML = `
@@ -1303,7 +1323,14 @@
             您可以點選下方「自訂新單元/頁數」直接登記！
           </div>
         `;
+        const customBox = document.getElementById('custom-unit-box');
+        if (customBox) customBox.style.display = 'flex';
+        tempSelectedOtherPageScanner = 'custom';
       } else {
+        const curr = getCurrAssign();
+        const customBox = document.getElementById('custom-unit-box');
+        if (customBox) customBox.style.display = 'none';
+
         checkinList.forEach((item, idx) => {
           const matchedAssign = assignments.find(a =>
             a.subject === item.subject && a.category === item.category &&
@@ -1321,9 +1348,9 @@
             }
           }
 
-          const isCurrent = curr && (
-            (String(curr.unit || '').trim() === String(item.unit || '').trim() && String(curr.page || '').trim() === String(item.page || '').trim())
-          );
+          const isCurrent = (curr && curr.subject === subject && curr.category === category &&
+            String(curr.unit || '').trim() === String(item.unit || '').trim() &&
+            String(curr.page || '').trim() === String(item.page || '').trim()) || (!curr && idx === 0) || (idx === 0 && !tempSelectedOtherPageScanner);
 
           const card = document.createElement('label');
           card.style.cssText = `display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:${isCurrent ? '#172554' : '#0f172a'}; border:1px solid ${isCurrent ? '#38bdf8' : '#334155'}; border-radius:8px; cursor:pointer; gap:8px; margin-bottom:4px;`;
@@ -1347,8 +1374,8 @@
             });
             card.style.background = '#172554';
             card.style.borderColor = '#38bdf8';
-            const customBox = document.getElementById('custom-unit-box');
-            if (customBox) customBox.style.display = 'none';
+            const cBox = document.getElementById('custom-unit-box');
+            if (cBox) cBox.style.display = 'none';
             tempSelectedOtherPageScanner = item;
           };
           listEl.appendChild(card);
@@ -1384,6 +1411,10 @@
 
     function closeOtherPageModal() {
       document.getElementById('other-page-modal').classList.add('hidden');
+      if (pendingScanData) {
+        pendingScanData = null;
+        isProcessingScan = false;
+      }
     }
 
     async function confirmOtherPageSelection() {
@@ -1392,9 +1423,17 @@
         return;
       }
 
-      const curr = getCurrAssign();
-      const subject = curr ? curr.subject : '國語';
-      const category = curr ? curr.category : '甲本';
+      const pData = pendingScanData;
+      pendingScanData = null;
+
+      let subject = pData ? pData.subject : null;
+      let category = pData ? pData.category : null;
+
+      if (!subject || !category) {
+        const curr = getCurrAssign();
+        subject = curr ? curr.subject : '國語';
+        category = curr ? curr.category : '甲本';
+      }
 
       let targetUnit = '';
       let targetPage = '';
@@ -1415,29 +1454,101 @@
       }
 
       closeOtherPageModal();
-      showToast(`⏳ 正在切換至【${targetUnit || '新單元'}】...`, 'success');
 
-      try {
-        const res = await gasApi('addCorrectionRecordMatrix', {
-          createOnly: true,
-          subject: subject,
-          category: category,
-          unit: targetUnit,
-          page: targetPage,
-          date: targetDate
-        });
+      if (pData && pData.seatStr) {
+        const seatStr = pData.seatStr;
+        const mode = pData.mode || 'register';
 
-        if (res && res.success) {
-          currentAssignKey = res.key || `${subject}_${category}_${res.colIndex}`;
-          try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
-          await fetchMatrixData();
-          triggerFeedback('success');
-          showToast(`🟢 已切換至：${targetUnit || '無單元'} ${targetPage ? '(' + targetPage + ')' : ''}`, 'success');
+        if (mode === 'register') {
+          showToast(`⏳ 正在為 ${seatStr}號 登錄【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正...`, 'orange');
+          try {
+            const res = await gasApi('addCorrectionRecordMatrix', {
+              seat: seatStr,
+              subject: subject,
+              category: category,
+              unit: targetUnit,
+              page: targetPage,
+              date: targetDate
+            });
+
+            if (res && res.success) {
+              triggerFeedback('success');
+              showToast(`🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`, 'orange');
+              currentAssignKey = res.key || `${subject}_${category}_${res.colIndex || ''}`;
+              try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+              await fetchMatrixData(true);
+            } else {
+              triggerFeedback('error');
+              showToast(`❌ 登記失敗: ${res ? res.message : ''}`, 'error');
+            }
+          } catch (err) {
+            showToast('❌ 網路連線異常', 'error');
+          } finally {
+            setTimeout(() => { isProcessingScan = false; }, 1000);
+          }
         } else {
-          showToast(`❌ 切換失敗: ${res ? res.message : ''}`, 'error');
+          // 銷案模式
+          showToast(`⏳ 正在為 ${seatStr}號 辦理銷案...`, 'success');
+          try {
+            const resCol = await gasApi('addCorrectionRecordMatrix', {
+              createOnly: true,
+              subject: subject,
+              category: category,
+              unit: targetUnit,
+              page: targetPage,
+              date: targetDate
+            });
+            if (resCol && resCol.success) {
+              currentAssignKey = resCol.key || `${subject}_${category}_${resCol.colIndex || ''}`;
+              try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+              const resClear = await gasApi('updateCorrectionMatrixCell', {
+                colIndex: resCol.colIndex,
+                seat: seatStr,
+                status: 'O'
+              });
+              if (resClear && resClear.success) {
+                triggerFeedback('success');
+                showToast(`🟦 已完成 ${seatStr}號【${subject} ${category}】錯題銷案 (O)`, 'success');
+                await fetchMatrixData(true);
+              } else {
+                showToast(`❌ 銷案失敗: ${resClear ? resClear.message : ''}`, 'error');
+              }
+            } else {
+              showToast(`❌ 欄位處理失敗`, 'error');
+            }
+          } catch (err) {
+            showToast('❌ 網路連線異常', 'error');
+          } finally {
+            setTimeout(() => { isProcessingScan = false; }, 1000);
+          }
         }
-      } catch (err) {
-        showToast('❌ 網路連線異常', 'error');
+      } else {
+        // 使用者主動點擊 [ 📑 它頁 ] 按鈕切換
+        showToast(`⏳ 正在切換至【${targetUnit || '新單元'}】...`, 'success');
+        try {
+          const res = await gasApi('addCorrectionRecordMatrix', {
+            createOnly: true,
+            subject: subject,
+            category: category,
+            unit: targetUnit,
+            page: targetPage,
+            date: targetDate
+          });
+
+          if (res && res.success) {
+            currentAssignKey = res.key || `${subject}_${category}_${res.colIndex}`;
+            try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+            await fetchMatrixData();
+            triggerFeedback('success');
+            showToast(`🟢 已切換至：${targetUnit || '無單元'} ${targetPage ? '(' + targetPage + ')' : ''}`, 'success');
+          } else {
+            showToast(`❌ 切換失敗: ${res ? res.message : ''}`, 'error');
+          }
+        } catch (err) {
+          showToast('❌ 網路連線異常', 'error');
+        } finally {
+          isProcessingScan = false;
+        }
       }
     }
 
@@ -1495,34 +1606,49 @@
       const subject = hasQrSubject ? rawSubject : (currAssign ? currAssign.subject : '國語');
       const category = hasQrCategory ? rawCategory : (currAssign ? currAssign.category : '甲本');
 
-      // 只有在【條碼未指定科目】或【條碼科目與當前選取作業一致】時，才承接當前單元頁數與欄位
+      // 檢查是否與當前鎖定之作業一致 (同科目同種類)
       const isMatchingCurrent = currAssign && (currAssign.subject === subject && currAssign.category === category);
-      
-      // 根據使用者要求，掃碼登記時絕對不改動/帶入任何「單元」與「頁數」資料，只針對該欄位紀錄錯題！
-      // 「單元」與「頁數」資料只能透過點擊「編輯說明」並按下「儲存設定」時修改！
+
       try {
         if (scanMode === 'register') {
           // 🟧 登記模式
-          showToast(`⏳ 正在為 ${seatStr}號 登錄【${subject} ${category}】需訂正...`, 'orange');
           let targetUnit = '';
           let targetPage = '';
           let targetDate = '';
           let targetColIndex = null;
 
           if (isMatchingCurrent && currAssign.colIndex) {
+            // 已鎖定該項目，無需彈窗，直接繼續在這個項目裡登錄座號
             targetColIndex = currAssign.colIndex;
             targetUnit = currAssign.unit || '';
             targetPage = currAssign.page || '';
             targetDate = currAssign.date || '';
           } else {
+            // 條碼科目/種類與當前不同，或首次掃碼：查詢清點頁作業列表
             const checkinAll = matrixDataCache.checkinAssignments || [];
             const checkinList = checkinAll.filter(item => item.subject === subject && item.category === category);
-            if (checkinList.length > 0) {
+
+            if (checkinList.length > 1) {
+              // 超過一筆符合項目：暫停並彈窗讓使用者選擇要哪一個單元/頁數
+              pendingScanData = { seatStr, subject, category, mode: scanMode };
+              triggerFeedback('duplicate');
+              openOtherPageModal(true, subject, category, seatStr);
+              return;
+            } else if (checkinList.length === 1) {
+              // 剛好只有一筆：自動選定該筆直接登記
               targetUnit = checkinList[0].unit || '';
               targetPage = checkinList[0].page || '';
               targetDate = checkinList[0].date || '';
+            } else {
+              // 清點頁查無紀錄：彈窗讓使用者自訂新單元
+              pendingScanData = { seatStr, subject, category, mode: scanMode };
+              triggerFeedback('duplicate');
+              openOtherPageModal(true, subject, category, seatStr);
+              return;
             }
           }
+
+          showToast(`⏳ 正在為 ${seatStr}號 登錄【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正...`, 'orange');
 
           const apiParams = {
             seat: seatStr,

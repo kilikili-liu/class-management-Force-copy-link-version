@@ -1361,6 +1361,7 @@
     let currentSelectedPage = '';
     let currentSelectedDate = '';
     let tempSelectedOtherPage = null;
+    let pendingScanSeat = null;
 
     function getCheckinListForCurrentSubjectCategory() {
       const subjectEl = document.getElementById('reg-subject');
@@ -1451,8 +1452,27 @@
       }
     }
 
+    async function ensureMatrixColumn(subject, category, unit, page, date) {
+      if (!subject || !category) return;
+      try {
+        const res = await apiCallCorrection('addCorrectionRecordMatrix', {
+          createOnly: true,
+          subject: subject,
+          category: category,
+          unit: unit || '',
+          page: page || '',
+          date: date || ''
+        });
+        if (res && res.success) {
+          await fetchCorrectionMatrixData();
+        }
+      } catch (e) {
+        console.warn('ensureMatrixColumn failed:', e);
+      }
+    }
+
     // Modal Operations: 選擇作業單元 (它頁) Modal
-    function openOtherPageModal() {
+    function openOtherPageModal(isAutoPrompt = false) {
       const subjectEl = document.getElementById('reg-subject');
       const categoryEl = document.getElementById('reg-category');
       const subject = subjectEl ? subjectEl.value : '';
@@ -1463,7 +1483,13 @@
         return;
       }
 
-      document.getElementById('other-page-modal-title').textContent = `📑 選擇作業單元 (它頁) — 【${subject} ${category}】`;
+      const modalTitleEl = document.getElementById('other-page-modal-title');
+      if (modalTitleEl) {
+        modalTitleEl.textContent = isAutoPrompt
+          ? `📑 請選擇作業單元 — 【${subject} ${category}】`
+          : `📑 選擇作業單元 (它頁) — 【${subject} ${category}】`;
+      }
+
       const listEl = document.getElementById('other-page-list');
       listEl.innerHTML = '';
 
@@ -1557,13 +1583,20 @@
 
     function closeOtherPageModal() {
       document.getElementById('other-page-modal').classList.add('hidden');
+      pendingScanSeat = null;
+      isProcessingScan = false;
     }
 
-    function confirmOtherPageSelection() {
+    async function confirmOtherPageSelection() {
       if (!tempSelectedOtherPage) {
         closeOtherPageModal();
         return;
       }
+
+      const subjectEl = document.getElementById('reg-subject');
+      const categoryEl = document.getElementById('reg-category');
+      const subject = subjectEl ? subjectEl.value : '';
+      const category = categoryEl ? categoryEl.value : '';
 
       if (tempSelectedOtherPage === 'custom') {
         const customUnit = document.getElementById('custom-unit-input').value.trim();
@@ -1583,8 +1616,17 @@
 
       closeOtherPageModal();
       updateCurrentMetaText();
+      showToastWithUndo(`⏳ 正在切換至【${currentSelectedUnit || '新單元'}】...`, null);
+
+      await ensureMatrixColumn(subject, category, currentSelectedUnit, currentSelectedPage, currentSelectedDate);
       renderSeatButtons();
       showToastWithUndo(`🟢 已切換登記單元為：${currentSelectedUnit || '無單元'} ${currentSelectedPage ? '(' + currentSelectedPage + ')' : ''}`, null);
+
+      if (pendingScanSeat) {
+        const s = pendingScanSeat;
+        pendingScanSeat = null;
+        await registerErrorForSeat(s);
+      }
     }
 
     // Modal Operations: 編輯單元與頁碼 Modal
@@ -1755,6 +1797,20 @@
 
       if (subject && category) {
         hasUserSelectedSubjectCategory = true;
+        const checkinList = getCheckinListForCurrentSubjectCategory();
+        if (checkinList.length > 1) {
+          // 超過一筆，自動跳出彈窗選單供使用者選擇！
+          updateCurrentMetaText();
+          renderSeatButtons();
+          openOtherPageModal(true);
+          return;
+        } else if (checkinList.length === 1) {
+          // 只有一筆，直接選定該筆並自動確保訂正分頁開欄
+          currentSelectedUnit = String(checkinList[0].unit || '').trim();
+          currentSelectedPage = String(checkinList[0].page || '').trim();
+          currentSelectedDate = String(checkinList[0].date || '').trim();
+          ensureMatrixColumn(subject, category, currentSelectedUnit, currentSelectedPage, currentSelectedDate);
+        }
       } else {
         hasUserSelectedSubjectCategory = false;
       }
@@ -2256,21 +2312,76 @@
       }
     }
 
-    function onScanSuccess(decodedText) {
+    async function onScanSuccess(decodedText) {
       if (isProcessingScan) return;
       isProcessingScan = true;
 
-      const parts = decodedText.split('|');
-      if (parts[0] === 'CMS' && parts[1]) {
-        const seatStr = parts[1].padStart(2, '0');
-        if (currentMainView === 'register') {
-          registerErrorForSeat(seatStr);
-        } else {
-          openModalForSeat(seatStr);
-        }
+      let seatNo = -1;
+      let rawSubject = '';
+      let rawCategory = '';
+
+      const parts = String(decodedText).trim().split('|');
+      if (parts[0] === 'CMS' && parts.length >= 2) {
+        seatNo = parseInt(parts[1], 10);
+        if (parts[2]) rawSubject = parts[2].trim();
+        if (parts[3]) rawCategory = parts[3].trim();
+      } else if (!isNaN(parseInt(parts[0], 10))) {
+        seatNo = parseInt(parts[0], 10);
+        if (parts[1]) rawSubject = parts[1].trim();
+        if (parts[2]) rawCategory = parts[2].trim();
       }
 
-      setTimeout(() => { isProcessingScan = false; }, 2200);
+      if (isNaN(seatNo) || seatNo < 1 || seatNo > 30) {
+        setTimeout(() => { isProcessingScan = false; }, 2000);
+        return;
+      }
+
+      const seatStr = String(seatNo).padStart(2, '0');
+
+      if (currentMainView !== 'register') {
+        openModalForSeat(seatStr);
+        setTimeout(() => { isProcessingScan = false; }, 2200);
+        return;
+      }
+
+      const curSub = document.getElementById('reg-subject').value;
+      const curCat = document.getElementById('reg-category').value;
+      const hasQrSub = !!rawSubject;
+      const hasQrCat = !!rawCategory;
+
+      const sub = hasQrSub ? rawSubject : curSub;
+      const cat = hasQrCat ? rawCategory : curCat;
+
+      const isMatching = (curSub === sub && curCat === cat && hasUserSelectedSubjectCategory);
+
+      if (hasQrSub && (document.getElementById('reg-subject').value !== sub || document.getElementById('reg-category').value !== cat)) {
+        document.getElementById('reg-subject').value = sub;
+        onSubjectChange();
+        document.getElementById('reg-category').value = cat;
+        hasUserSelectedSubjectCategory = true;
+      }
+
+      if (isMatching) {
+        registerErrorForSeat(seatStr);
+        setTimeout(() => { isProcessingScan = false; }, 2200);
+      } else {
+        const checkinList = getCheckinListForCurrentSubjectCategory();
+        if (checkinList.length > 1) {
+          pendingScanSeat = seatStr;
+          openOtherPageModal(true);
+        } else if (checkinList.length === 1) {
+          currentSelectedUnit = String(checkinList[0].unit || '').trim();
+          currentSelectedPage = String(checkinList[0].page || '').trim();
+          currentSelectedDate = String(checkinList[0].date || '').trim();
+          await ensureMatrixColumn(sub, cat, currentSelectedUnit, currentSelectedPage, currentSelectedDate);
+          updateCurrentMetaText();
+          registerErrorForSeat(seatStr);
+          setTimeout(() => { isProcessingScan = false; }, 2200);
+        } else {
+          registerErrorForSeat(seatStr);
+          setTimeout(() => { isProcessingScan = false; }, 2200);
+        }
+      }
     }
   </script>
 </body>
