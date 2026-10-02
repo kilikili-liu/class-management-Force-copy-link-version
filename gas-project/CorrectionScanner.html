@@ -367,17 +367,17 @@
     .toast-banner.orange { background: #f97316; color: #fff; }
     .toast-banner.error { background: #ef4444; color: #fff; }
 
-    /* Modal 彈窗通用 */
+    /* Modal 彈窗通用 (針對橫向手機優化，保證確認/取消按鈕絕對不被截斷) */
     .modal-overlay {
       position: fixed;
       inset: 0;
       background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(4px);
-      z-index: 2000;
+      z-index: 10005; /* 高於 #rotate-hint (9999)，即使旋轉也不會遮蔽彈窗 */
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 8px;
     }
     .modal-overlay.hidden { display: none; }
     .modal-box {
@@ -386,18 +386,22 @@
       border-radius: 12px;
       width: 100%;
       max-width: 440px;
-      padding: 16px;
+      max-height: calc(100vh - 16px);
+      padding: 12px 14px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+      overflow: hidden;
     }
-    .modal-header { font-weight: 700; font-size: 1rem; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
-    .modal-body { display: flex; flex-direction: column; gap: 8px; max-height: 260px; overflow-y: auto; }
+    .modal-header { font-weight: 700; font-size: 0.95rem; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+    .modal-scroll-area { overflow-y: auto; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 6px; padding-right: 2px; }
+    .modal-body { display: flex; flex-direction: column; gap: 6px; }
     .modal-item-card {
       background: #0f172a;
       border: 1px solid #334155;
       border-radius: 8px;
-      padding: 10px;
+      padding: 8px 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -412,7 +416,7 @@
       font-size: 0.8rem;
       cursor: pointer;
     }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; flex-shrink: 0; border-top: 1px solid #334155; padding-top: 8px; }
     .btn-modal-close {
       background: #334155;
       color: #94a3b8;
@@ -550,18 +554,22 @@
         <span id="other-page-modal-title">📑 選擇作業單元 (它頁)</span>
         <button onclick="closeOtherPageModal()" style="background:none; border:none; color:#94a3b8; font-size:1.3rem; cursor:pointer; line-height:1;">&times;</button>
       </div>
-      <div id="other-page-modal-hint" style="font-size:0.78rem; color:#94a3b8; margin:0 4px 6px 4px;">
+      <div id="other-page-modal-hint" style="font-size:0.78rem; color:#94a3b8; margin:0 2px 2px 2px; flex-shrink:0;">
         💡 從「作業清點表」讀取，由最新收繳依序排列：
       </div>
-      <div id="other-page-list" class="modal-body" style="max-height: 240px; padding: 2px;">
-        <!-- 動態帶入該作業種類所有歷史收繳之單元與頁數 -->
+      <div class="modal-scroll-area">
+        <div id="other-page-list" class="modal-body" style="padding: 2px;">
+          <!-- 動態帶入該作業種類所有歷史收繳之單元與頁數 -->
+        </div>
+        <div id="custom-unit-box" style="display:none; flex-direction:column; gap:6px; background:#0f172a; padding:8px 10px; border-radius:8px; border:1px solid #334155; margin-top:4px;">
+          <div style="font-size:0.75rem; color:#38bdf8; font-weight:700;">➕ 自訂新單元/頁數：</div>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="custom-unit-input" style="flex:1; background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 8px; border-radius:6px; font-size:0.8rem; outline:none;" placeholder="單元 (例如: 2)">
+            <input type="text" id="custom-page-input" style="flex:1; background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 8px; border-radius:6px; font-size:0.8rem; outline:none;" placeholder="頁數/備註 (例如: 15)">
+          </div>
+        </div>
       </div>
-      <div id="custom-unit-box" style="display:none; flex-direction:column; gap:6px; background:#0f172a; padding:10px; border-radius:8px; border:1px solid #334155; margin: 4px 0;">
-        <div style="font-size:0.75rem; color:#38bdf8; font-weight:700;">➕ 自訂新單元/頁數：</div>
-        <input type="text" id="custom-unit-input" style="width:100%; background:#1e293b; border:1px solid #475569; color:#fff; padding:5px 8px; border-radius:6px; font-size:0.8rem; outline:none;" placeholder="單元 (例如: 單元4)">
-        <input type="text" id="custom-page-input" style="width:100%; background:#1e293b; border:1px solid #475569; color:#fff; padding:5px 8px; border-radius:6px; font-size:0.8rem; outline:none;" placeholder="頁數/備註 (例如: 21-25頁)">
-      </div>
-      <div class="modal-footer" style="margin-top:6px; border-top:1px solid #334155; padding-top:10px;">
+      <div class="modal-footer">
         <button class="btn-modal-close" onclick="closeOtherPageModal()">取消</button>
         <button id="btn-confirm-other-page" class="btn-modal-clear" onclick="confirmOtherPageSelection()" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:7px 16px; border-radius:6px; font-weight:700; cursor:pointer;">✔️ 確定切換</button>
       </div>
@@ -1284,7 +1292,7 @@
     let tempSelectedOtherPageScanner = null;
     let pendingScanData = null;
 
-    function openOtherPageModal(isAutoPrompt = false, targetSub = null, targetCat = null, seatStr = null) {
+    async function openOtherPageModal(isAutoPrompt = false, targetSub = null, targetCat = null, seatStr = null) {
       let subject = targetSub;
       let category = targetCat;
       if (!subject || !category) {
@@ -1310,17 +1318,40 @@
       const listEl = document.getElementById('other-page-list');
       listEl.innerHTML = '';
 
-      const checkinAll = matrixDataCache.checkinAssignments || [];
-      const checkinList = checkinAll.filter(item => item.subject === subject && item.category === category);
-      const assignments = matrixDataCache.assignments || [];
+      let checkinAll = matrixDataCache.checkinAssignments || [];
+      let checkinList = checkinAll.filter(item =>
+        String(item.subject || '').trim() === String(subject || '').trim() &&
+        String(item.category || '').trim() === String(category || '').trim()
+      );
 
+      // 若快取無紀錄，向後端即時查詢作業清點表
+      if (checkinList.length === 0) {
+        try {
+          const chkRes = await gasApi('getCheckinAssignments', { subject, category });
+          if (chkRes && chkRes.success && Array.isArray(chkRes.list) && chkRes.list.length > 0) {
+            checkinList = chkRes.list;
+            if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
+            chkRes.list.forEach(item => {
+              const exists = matrixDataCache.checkinAssignments.some(c =>
+                c.subject === item.subject && c.category === item.category &&
+                c.unit === item.unit && c.page === item.page && c.date === item.date
+              );
+              if (!exists) matrixDataCache.checkinAssignments.push(item);
+            });
+          }
+        } catch (e) {
+          console.warn('即時查詢清點紀錄失敗:', e);
+        }
+      }
+
+      const assignments = matrixDataCache.assignments || [];
       tempSelectedOtherPageScanner = null;
 
       if (checkinList.length === 0) {
         listEl.innerHTML = `
-          <div style="font-size:0.82rem; color:#94a3b8; text-align:center; padding:16px; background:#0f172a; border-radius:8px;">
+          <div style="font-size:0.82rem; color:#94a3b8; text-align:center; padding:12px; background:#0f172a; border-radius:8px;">
             清點分頁尚未有【${subject} ${category}】的收繳紀錄。<br>
-            您可以點選下方「自訂新單元/頁數」直接登記！
+            您可以直接在下方輸入單元與頁數進行登記！
           </div>
         `;
         const customBox = document.getElementById('custom-unit-box');
@@ -1625,25 +1656,49 @@
             targetDate = currAssign.date || '';
           } else {
             // 條碼科目/種類與當前不同，或首次掃碼：查詢清點頁作業列表
-            const checkinAll = matrixDataCache.checkinAssignments || [];
-            const checkinList = checkinAll.filter(item => item.subject === subject && item.category === category);
+            let checkinAll = matrixDataCache.checkinAssignments || [];
+            let checkinList = checkinAll.filter(item =>
+              String(item.subject || '').trim() === String(subject || '').trim() &&
+              String(item.category || '').trim() === String(category || '').trim()
+            );
+
+            // 若快取無符合紀錄，即時向後端查詢作業清點表
+            if (checkinList.length === 0) {
+              try {
+                showToast(`🔍 正在查詢清點紀錄【${subject} ${category}】...`, 'info');
+                const chkRes = await gasApi('getCheckinAssignments', { subject, category });
+                if (chkRes && chkRes.success && Array.isArray(chkRes.list) && chkRes.list.length > 0) {
+                  checkinList = chkRes.list;
+                  if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
+                  chkRes.list.forEach(item => {
+                    const exists = matrixDataCache.checkinAssignments.some(c =>
+                      c.subject === item.subject && c.category === item.category &&
+                      c.unit === item.unit && c.page === item.page && c.date === item.date
+                    );
+                    if (!exists) matrixDataCache.checkinAssignments.push(item);
+                  });
+                }
+              } catch (err) {
+                console.warn('即時查詢清點紀錄失敗:', err);
+              }
+            }
 
             if (checkinList.length > 1) {
               // 超過一筆符合項目：暫停並彈窗讓使用者選擇要哪一個單元/頁數
               pendingScanData = { seatStr, subject, category, mode: scanMode };
               triggerFeedback('duplicate');
-              openOtherPageModal(true, subject, category, seatStr);
+              await openOtherPageModal(true, subject, category, seatStr);
               return;
             } else if (checkinList.length === 1) {
-              // 剛好只有一筆：自動選定該筆直接登記
-              targetUnit = checkinList[0].unit || '';
-              targetPage = checkinList[0].page || '';
-              targetDate = checkinList[0].date || '';
+              // 剛好只有一筆：自動選定該筆直接登記，絕不彈窗！
+              targetUnit = String(checkinList[0].unit || '').trim();
+              targetPage = String(checkinList[0].page || '').trim();
+              targetDate = String(checkinList[0].date || '').trim();
             } else {
               // 清點頁查無紀錄：彈窗讓使用者自訂新單元
               pendingScanData = { seatStr, subject, category, mode: scanMode };
               triggerFeedback('duplicate');
-              openOtherPageModal(true, subject, category, seatStr);
+              await openOtherPageModal(true, subject, category, seatStr);
               return;
             }
           }
