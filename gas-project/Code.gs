@@ -124,6 +124,11 @@ function handleScannerApiAction(action, params) {
     if (action === 'getCorrectionMatrixData' || action === 'getCorrectionData') {
       return getCorrectionMatrixData(params);
     }
+    if (action === 'getCheckinAssignments') {
+      const sub = String(params.subject || '').trim();
+      const cat = String(params.category || '').trim();
+      return { success: true, list: getCheckinAssignmentsList(sub, cat) };
+    }
     if (action === 'getStudentUncorrectedMatrix' || action === 'getStudentUncorrectedRecords') {
       return getStudentUncorrectedMatrix(params.seat);
     }
@@ -558,57 +563,123 @@ function getCorrectionMatrixSheet() {
   return sheet;
 }
 
+/**
+ * 從「工作表1」(作業清點表) 讀取所有作業欄位（由最新到最舊排列）
+ * @param {string} [targetSubject] 可選：篩選科目
+ * @param {string} [targetCategory] 可選：篩選種類
+ * @returns {Array} 作業清單 [{ colIndex, date, subject, category, unit, page }, ...]
+ */
+function getCheckinAssignmentsList(targetSubject, targetCategory) {
+  const sheet = getHwSheet();
+  const lastCol = sheet.getLastColumn();
+  if (lastCol < 3) return [];
+
+  const headers = sheet.getRange(1, 3, 5, lastCol - 2).getDisplayValues();
+  const list = [];
+  const seen = new Set();
+
+  const filterSub = String(targetSubject || '').trim();
+  const filterCat = String(targetCategory || '').trim();
+
+  // 由右向左 (最新欄到最舊欄) 讀取
+  for (let c = headers[0].length - 1; c >= 0; c--) {
+    const rawDate = headers[0][c];
+    const sub = String(headers[1][c] || '').trim();
+    const cat = String(headers[2][c] || '').trim();
+    const unit = String(headers[3][c] || '').trim();
+    const page = String(headers[4][c] || '').trim();
+
+    if (!sub && !cat) continue;
+    if (filterSub && sub !== filterSub) continue;
+    if (filterCat && cat !== filterCat) continue;
+
+    const normDate = normalizeDateString(rawDate);
+    const uniqueKey = `${normDate}_${sub}_${cat}_${unit}_${page}`;
+    if (!seen.has(uniqueKey)) {
+      seen.add(uniqueKey);
+      list.push({
+        colIndex: c + 3,
+        date: normDate,
+        subject: sub,
+        category: cat,
+        unit: unit,
+        page: page
+      });
+    }
+  }
+  return list;
+}
+
 function findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page) {
   const lastCol = Math.max(sheet.getLastColumn(), 1);
-  const todayStr = normalizeDateString(date || getTodayString());
+  const targetSub = String(subject || '').trim();
+  const targetCat = String(category || '').trim();
+  const targetUnit = String(unit || '').trim();
+  const targetPage = String(page || '').trim();
+  let targetDate = normalizeDateString(date || '');
 
-  const matchedCols = [];
+  // 1. 若有指定單元或頁數，優先比對「科目 + 種類 + 單元 + 頁數」
   if (lastCol > 1) {
     const headerValues = sheet.getRange(1, 2, 5, lastCol - 1).getDisplayValues();
-    for (let c = 0; c < headerValues[0].length; c++) {
-      const hDate = normalizeDateString(headerValues[0][c]);
+
+    if (targetUnit || targetPage) {
+      for (let c = 0; c < headerValues[0].length; c++) {
+        const hSub = String(headerValues[1][c] || '').trim();
+        const hCat = String(headerValues[2][c] || '').trim();
+        const hUnit = String(headerValues[3][c] || '').trim();
+        const hPage = String(headerValues[4][c] || '').trim();
+
+        if (hSub === targetSub && hCat === targetCat && hUnit === targetUnit && hPage === targetPage) {
+          return c + 2;
+        }
+      }
+    }
+
+    // 2. 若有日期，比對「科目 + 種類 + 日期」
+    if (targetDate) {
+      for (let c = 0; c < headerValues[0].length; c++) {
+        const hDate = normalizeDateString(headerValues[0][c]);
+        const hSub = String(headerValues[1][c] || '').trim();
+        const hCat = String(headerValues[2][c] || '').trim();
+        if (hSub === targetSub && hCat === targetCat && hDate === targetDate) {
+          return c + 2;
+        }
+      }
+    }
+
+    // 3. 若有完全空白單元/頁數的同科目同種類欄位，可進行補填復用
+    for (let c = headerValues[0].length - 1; c >= 0; c--) {
       const hSub = String(headerValues[1][c] || '').trim();
       const hCat = String(headerValues[2][c] || '').trim();
+      const hUnit = String(headerValues[3][c] || '').trim();
+      const hPage = String(headerValues[4][c] || '').trim();
 
-      if (hSub === subject && hCat === category && (hDate === todayStr || !hDate)) {
-        matchedCols.push(c + 2);
-      }
-    }
-  }
-
-  if (matchedCols.length > 0) {
-    const mainCol = matchedCols[0];
-
-    // 若存在重複新增的同作業欄位，自動合併座號狀態資料並清空重複欄
-    if (matchedCols.length > 1) {
-      for (let m = 1; m < matchedCols.length; m++) {
-        const dupCol = matchedCols[m];
-        const dupVals = sheet.getRange(6, dupCol, CLASS_SIZE, 1).getValues();
-        const mainVals = sheet.getRange(6, mainCol, CLASS_SIZE, 1).getValues();
-        const mergedVals = [];
-        for (let r = 0; r < CLASS_SIZE; r++) {
-          const mainV = String(mainVals[r][0] || '').trim().toUpperCase();
-          const dupV = String(dupVals[r][0] || '').trim().toUpperCase();
-          if (mainV === 'X' || dupV === 'X') {
-            mergedVals.push(['X']);
-          } else if (mainV === 'O' || dupV === 'O') {
-            mergedVals.push(['O']);
-          } else {
-            mergedVals.push(['']);
-          }
+      if (hSub === targetSub && hCat === targetCat && !hUnit && !hPage) {
+        if (targetUnit || targetPage) {
+          sheet.getRange(4, c + 2, 2, 1).setValues([[targetUnit], [targetPage]]);
         }
-        sheet.getRange(6, mainCol, CLASS_SIZE, 1).setValues(mergedVals);
-        sheet.getRange(1, dupCol, CLASS_SIZE + 5, 1).clearContent().clearFormat();
+        if (targetDate) {
+          sheet.getRange(1, c + 2).setValue(targetDate);
+        }
+        return c + 2;
       }
     }
-
-    return mainCol;
   }
 
-  // 若找不到當日同 科目|種類 的資料，則新開一欄（單元與頁數設為空，僅「補填細節」可改動）
+  // 若 targetDate 為空，嘗試從「工作表1」找出該 (subject, category, unit, page) 之收繳日期對齊
+  if (!targetDate) {
+    const checkinList = getCheckinAssignmentsList(targetSub, targetCat);
+    const matchedCheckin = checkinList.find(item => item.unit === targetUnit && item.page === targetPage);
+    if (matchedCheckin && matchedCheckin.date) {
+      targetDate = matchedCheckin.date;
+    }
+  }
+
+  // 4. 若訂正分頁完全無匹配欄位，則新增一欄（對齊清點日期與單元頁數）
+  const finalDate = targetDate || getTodayString();
   const newCol = lastCol + 1;
   sheet.getRange(1, newCol, 5, 1).setValues([
-    [todayStr], [subject], [category], [''], ['']
+    [finalDate], [targetSub], [targetCat], [targetUnit], [targetPage]
   ]).setFontWeight("bold").setHorizontalAlignment("center").setBackground("#f1f5f9");
 
   return newCol;
@@ -616,21 +687,38 @@ function findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page
 
 function addCorrectionRecordMatrix(params) {
   const seatNum = parseInt(params.seat, 10);
-  if (isNaN(seatNum) || seatNum < 1 || seatNum > 30) {
-    return { success: false, message: '無效的座號: ' + params.seat };
-  }
-
-  const seatStr = String(seatNum).padStart(2, '0');
   const subject = String(params.subject || '國語').trim();
   const category = String(params.category || '甲本').trim();
-  const date = String(params.date || '').trim() || getTodayString();
+  const unit = String(params.unit || '').trim();
+  const page = String(params.page || '').trim();
+  const date = String(params.date || '').trim();
 
   const sheet = getCorrectionMatrixSheet();
   let colIndex = parseInt(params.colIndex, 10);
   if (isNaN(colIndex) || colIndex < 2) {
-    colIndex = findOrCreateAssignmentColumn(sheet, date, subject, category, '', '');
+    colIndex = findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page);
   }
 
+  // 支援只建欄或切換欄位（不標記座號）
+  if (params.createOnly || !params.seat || isNaN(seatNum)) {
+    return {
+      success: true,
+      message: `作業欄位已就緒【${subject} ${category} ${unit}】`,
+      colIndex: colIndex,
+      key: `${subject}_${category}_${colIndex}`,
+      subject: subject,
+      category: category,
+      unit: unit,
+      page: page,
+      date: date
+    };
+  }
+
+  if (seatNum < 1 || seatNum > 30) {
+    return { success: false, message: '無效的座號: ' + params.seat };
+  }
+
+  const seatStr = String(seatNum).padStart(2, '0');
   const row = 5 + seatNum;
   sheet.getRange(row, colIndex).setValue('X').setHorizontalAlignment("center").setFontWeight("bold");
 
@@ -641,6 +729,9 @@ function addCorrectionRecordMatrix(params) {
     key: `${subject}_${category}_${colIndex}`,
     subject: subject,
     category: category,
+    unit: unit,
+    page: page,
+    date: date,
     seat: seatStr,
     status: 'X'
   };
@@ -747,7 +838,8 @@ function getCorrectionMatrixData(params = {}) {
     assignments: assignments,
     seatSummary: seatSummary,
     records: records,
-    vacantSeats: vacantSeatNums
+    vacantSeats: vacantSeatNums,
+    checkinAssignments: getCheckinAssignmentsList()
   };
 }
 
@@ -796,7 +888,9 @@ function doScanRecordCorrection(params) {
       subject: subject,
       category: category,
       unit: unit,
-      page: page
+      page: page,
+      date: String(params.date || ''),
+      colIndex: params.colIndex
     });
     if (res.success) {
       res.action = 'registered';
