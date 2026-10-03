@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>✍️ 班級作業批改與成績登記</title>
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: #131b2e;
+      --card-border: #1e293b;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --orange: #f97316;
+      --orange-bg: rgba(249, 115, 22, 0.15);
+      --green: #10b981;
+      --blue: #38bdf8;
+      --gold: #facc15;
+      --gray-dot: #475569;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 頂部整合單列 */
+    header {
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-shrink: 0;
+      height: 48px;
+      z-index: 50;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .subject-select {
+      background: #1e293b;
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .assign-meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #1e293b;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+    .assign-meta-pill b {
+      color: #facc15;
+    }
+
+    .header-btn {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #475569;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .header-btn:hover, .header-btn:active {
+      background: #334155;
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    /* 主工作區 (橫向佈局：左側座號矩陣，右側評分控制台) */
+    .main-workspace {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 48px);
+      overflow: hidden;
+      background: var(--bg-dark);
+    }
+
+    /* 📋 左側：30 座號矩陣區 */
+    .seat-grid-container {
+      flex: 1.25;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(6, 1fr);
+      gap: 6px;
+      overflow: hidden;
+      border-right: 1px solid #1e293b;
+    }
+
+    .seat-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 4px 6px;
+      cursor: pointer;
+      transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
+      position: relative;
+    }
+
+    .seat-card:active {
+      transform: scale(0.96);
+    }
+
+    /* 批改狀態外框 */
+    .seat-card.graded {
+      border-color: #10b981; /* 亮翡翠綠框：已批改 */
+      background: rgba(16, 185, 129, 0.08);
+    }
+    .seat-card.ungraded {
+      border-color: #334155; /* 暗灰黑框：未批改 */
+    }
+    .seat-card.selected {
+      border-color: #facc15 !important; /* 亮黃框：當前選中 */
+      background: rgba(250, 204, 21, 0.12) !important;
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.35);
+    }
+    .seat-card.vacant {
+      opacity: 0.35;
+      pointer-events: none;
+      filter: grayscale(1);
+    }
+
+    .seat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      line-height: 1;
+    }
+    .seat-num {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #94a3b8;
+    }
+    .seat-card.selected .seat-num {
+      color: #facc15;
+    }
+    .seat-name {
+      font-size: 0.75rem;
+      color: #cbd5e1;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 60px;
+    }
+
+    .seat-score {
+      text-align: center;
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: #f8fafc;
+      margin: 2px 0;
+      letter-spacing: -0.5px;
+    }
+    .seat-score.empty {
+      color: #475569;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .seat-footer {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gray-dot);
+    }
+    .status-dot.green {
+      background: #10b981;
+      box-shadow: 0 0 5px rgba(16, 185, 129, 0.7);
+    }
+    .status-dot.orange {
+      background: #f97316;
+      box-shadow: 0 0 5px rgba(249, 115, 22, 0.8);
+    }
+    .status-dot.blue {
+      background: #38bdf8;
+      box-shadow: 0 0 5px rgba(56, 189, 248, 0.8);
+    }
+
+    /* ✍️ 右側：左手操作評分控制台 */
+    .action-panel {
+      flex: 1.15;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    /* 1. 等第快捷橫列 (7等第 + ⚙️) */
+    .grades-bar {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 5px;
+    }
+
+    .grade-btn {
+      background: #1e293b;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      border-radius: 6px;
+      padding: 7px 0;
+      font-size: 0.85rem;
+      font-weight: 800;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.12s;
+    }
+    .grade-btn:hover {
+      background: #334155;
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .grade-btn:active {
+      transform: scale(0.94);
+      background: #0284c7;
+      color: #fff;
+    }
+    .grade-btn.settings-btn {
+      background: #0f172a;
+      border-color: #334155;
+      color: #94a3b8;
+    }
+
+    /* 2. 中間核心區 (左邊需訂正/下一號，最右邊正方形大字成績框) */
+    .middle-action-row {
+      display: flex;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 12px;
+      flex: 1;
+      max-height: 125px;
+    }
+
+    .mid-left-controls {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .toggle-correction-btn {
+      flex: 1;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .toggle-correction-btn.active {
+      background: rgba(249, 115, 22, 0.2);
+      border-color: #f97316;
+      color: #f97316;
+      box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
+    }
+    .toggle-correction-btn:active {
+      transform: scale(0.97);
+    }
+
+    .next-student-btn {
+      flex: 1;
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+      box-shadow: 0 3px 8px rgba(2, 132, 199, 0.4);
+    }
+    .next-student-btn:active {
+      transform: scale(0.97);
+      background: #0369a1;
+    }
+
+    /* 📺 最右側正方形高對比大看板 (絕不被左手遮擋) */
+    .score-display-box {
+      width: 125px;
+      height: 125px;
+      background: #030712;
+      border: 2px solid #38bdf8;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 4px;
+      flex-shrink: 0;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    }
+
+    .display-seat-info {
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #facc15;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .display-score-huge {
+      font-size: 2.4rem;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: -1px;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+    .display-score-huge.empty {
+      color: #475569;
+      font-size: 1.8rem;
+    }
+
+    .display-grade-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: #1e293b;
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+    }
+
+    /* 3. 數字微調鍵盤 */
+    .keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 5px;
+      height: 110px;
+    }
+
+    .key-btn {
+      background: #1e293b;
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.1s;
+    }
+    .key-btn:active {
+      background: #475569;
+      transform: scale(0.95);
+    }
+    .key-btn.action-key {
+      background: #0f172a;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+    .key-btn.hundred-key {
+      color: #facc15;
+      font-weight: 800;
+    }
+
+    /* 底部小設定列 */
+    .bottom-opts {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      color: #64748b;
+      padding-top: 2px;
+    }
+    .bottom-opts label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    /* 彈窗樣式 (Modal) */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 12px;
+    }
+    .modal-overlay.hidden {
+      display: none;
+    }
+    .modal-card {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #131b2e;
+    }
+    .modal-header h3 {
+      font-size: 1rem;
+      color: #f8fafc;
+      font-weight: 700;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+    .modal-body {
+      padding: 14px 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .modal-footer {
+      padding: 10px 16px;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      background: #131b2e;
+    }
+
+    .opt-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.15s;
+    }
+    .opt-card:hover {
+      border-color: #38bdf8;
+      background: #24324a;
+    }
+    .opt-card.active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+    }
+
+    /* Toast Banner */
+    .toast-banner {
+      position: fixed;
+      top: 54px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      z-index: 2000;
+      display: none;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+      white-space: nowrap;
+    }
+    .toast-banner.success { background: #10b981; color: #fff; }
+    .toast-banner.orange { background: #f97316; color: #fff; }
+    .toast-banner.error { background: #ef4444; color: #fff; }
+    .toast-banner.info { background: #0284c7; color: #fff; }
+
+    /* 直向模式自適應排版 (Portrait Fallback) */
+    @media (orientation: portrait) {
+      .main-workspace {
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .seat-grid-container {
+        height: 52%;
+        flex: none;
+        border-right: none;
+        border-bottom: 1px solid #1e293b;
+      }
+      .action-panel {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部單列整合列 -->
+  <header>
+    <div class="header-left">
+      <select id="subject-select" class="subject-select" onchange="onSubjectChange()">
+        <option value="國語|甲本">國語 甲本</option>
+        <option value="國語|乙本">國語 乙本</option>
+        <option value="國語|習作">國語 習作</option>
+        <option value="國語|圈詞">國語 圈詞</option>
+        <option value="數學|數習">數學 數習</option>
+        <option value="社會|社習">社會 社習</option>
+        <option value="日記|日記">日記 日記</option>
+        <option value="國語|作文">國語 作文</option>
+      </select>
+
+      <div class="assign-meta-pill" id="assign-meta-pill">
+        📅 <span id="meta-date">----/--/--</span>
+        📖 單元: <b id="meta-unit">-</b>
+        📄 頁數: <b id="meta-page">-</b>
+      </div>
+
+      <button class="header-btn" onclick="openOtherPageModal()">📅 它頁</button>
+      <button class="header-btn" onclick="openNewAssignModal()">➕ 新作業</button>
+    </div>
+
+    <div class="header-right">
+      <button class="header-btn" onclick="openPairModal()">🔗 連線</button>
+      <a href="correction.html" class="header-btn" id="link-correction">✏️ 訂正</a>
+      <a href="index.html" class="header-btn" id="link-index">🎯 清點</a>
+    </div>
+  </header>
+
+  <!-- 主工作區 (橫向佈局：左側座號矩陣，右側評分控制台) -->
+  <div class="main-workspace">
+
+    <!-- 📋 左側：30 座號矩陣區 -->
+    <div class="seat-grid-container" id="seat-grid">
+      <!-- 由 JavaScript 動態生成 30 個 seat-card -->
+    </div>
+
+    <!-- ✍️ 右側：左手操作評分控制台 -->
+    <div class="action-panel">
+
+      <!-- 1. 7 等第按鈕 (精簡無分數標籤，縮小好按) + ⚙️ 設定 -->
+      <div class="grades-bar" id="grades-bar">
+        <button class="grade-btn" onclick="onGradeClick('甲上上')">甲上上</button>
+        <button class="grade-btn" onclick="onGradeClick('甲上')">甲上</button>
+        <button class="grade-btn" onclick="onGradeClick('甲')">甲</button>
+        <button class="grade-btn" onclick="onGradeClick('甲下')">甲下</button>
+        <button class="grade-btn" onclick="onGradeClick('乙上')">乙上</button>
+        <button class="grade-btn" onclick="onGradeClick('乙')">乙</button>
+        <button class="grade-btn" onclick="onGradeClick('乙下')">乙下</button>
+        <button class="grade-btn settings-btn" onclick="openSettingsModal()" title="修改等第預設分數">⚙️</button>
+      </div>
+
+      <!-- 2. 中間核心區 (左邊需訂正/下一號，最右邊正方形大字成績框) -->
+      <div class="middle-action-row">
+        <div class="mid-left-controls">
+          <button id="toggle-correction-btn" class="toggle-correction-btn" onclick="toggleNeedCorrection()">
+            <span id="correction-icon">🟧</span>
+            <span>需訂正</span>
+          </button>
+          <button class="next-student-btn" onclick="goToNextStudent()">
+            <span>⏭️ 下一號</span>
+          </button>
+        </div>
+
+        <!-- 📺 最右側正方形高對比大看板 (不被左手手腕遮擋) -->
+        <div class="score-display-box" id="score-display-box">
+          <div class="display-seat-info" id="display-seat-info">01 號 姓名</div>
+          <div class="display-score-huge empty" id="display-score-huge">--</div>
+          <div class="display-grade-badge" id="display-grade-badge">尚未給分</div>
+        </div>
+      </div>
+
+      <!-- 3. 數字微調鍵盤 (非等第給分時使用) -->
+      <div class="keypad-grid">
+        <button class="key-btn" onclick="onNumKey('7')">7</button>
+        <button class="key-btn" onclick="onNumKey('8')">8</button>
+        <button class="key-btn" onclick="onNumKey('9')">9</button>
+        <button class="key-btn action-key" onclick="onNumKey('backspace')">⌫ 退格</button>
+
+        <button class="key-btn" onclick="onNumKey('4')">4</button>
+        <button class="key-btn" onclick="onNumKey('5')">5</button>
+        <button class="key-btn" onclick="onNumKey('6')">6</button>
+        <button class="key-btn hundred-key" onclick="onNumKey('100')">100</button>
+
+        <button class="key-btn" onclick="onNumKey('1')">1</button>
+        <button class="key-btn" onclick="onNumKey('2')">2</button>
+        <button class="key-btn" onclick="onNumKey('3')">3</button>
+        <button class="key-btn action-key" onclick="onNumKey('clear')">C 清除</button>
+
+        <button class="key-btn" style="grid-column: span 2;" onclick="onNumKey('0')">0</button>
+        <button class="key-btn" onclick="onNumKey('.')">.</button>
+        <button class="key-btn action-key" style="background:#0284c7; color:#fff; font-weight:800;" onclick="submitCurrentScore()">💾 儲存</button>
+      </div>
+
+      <!-- 底部選項 -->
+      <div class="bottom-opts">
+        <label>
+          <input type="checkbox" id="auto-advance-chk" style="accent-color: #38bdf8;">
+          <span>給分後自動跳下一號 (備用)</span>
+        </label>
+        <span id="save-status-indicator" style="color: #10b981;">🟢 已連線就緒</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast Banner -->
+  <div id="toast-banner" class="toast-banner"></div>
+
+  <!-- 📅 它頁選擇彈窗 (依日期排列) -->
+  <div id="other-page-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="other-page-title">📅 選擇要批改的單元/頁數</h3>
+        <button class="modal-close" onclick="closeOtherPageModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="other-page-list">
+        <!-- 動態列出符合的清點收繳項目 -->
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn" onclick="closeOtherPageModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ➕ 新作業自訂彈窗 -->
+  <div id="new-assign-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>➕ 新增作業欄位</h3>
+        <button class="modal-close" onclick="closeNewAssignModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label style="font-size:0.85rem; color:#94a3b8;">收繳日期：</label>
+        <input type="date" id="new-date-input" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px;">
+
+        <label style="font-size:0.85rem; color:#94a3b8; margin-top:6px;">單元名稱／課次：</label>
+        <input type="text" id="new-unit-input" placeholder="例如：1 或 第三課" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px;">
+
+        <label style="font-size:0.85rem; color:#94a3b8; margin-top:6px;">頁數／備註：</label>
+        <input type="text" id="new-page-input" placeholder="例如：2-5 或 p.10" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px;">
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn" onclick="closeNewAssignModal()">取消</button>
+        <button class="header-btn" style="background:#0284c7; color:#fff; border-color:#0284c7;" onclick="submitNewAssign()">確定新增</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ⚙️ 等第分數設定彈窗 -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚙️ 等第預設分數設定</h3>
+        <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="settings-presets-list">
+        <!-- 7 個等第輸入欄位 -->
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn" onclick="resetDefaultPresets()">恢復預設值</button>
+        <button class="header-btn" onclick="closeSettingsModal()">取消</button>
+        <button class="header-btn" style="background:#0284c7; color:#fff; border-color:#0284c7;" onclick="savePresetsSettings()">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔗 連線設定彈窗 -->
+  <div id="pair-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔗 Google Apps Script 連線設定</h3>
+        <button class="modal-close" onclick="closePairModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.5;">請貼上您的 Google Apps Script 正式部署網址 (Web App URL)：</p>
+        <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 10px; border-radius:6px; font-size:0.8rem; width:100%;">
+      </div>
+      <div class="modal-footer">
+        <button class="header-btn" onclick="closePairModal()">取消</button>
+        <button class="header-btn" style="background:#0284c7; color:#fff;" onclick="savePairGasUrl()">儲存連線</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── 全域狀態與設定 ──
+    const DEFAULT_PRESETS = {
+      "甲上上": 98,
+      "甲上": 95,
+      "甲": 90,
+      "甲下": 85,
+      "乙上": 79,
+      "乙": 75,
+      "乙下": 70
+    };
+
+    let gradePresets = { ...DEFAULT_PRESETS };
+    let currentSheetName = "國語|甲本";
+    let gradingDataCache = null;
+    let selectedSeat = 1;
+    let currentNeedCorrection = false;
+    let currentInputScore = "";
+    let isSaving = false;
+
+    // ── 連線與 API 設定 ──
+    function cleanGasUrl(url) {
+      if (!url || typeof url !== 'string') return '';
+      let clean = url.trim();
+      try {
+        if (clean.includes('%3A') || clean.includes('%2F')) clean = decodeURIComponent(clean);
+      } catch(e){}
+      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
+        return `https://script.google.com/macros/s/${clean}/exec`;
+      }
+      return clean.replace(/https?:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
+    }
+
+    function getGasApiUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paramGas = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
+      if (paramGas) {
+        const clean = cleanGasUrl(paramGas);
+        try { localStorage.setItem('class_management_gas_api_url', clean); } catch(e){}
+        return clean;
+      }
+      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL.includes('script.google.com')) {
+        return cleanGasUrl(window._GAS_WEBAPP_URL);
+      }
+      if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL.includes('script.google.com')) {
+        return cleanGasUrl(window.GAS_API_URL);
+      }
+      const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
+      if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
+        return cleanGasUrl(stored);
+      }
+      return '';
+    }
+
+    let GAS_API_URL = getGasApiUrl();
+
+    async function gasApi(action, params = {}) {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(res => resolve(res))
+            .withFailureHandler(err => reject(err))
+            .handleScannerApiAction(action, params);
+        });
+      } else {
+        if (!GAS_API_URL) throw new Error('尚未設定 GAS API 網址');
+        const cleanBase = cleanGasUrl(GAS_API_URL);
+        const url = new URL(cleanBase);
+        url.searchParams.set('action', action);
+        for (const [k, v] of Object.entries(params)) {
+          url.searchParams.set(k, v);
+        }
+        return await singleGasApiFetch(url.toString());
+      }
+    }
+
+    function singleGasApiFetch(url, timeoutMs = 18000) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+        const sep = url.includes('?') ? '&' : '?';
+        const finalUrl = url + sep + 'callback=' + callbackName + '&_t=' + Date.now();
+        let isSettled = false;
+        let scriptTag = null;
+
+        const timer = setTimeout(() => {
+          if (isSettled) return;
+          isSettled = true;
+          cleanup();
+          reject(new Error('伺服器回應逾時'));
+        }, timeoutMs);
+
+        function cleanup() {
+          try { delete window[callbackName]; } catch(e){}
+          if (scriptTag && scriptTag.parentNode) scriptTag.parentNode.removeChild(scriptTag);
+        }
+
+        window[callbackName] = function(data) {
+          if (isSettled) return;
+          isSettled = true;
+          clearTimeout(timer);
+          cleanup();
+          resolve(data);
+        };
+
+        fetch(finalUrl, { method: 'GET', redirect: 'follow', credentials: 'omit' })
+          .then(res => res.text())
+          .then(text => {
+            if (isSettled) return;
+            const trimmed = (text || '').trim();
+            let parsed = null;
+            if (trimmed.startsWith(callbackName + '(')) {
+              const inner = trimmed.substring(callbackName.length + 1).replace(/\);?$/, '');
+              try { parsed = JSON.parse(inner); } catch(e){}
+            } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+              try { parsed = JSON.parse(trimmed); } catch(e){}
+            }
+            if (parsed) {
+              isSettled = true;
+              clearTimeout(timer);
+              cleanup();
+              resolve(parsed);
+            } else {
+              throw new Error('無法解析伺服器回應');
+            }
+          })
+          .catch(err => {
+            if (isSettled) return;
+            scriptTag = document.createElement('script');
+            scriptTag.src = finalUrl;
+            scriptTag.onerror = () => {
+              if (isSettled) return;
+              isSettled = true;
+              clearTimeout(timer);
+              cleanup();
+              reject(new Error('連線失敗'));
+            };
+            document.body.appendChild(scriptTag);
+          });
+      });
+    }
+
+    // ── 初始化 ──
+    document.addEventListener('DOMContentLoaded', () => {
+      loadSavedPresets();
+      initSeatGridUI();
+      fetchGradingData();
+      adaptInternalLinks();
+    });
+
+    function loadSavedPresets() {
+      try {
+        const saved = localStorage.getItem('class_mgmt_grade_presets');
+        if (saved) gradePresets = { ...DEFAULT_PRESETS, ...JSON.parse(saved) };
+      } catch(e){}
+    }
+
+    function initSeatGridUI() {
+      const container = document.getElementById('seat-grid');
+      container.innerHTML = '';
+      for (let s = 1; s <= 30; s++) {
+        const seatStr = String(s).padStart(2, '0');
+        const div = document.createElement('div');
+        div.id = `seat-card-${s}`;
+        div.className = `seat-card ungraded ${s === selectedSeat ? 'selected' : ''}`;
+        div.onclick = () => onSeatCardClick(s);
+        div.innerHTML = `
+          <div class="seat-header">
+            <span class="seat-num">${seatStr}</span>
+            <span class="seat-name" id="seat-name-${s}">載入中...</span>
+          </div>
+          <div class="seat-score empty" id="seat-score-${s}">--</div>
+          <div class="seat-footer">
+            <div class="status-dot" id="dot-chk-${s}" title="清點繳交狀態"></div>
+            <div class="status-dot" id="dot-cor-${s}" title="錯題訂正狀態"></div>
+          </div>
+        `;
+        container.appendChild(div);
+      }
+    }
+
+    // ── 抓取並渲染批改資料 ──
+    async function fetchGradingData(targetColIndex = null) {
+      showToast('⏳ 正在同步作業成績與批改進度...', 'info');
+      try {
+        const params = { sheetName: currentSheetName };
+        if (targetColIndex) params.colIndex = targetColIndex;
+
+        const res = await gasApi('getGradingData', params);
+        if (res && res.success) {
+          gradingDataCache = res;
+          if (res.presets) {
+            gradePresets = { ...DEFAULT_PRESETS, ...res.presets };
+            try { localStorage.setItem('class_mgmt_grade_presets', JSON.stringify(gradePresets)); } catch(e){}
+          }
+          renderHeaderMeta();
+          renderAllSeats();
+          updateSelectedStudentDisplay();
+          showToast(`🟢 已載入【${currentSheetName}】批改資料`, 'success');
+        } else {
+          showToast('❌ 載入失敗: ' + (res ? res.message : ''), 'error');
+        }
+      } catch (err) {
+        showToast('❌ 連線異常: ' + err.message, 'error');
+      }
+    }
+
+    function renderHeaderMeta() {
+      if (!gradingDataCache) return;
+      const assign = gradingDataCache.currentAssignment;
+      document.getElementById('meta-date').textContent = assign ? (assign.date || '未定') : '尚未開立作業';
+      document.getElementById('meta-unit').textContent = assign ? (assign.unit || '-') : '-';
+      document.getElementById('meta-page').textContent = assign ? (assign.page || '-') : '-';
+    }
+
+    function renderAllSeats() {
+      if (!gradingDataCache || !gradingDataCache.students) return;
+      gradingDataCache.students.forEach(st => {
+        const s = parseInt(st.seat, 10);
+        const card = document.getElementById(`seat-card-${s}`);
+        const nameEl = document.getElementById(`seat-name-${s}`);
+        const scoreEl = document.getElementById(`seat-score-${s}`);
+        const dotChk = document.getElementById(`dot-chk-${s}`);
+        const dotCor = document.getElementById(`dot-cor-${s}`);
+
+        if (!card) return;
+
+        nameEl.textContent = st.name || '';
+        if (st.isVacant) {
+          card.className = 'seat-card vacant';
+          return;
+        }
+
+        // 分數
+        if (st.score && st.score !== '--') {
+          scoreEl.textContent = st.score;
+          scoreEl.className = 'seat-score';
+          card.className = `seat-card graded ${s === selectedSeat ? 'selected' : ''}`;
+        } else {
+          scoreEl.textContent = '--';
+          scoreEl.className = 'seat-score empty';
+          card.className = `seat-card ungraded ${s === selectedSeat ? 'selected' : ''}`;
+        }
+
+        // 左燈：繳交狀態 (綠燈 1 / 灰燈)
+        dotChk.className = st.checkin ? 'status-dot green' : 'status-dot';
+
+        // 右燈：訂正狀態 (橘燈 X / 天藍燈 O / 灰燈 無)
+        if (st.correction === 'X') {
+          dotCor.className = 'status-dot orange';
+        } else if (st.correction === 'O') {
+          dotCor.className = 'status-dot blue';
+        } else {
+          dotCor.className = 'status-dot';
+        }
+      });
+    }
+
+    // ── 座號點選與自動儲存 ──
+    async function onSeatCardClick(seatNum) {
+      if (seatNum === selectedSeat) return;
+      triggerFeedback('light');
+
+      // 若當前有尚未提交的輸入分數，切換時自動儲存
+      if (currentInputScore !== "") {
+        await submitCurrentScore(false);
+      }
+
+      selectSeat(seatNum);
+    }
+
+    function selectSeat(seatNum) {
+      selectedSeat = seatNum;
+      currentInputScore = "";
+
+      // 更新卡片選中外框
+      for (let s = 1; s <= 30; s++) {
+        const card = document.getElementById(`seat-card-${s}`);
+        if (!card) continue;
+        if (s === selectedSeat) {
+          card.classList.add('selected');
+        } else {
+          card.classList.remove('selected');
+        }
+      }
+
+      // 載入該生目前狀態
+      if (gradingDataCache && gradingDataCache.students) {
+        const st = gradingDataCache.students.find(x => parseInt(x.seat, 10) === selectedSeat);
+        if (st) {
+          currentNeedCorrection = (st.correction === 'X');
+        } else {
+          currentNeedCorrection = false;
+        }
+      }
+
+      updateSelectedStudentDisplay();
+      updateCorrectionBtnUI();
+    }
+
+    function updateSelectedStudentDisplay() {
+      const infoEl = document.getElementById('display-seat-info');
+      const scoreEl = document.getElementById('display-score-huge');
+      const badgeEl = document.getElementById('display-grade-badge');
+
+      let name = '';
+      let score = '';
+
+      if (gradingDataCache && gradingDataCache.students) {
+        const st = gradingDataCache.students.find(x => parseInt(x.seat, 10) === selectedSeat);
+        if (st) {
+          name = st.name || '';
+          score = st.score || '';
+        }
+      }
+
+      const seatStr = String(selectedSeat).padStart(2, '0');
+      infoEl.textContent = `${seatStr} 號  ${name}`;
+
+      const displayScore = currentInputScore !== "" ? currentInputScore : score;
+
+      if (displayScore && displayScore !== '--') {
+        scoreEl.textContent = displayScore;
+        scoreEl.className = 'display-score-huge';
+        badgeEl.textContent = getGradeNameFromScore(displayScore);
+      } else {
+        scoreEl.textContent = '--';
+        scoreEl.className = 'display-score-huge empty';
+        badgeEl.textContent = '尚未給分';
+      }
+    }
+
+    function getGradeNameFromScore(val) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return val;
+      for (const [grade, target] of Object.entries(gradePresets)) {
+        if (num === target) return `【${grade}】`;
+      }
+      if (num >= 98) return '【甲上上】';
+      if (num >= 95) return '【甲上】';
+      if (num >= 90) return '【甲】';
+      if (num >= 85) return '【甲下】';
+      if (num >= 79) return '【乙上】';
+      if (num >= 75) return '【乙】';
+      if (num >= 70) return '【乙下】';
+      return `【${val}分】`;
+    }
+
+    // ── 等第與數字鍵盤操作 ──
+    async function onGradeClick(gradeKey) {
+      triggerFeedback('medium');
+      const scoreVal = gradePresets[gradeKey] || 90;
+      currentInputScore = String(scoreVal);
+      updateSelectedStudentDisplay();
+      await submitCurrentScore();
+    }
+
+    function onNumKey(key) {
+      triggerFeedback('light');
+      if (key === 'clear') {
+        currentInputScore = "";
+      } else if (key === 'backspace') {
+        currentInputScore = currentInputScore.slice(0, -1);
+      } else if (key === '100') {
+        currentInputScore = "100";
+      } else {
+        if (currentInputScore.length < 5) {
+          currentInputScore += key;
+        }
+      }
+      updateSelectedStudentDisplay();
+    }
+
+    function toggleNeedCorrection() {
+      triggerFeedback('medium');
+      currentNeedCorrection = !currentNeedCorrection;
+      updateCorrectionBtnUI();
+
+      // 若目前已有分數，切換需訂正直接同步儲存
+      const score = currentInputScore || (gradingDataCache?.students?.find(x => parseInt(x.seat,10) === selectedSeat)?.score);
+      if (score) {
+        submitCurrentScore(false);
+      }
+    }
+
+    function updateCorrectionBtnUI() {
+      const btn = document.getElementById('toggle-correction-btn');
+      const icon = document.getElementById('correction-icon');
+      if (currentNeedCorrection) {
+        btn.className = 'toggle-correction-btn active';
+        icon.textContent = '🟧';
+      } else {
+        btn.className = 'toggle-correction-btn';
+        icon.textContent = '⚪';
+      }
+    }
+
+    // ── 儲存成績 ──
+    async function submitCurrentScore(shouldAdvance = null) {
+      if (isSaving) return;
+      if (!gradingDataCache || !gradingDataCache.currentAssignment) {
+        showToast('⚠️ 尚未選定作業欄位，請先選擇或建立作業', 'orange');
+        return;
+      }
+
+      const st = gradingDataCache.students.find(x => parseInt(x.seat, 10) === selectedSeat);
+      const scoreToSave = currentInputScore !== "" ? currentInputScore : (st ? st.score : '');
+
+      if (!scoreToSave || scoreToSave === '--') {
+        showToast('⚠️ 請先點選等第或輸入分數', 'orange');
+        return;
+      }
+
+      isSaving = true;
+      document.getElementById('save-status-indicator').textContent = '⏳ 儲存中...';
+      document.getElementById('save-status-indicator').style.color = '#f59e0b';
+
+      const seatStr = String(selectedSeat).padStart(2, '0');
+      const assign = gradingDataCache.currentAssignment;
+
+      const payload = {
+        sheetName: currentSheetName,
+        colIndex: assign.colIndex,
+        seat: seatStr,
+        score: scoreToSave,
+        needCorrection: currentNeedCorrection,
+        unit: assign.unit || '',
+        page: assign.page || '',
+        date: assign.date || ''
+      };
+
+      try {
+        const res = await gasApi('saveStudentGrade', payload);
+        if (res && res.success) {
+          triggerFeedback('success');
+          // 更新本機快取
+          if (st) {
+            st.score = scoreToSave;
+            st.checkin = true;
+            st.correction = res.correction || (currentNeedCorrection ? 'X' : '');
+            st.graded = true;
+          }
+          currentInputScore = "";
+          renderAllSeats();
+          updateSelectedStudentDisplay();
+
+          let msg = res.message || `已登記 ${seatStr}號 【${scoreToSave}分】`;
+          showToast(msg, 'success');
+
+          // 自動跳號判斷
+          const autoAdvance = (shouldAdvance !== null) ? shouldAdvance : document.getElementById('auto-advance-chk').checked;
+          if (autoAdvance) {
+            goToNextStudent(false);
+          }
+        } else {
+          showToast('❌ 儲存失敗: ' + (res ? res.message : ''), 'error');
+        }
+      } catch (err) {
+        showToast('❌ 連線失敗: ' + err.message, 'error');
+      } finally {
+        isSaving = false;
+        document.getElementById('save-status-indicator').textContent = '🟢 已連線就緒';
+        document.getElementById('save-status-indicator').style.color = '#10b981';
+      }
+    }
+
+    function goToNextStudent(triggerSave = true) {
+      if (triggerSave && currentInputScore !== "") {
+        submitCurrentScore(false);
+      }
+      let next = selectedSeat + 1;
+      if (next > 30) next = 1;
+      selectSeat(next);
+    }
+
+    // ── 科目與它頁彈窗切換 ──
+    async function onSubjectChange() {
+      const select = document.getElementById('subject-select');
+      currentSheetName = select.value;
+      await fetchGradingData();
+
+      // 若工作表1有多筆收繳紀錄，自動彈出它頁選單
+      if (gradingDataCache && gradingDataCache.checkinAssignments && gradingDataCache.checkinAssignments.length > 1) {
+        openOtherPageModal();
+      }
+    }
+
+    function openOtherPageModal() {
+      const modal = document.getElementById('other-page-modal');
+      const listEl = document.getElementById('other-page-list');
+      const titleEl = document.getElementById('other-page-title');
+
+      titleEl.textContent = `📅 選擇【${currentSheetName}】單元與頁數`;
+      listEl.innerHTML = '';
+
+      const checkinList = gradingDataCache ? (gradingDataCache.checkinAssignments || []) : [];
+      const scoreAssignments = gradingDataCache ? (gradingDataCache.assignments || []) : [];
+
+      if (checkinList.length === 0 && scoreAssignments.length === 0) {
+        listEl.innerHTML = '<div style="color:#94a3b8; text-align:center; padding:15px;">清點表尚未有此科目的收繳紀錄，請點「➕ 新作業」開立</div>';
+      } else {
+        // 優先顯示清點表的收繳紀錄（依日期排列）
+        checkinList.forEach(item => {
+          const card = document.createElement('div');
+          const isCurr = gradingDataCache?.currentAssignment?.unit === item.unit &&
+                         gradingDataCache?.currentAssignment?.page === item.page;
+          card.className = `opt-card ${isCurr ? 'active' : ''}`;
+          card.onclick = () => selectCheckinAssignment(item);
+          card.innerHTML = `
+            <div>
+              <span style="font-weight:800; color:#38bdf8; font-size:0.95rem;">📖 單元: ${item.unit || '(未填)'}</span>
+              <span style="color:#cbd5e1; font-size:0.85rem; margin-left:8px;">📄 頁數: ${item.page || '(未填)'}</span>
+            </div>
+            <div style="font-size:0.8rem; color:#facc15; font-weight:700;">📅 ${item.date || ''}</div>
+          `;
+          listEl.appendChild(card);
+        });
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeOtherPageModal() {
+      document.getElementById('other-page-modal').classList.add('hidden');
+    }
+
+    async function selectCheckinAssignment(item) {
+      closeOtherPageModal();
+      showToast(`⏳ 正在切換至【單元: ${item.unit} 頁數: ${item.page}】...`, 'info');
+      await fetchGradingData(null);
+      // 比對並選中該作業
+      const matched = gradingDataCache.assignments.find(a => a.unit === item.unit && a.page === item.page);
+      if (matched) {
+        await fetchGradingData(matched.colIndex);
+      } else {
+        // 若成績分頁尚未開立此欄，即時開立
+        await gasApi('createScoreAssignment', {
+          sheetName: currentSheetName,
+          date: item.date,
+          unit: item.unit,
+          page: item.page
+        });
+        await fetchGradingData();
+      }
+    }
+
+    // ── 新作業自訂彈窗 ──
+    function openNewAssignModal() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('new-date-input').value = today;
+      document.getElementById('new-unit-input').value = '';
+      document.getElementById('new-page-input').value = '';
+      document.getElementById('new-assign-modal').classList.remove('hidden');
+    }
+
+    function closeNewAssignModal() {
+      document.getElementById('new-assign-modal').classList.add('hidden');
+    }
+
+    async function submitNewAssign() {
+      const date = document.getElementById('new-date-input').value.trim();
+      const unit = document.getElementById('new-unit-input').value.trim();
+      const page = document.getElementById('new-page-input').value.trim();
+
+      if (!unit && !page) {
+        showToast('⚠️ 請至少輸入單元或頁數', 'orange');
+        return;
+      }
+
+      closeNewAssignModal();
+      showToast('⏳ 正在建立新作業欄位...', 'info');
+
+      try {
+        const res = await gasApi('createScoreAssignment', {
+          sheetName: currentSheetName,
+          date: date,
+          unit: unit,
+          page: page
+        });
+        if (res && res.success) {
+          showToast(`🟢 ${res.message}`, 'success');
+          await fetchGradingData(res.colIndex);
+        } else {
+          showToast('❌ 建立失敗: ' + (res ? res.message : ''), 'error');
+        }
+      } catch (err) {
+        showToast('❌ 連線錯誤: ' + err.message, 'error');
+      }
+    }
+
+    // ── 等第設定彈窗 ──
+    function openSettingsModal() {
+      const container = document.getElementById('settings-presets-list');
+      container.innerHTML = '';
+      for (const [grade, score] of Object.entries(gradePresets)) {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:4px 0;';
+        row.innerHTML = `
+          <span style="font-weight:700; color:#38bdf8; font-size:0.95rem;">${grade}</span>
+          <input type="number" id="preset-${grade}" value="${score}" style="background:#1e293b; border:1px solid #475569; color:#fff; width:80px; padding:4px 8px; border-radius:6px; font-weight:800; text-align:center;">
+        `;
+        container.appendChild(row);
+      }
+      document.getElementById('settings-modal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function resetDefaultPresets() {
+      gradePresets = { ...DEFAULT_PRESETS };
+      openSettingsModal();
+      showToast('已還原為標準預設等第分數', 'info');
+    }
+
+    async function savePresetsSettings() {
+      const updated = {};
+      for (const grade of Object.keys(DEFAULT_PRESETS)) {
+        const input = document.getElementById(`preset-${grade}`);
+        if (input) {
+          const val = parseFloat(input.value);
+          updated[grade] = isNaN(val) ? DEFAULT_PRESETS[grade] : val;
+        }
+      }
+      gradePresets = updated;
+      try { localStorage.setItem('class_mgmt_grade_presets', JSON.stringify(gradePresets)); } catch(e){}
+      closeSettingsModal();
+      showToast('🟢 等第分數設定已儲存', 'success');
+
+      // 同步存至後端 ScriptProperties
+      try {
+        await gasApi('saveScorePresets', { presets: JSON.stringify(gradePresets) });
+      } catch(e){}
+    }
+
+    // ── 連線設定彈窗 ──
+    function openPairModal() {
+      document.getElementById('gas-url-input').value = GAS_API_URL || '';
+      document.getElementById('pair-modal').classList.remove('hidden');
+    }
+
+    function closePairModal() {
+      document.getElementById('pair-modal').classList.add('hidden');
+    }
+
+    function savePairGasUrl() {
+      const input = document.getElementById('gas-url-input').value.trim();
+      if (!input) {
+        showToast('⚠️ 請輸入有效的 GAS 網址', 'orange');
+        return;
+      }
+      const clean = cleanGasUrl(input);
+      GAS_API_URL = clean;
+      try { localStorage.setItem('class_management_gas_api_url', clean); } catch(e){}
+      closePairModal();
+      showToast('🟢 連線設定已儲存，正在重新連線...', 'success');
+      fetchGradingData();
+    }
+
+    // ── 工具函式 ──
+    function showToast(msg, type = 'success') {
+      const banner = document.getElementById('toast-banner');
+      banner.className = `toast-banner ${type}`;
+      banner.textContent = msg;
+      banner.style.display = 'block';
+      setTimeout(() => { banner.style.display = 'none'; }, 3000);
+    }
+
+    function triggerFeedback(type) {
+      if (navigator.vibrate) {
+        if (type === 'success') navigator.vibrate([80, 40, 80]);
+        else if (type === 'medium') navigator.vibrate(50);
+        else navigator.vibrate(20);
+      }
+    }
+
+    function adaptInternalLinks() {
+      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
+                    location.hostname.includes('script.google.com') ||
+                    location.hostname.includes('googleusercontent.com');
+      if (!isGas) return;
+
+      const baseGas = window._GAS_WEBAPP_URL || GAS_API_URL;
+      if (!baseGas) return;
+
+      const linkCor = document.getElementById('link-correction');
+      const linkIdx = document.getElementById('link-index');
+      if (linkCor) { linkCor.href = `${baseGas}?page=correction`; linkCor.target = '_top'; }
+      if (linkIdx) { linkIdx.href = `${baseGas}`; linkIdx.target = '_top'; }
+    }
+  </script>
+</body>
+</html>

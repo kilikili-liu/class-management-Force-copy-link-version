@@ -50,6 +50,10 @@ function doGet(e) {
     return renderGasPage('CorrectionScanner', '✏️ 班級作業【訂正掃碼與銷案】工具');
   }
 
+  if (params.page === 'grading' || params.page === 'grade') {
+    return renderGasPage('Grading', '✍️ 班級作業批改與成績登記');
+  }
+
   if (params.page === 'sticker' || params.page === 'StickerGenerator' || params.page === 'sticker_generator') {
     return renderGasPage('StickerGenerator', '🏷️ 班級學生作業條碼貼紙產出工具');
   }
@@ -137,6 +141,26 @@ function handleScannerApiAction(action, params) {
     }
     if (action === 'getGasWebAppUrl') {
       return { success: true, url: getGasWebAppUrl() };
+    }
+
+    // ── 3. 作業批改與成績登記 API ──
+    if (action === 'getGradingData') {
+      return getGradingData(params);
+    }
+    if (action === 'saveStudentGrade') {
+      return saveStudentGrade(params);
+    }
+    if (action === 'createScoreAssignment') {
+      return createScoreAssignment(params);
+    }
+    if (action === 'getScorePresets') {
+      return getScorePresets();
+    }
+    if (action === 'saveScorePresets') {
+      return saveScorePresets(params);
+    }
+    if (action === 'initAllScoreSheets') {
+      return initAllScoreSheets();
     }
 
     return { success: false, message: '未知的 API 動作: ' + action };
@@ -1067,5 +1091,401 @@ function getGasWebAppUrl() {
   } catch (e) {
     return '';
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. 作業批改・成績登記與錯題訂正一體化系統 (Grading & Scores)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SCORE_SHEET_NAMES = [
+  "國語|甲本",
+  "國語|乙本",
+  "國語|習作",
+  "國語|圈詞",
+  "數學|數習",
+  "社會|社習",
+  "日記|日記",
+  "國語|作文"
+];
+
+const DEFAULT_GRADE_PRESETS = {
+  "甲上上": 98,
+  "甲上": 95,
+  "甲": 90,
+  "甲下": 85,
+  "乙上": 79,
+  "乙": 75,
+  "乙下": 70
+};
+
+/**
+ * 取得或建立指定的成績分頁
+ * 結構：
+ *   第 1 列: 日期 (A1="", B1="日期", C1起為各次作業日期)
+ *   第 2 列: 單元 (A2="", B2="單元", C2起為各次單元)
+ *   第 3 列: 頁數 (A3="", B3="頁數", C3起為各次頁數)
+ *   第 4 列起: 座號與姓名 (A4:A33=01..30, B4:B33=姓名, C4起為分數)
+ */
+function getScoreSheet(sheetName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+  initScoreSheetStructure(sheet);
+  return sheet;
+}
+
+function initScoreSheetStructure(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 3) {
+    sheet.getRange(1, 1, 3, 2).setValues([
+      ["", "日期"],
+      ["", "單元"],
+      ["", "頁數"]
+    ]).setFontWeight("bold").setBackground("#e2e8f0").setHorizontalAlignment("center");
+  }
+
+  // 讀取「工作表1」的學生名冊 (第 6 列到第 35 列)
+  if (sheet.getLastRow() < CLASS_SIZE + 3) {
+    const hwSheet = getHwSheet();
+    let studentNames = [];
+    if (hwSheet.getLastRow() >= 6) {
+      const numRows = Math.min(CLASS_SIZE, hwSheet.getLastRow() - 5);
+      studentNames = hwSheet.getRange(6, 2, numRows, 1).getDisplayValues();
+    }
+
+    const studentRows = [];
+    for (let i = 1; i <= CLASS_SIZE; i++) {
+      const seatStr = String(i).padStart(2, '0');
+      const name = (studentNames[i - 1] && studentNames[i - 1][0]) ? studentNames[i - 1][0] : '';
+      studentRows.push([seatStr, name]);
+    }
+    sheet.getRange(4, 1, CLASS_SIZE, 2).setValues(studentRows).setHorizontalAlignment("center");
+    sheet.getRange(4, 1, CLASS_SIZE, 1).setFontWeight("bold").setBackground("#f8fafc");
+  }
+}
+
+function initAllScoreSheets() {
+  SCORE_SHEET_NAMES.forEach(name => {
+    getScoreSheet(name);
+  });
+  return { success: true, message: `已成功初始化 8 大成績分頁` };
+}
+
+function findOrCreateScoreAssignmentColumn(sheet, date, unit, page) {
+  const lastCol = Math.max(sheet.getLastColumn(), 2);
+  const targetUnit = String(unit || '').trim();
+  const targetPage = String(page || '').trim();
+  const targetDate = normalizeDateString(date || '');
+
+  if (lastCol > 2) {
+    const headers = sheet.getRange(1, 3, 3, lastCol - 2).getDisplayValues();
+    for (let c = 0; c < headers[0].length; c++) {
+      const hDate = normalizeDateString(headers[0][c]);
+      const hUnit = String(headers[1][c] || '').trim();
+      const hPage = String(headers[2][c] || '').trim();
+
+      if (hUnit === targetUnit && hPage === targetPage) {
+        if (!targetDate || hDate === targetDate) {
+          return c + 3;
+        }
+      }
+    }
+
+    for (let c = 0; c < headers[0].length; c++) {
+      const hUnit = String(headers[1][c] || '').trim();
+      const hPage = String(headers[2][c] || '').trim();
+      if (hUnit === targetUnit && hPage === targetPage) {
+        return c + 3;
+      }
+    }
+  }
+
+  const finalDate = targetDate || getTodayString();
+  const newCol = Math.max(lastCol, 2) + 1;
+  sheet.getRange(1, newCol, 3, 1).setValues([
+    [finalDate], [targetUnit], [targetPage]
+  ]).setFontWeight("bold").setHorizontalAlignment("center").setBackground("#f1f5f9");
+
+  return newCol;
+}
+
+function getGradingData(params) {
+  params = params || {};
+  let sheetName = String(params.sheetName || '國語|甲本').trim();
+  if (!SCORE_SHEET_NAMES.includes(sheetName)) {
+    sheetName = SCORE_SHEET_NAMES[0];
+  }
+
+  const parts = sheetName.split('|');
+  const subject = parts[0] || '國語';
+  const category = parts[1] || '甲本';
+
+  const scoreSheet = getScoreSheet(sheetName);
+  const lastCol = scoreSheet.getLastColumn();
+  const assignments = [];
+
+  if (lastCol >= 3) {
+    const headers = scoreSheet.getRange(1, 3, 3, lastCol - 2).getDisplayValues();
+    for (let c = 0; c < headers[0].length; c++) {
+      const d = normalizeDateString(headers[0][c]);
+      const u = String(headers[1][c] || '').trim();
+      const p = String(headers[2][c] || '').trim();
+      if (!u && !p && !d) continue;
+      assignments.push({
+        colIndex: c + 3,
+        date: d,
+        unit: u,
+        page: p
+      });
+    }
+  }
+
+  // 取得清點表（工作表1）對應科目與種類的所有收繳作業（依日期由新至舊）
+  const checkinAssignments = getCheckinAssignmentsList(subject, category);
+
+  // 決定當前選定的作業欄位
+  let targetCol = parseInt(params.colIndex, 10);
+  let activeAssignment = null;
+
+  if (!isNaN(targetCol) && targetCol >= 3) {
+    activeAssignment = assignments.find(a => a.colIndex === targetCol);
+  }
+
+  if (!activeAssignment && (params.unit || params.page)) {
+    const u = String(params.unit || '').trim();
+    const p = String(params.page || '').trim();
+    activeAssignment = assignments.find(a => a.unit === u && a.page === p);
+  }
+
+  // 若仍無匹配，預設取最後一筆作業；若成績分頁尚無作業但清點表有作業，自動對齊清點表最新作業
+  if (!activeAssignment) {
+    if (assignments.length > 0) {
+      activeAssignment = assignments[assignments.length - 1];
+    } else if (checkinAssignments.length > 0) {
+      const latestChk = checkinAssignments[0];
+      const newCol = findOrCreateScoreAssignmentColumn(scoreSheet, latestChk.date, latestChk.unit, latestChk.page);
+      activeAssignment = {
+        colIndex: newCol,
+        date: latestChk.date,
+        unit: latestChk.unit,
+        page: latestChk.page
+      };
+      assignments.push(activeAssignment);
+    }
+  }
+
+  const students = [];
+  const studentMetadata = scoreSheet.getRange(4, 1, CLASS_SIZE, 2).getDisplayValues();
+
+  let scores = [];
+  if (activeAssignment && activeAssignment.colIndex >= 3) {
+    scores = scoreSheet.getRange(4, activeAssignment.colIndex, CLASS_SIZE, 1).getDisplayValues();
+  }
+
+  // 讀取工作表1（清點表）狀態
+  const hwSheet = getHwSheet();
+  let hwCol = -1;
+  let checkinVals = [];
+  if (activeAssignment) {
+    hwCol = findCheckinColumn(hwSheet, activeAssignment.date, subject, category, activeAssignment.unit, activeAssignment.page);
+    if (hwCol >= 3 && hwSheet.getLastRow() >= 6) {
+      checkinVals = hwSheet.getRange(6, hwCol, CLASS_SIZE, 1).getDisplayValues();
+    }
+  }
+
+  // 讀取作業訂正矩陣狀態
+  const matrixSheet = getCorrectionMatrixSheet();
+  let matrixCol = -1;
+  let matrixVals = [];
+  if (activeAssignment) {
+    const mLastCol = matrixSheet.getLastColumn();
+    if (mLastCol >= 2) {
+      const mHeaders = matrixSheet.getRange(1, 2, 5, mLastCol - 1).getDisplayValues();
+      for (let c = 0; c < mHeaders[0].length; c++) {
+        if (mHeaders[1][c] === subject && mHeaders[2][c] === category &&
+            mHeaders[3][c] === activeAssignment.unit && mHeaders[4][c] === activeAssignment.page) {
+          matrixCol = c + 2;
+          break;
+        }
+      }
+      if (matrixCol >= 2 && matrixSheet.getLastRow() >= 6) {
+        matrixVals = matrixSheet.getRange(6, matrixCol, CLASS_SIZE, 1).getDisplayValues();
+      }
+    }
+  }
+
+  for (let s = 1; s <= CLASS_SIZE; s++) {
+    const seatStr = String(s).padStart(2, '0');
+    const name = studentMetadata[s - 1] ? studentMetadata[s - 1][1] : '';
+    const rawScore = (scores[s - 1] && scores[s - 1][0]) ? String(scores[s - 1][0]).trim() : '';
+    const isSubmitted = (checkinVals[s - 1] && String(checkinVals[s - 1][0]).trim() === "1");
+    const mVal = (matrixVals[s - 1] && matrixVals[s - 1][0]) ? String(matrixVals[s - 1][0]).trim().toUpperCase() : '';
+
+    students.push({
+      seat: seatStr,
+      name: name,
+      isVacant: isVacantSeat(name),
+      score: rawScore,
+      checkin: isSubmitted,
+      correction: (mVal === 'X' || mVal === 'O') ? mVal : '',
+      graded: (rawScore !== '' && rawScore !== '--')
+    });
+  }
+
+  const presetsRes = getScorePresets();
+
+  return {
+    success: true,
+    sheetName: sheetName,
+    subject: subject,
+    category: category,
+    assignments: assignments,
+    checkinAssignments: checkinAssignments,
+    currentAssignment: activeAssignment,
+    students: students,
+    presets: presetsRes.presets || DEFAULT_GRADE_PRESETS
+  };
+}
+
+function saveStudentGrade(params) {
+  params = params || {};
+  const sheetName = String(params.sheetName || '國語|甲本').trim();
+  const seatNum = parseInt(params.seat, 10);
+  const score = String(params.score || '').trim();
+  const needCorrection = (params.needCorrection === true || params.needCorrection === 'true');
+  const unit = String(params.unit || '').trim();
+  const page = String(params.page || '').trim();
+  const date = String(params.date || '').trim();
+
+  if (isNaN(seatNum) || seatNum < 1 || seatNum > CLASS_SIZE) {
+    return { success: false, message: '無效座號: ' + params.seat };
+  }
+
+  const parts = sheetName.split('|');
+  const subject = parts[0] || '國語';
+  const category = parts[1] || '甲本';
+
+  const scoreSheet = getScoreSheet(sheetName);
+  let colIndex = parseInt(params.colIndex, 10);
+  if (isNaN(colIndex) || colIndex < 3) {
+    colIndex = findOrCreateScoreAssignmentColumn(scoreSheet, date, unit, page);
+  }
+
+  // 1. 登記成績至對應成績分頁 (Row 4 為 1 號)
+  const scoreRow = 3 + seatNum;
+  scoreSheet.getRange(scoreRow, colIndex).setValue(score).setHorizontalAlignment("center").setFontWeight("bold");
+
+  // 2. 自動在「工作表1」(清點表) 補登為已繳交 (1)
+  let madeUpCheckin = false;
+  const hwSheet = getHwSheet();
+  const hwCol = findCheckinColumn(hwSheet, date, subject, category, unit, page);
+  if (hwCol >= 3) {
+    const hwStudentRow = 5 + seatNum;
+    const currentCheckinVal = String(hwSheet.getRange(hwStudentRow, hwCol).getValue() || '').trim();
+    if (currentCheckinVal !== "1") {
+      hwSheet.getRange(hwStudentRow, hwCol).setValue("1");
+      madeUpCheckin = true;
+    }
+  }
+
+  // 3. 同步至「作業訂正矩陣」
+  const matrixSheet = getCorrectionMatrixSheet();
+  const matrixCol = findOrCreateAssignmentColumn(matrixSheet, date, subject, category, unit, page);
+  const matrixRow = 5 + seatNum;
+  let correctionStatus = '';
+
+  if (needCorrection) {
+    matrixSheet.getRange(matrixRow, matrixCol).setValue('X').setHorizontalAlignment("center").setFontWeight("bold");
+    correctionStatus = 'X';
+  } else {
+    const curVal = String(matrixSheet.getRange(matrixRow, matrixCol).getValue() || '').trim().toUpperCase();
+    if (curVal === 'X') {
+      matrixSheet.getRange(matrixRow, matrixCol).setValue('');
+    } else if (curVal === 'O') {
+      correctionStatus = 'O';
+    }
+  }
+
+  const seatStr = String(seatNum).padStart(2, '0');
+  let msg = `已登記 ${seatStr}號 成績【${score}分】${needCorrection ? ' (需訂正 X)' : ''}`;
+  if (madeUpCheckin) {
+    msg += `（📢 該生原未在清點表登記，已為其自動補登為已繳交 1）`;
+  }
+
+  return {
+    success: true,
+    seat: seatStr,
+    score: score,
+    colIndex: colIndex,
+    checkin: true,
+    correction: correctionStatus,
+    graded: (score !== '' && score !== '--'),
+    madeUpCheckin: madeUpCheckin,
+    message: msg
+  };
+}
+
+function createScoreAssignment(params) {
+  params = params || {};
+  const sheetName = String(params.sheetName || '國語|甲本').trim();
+  const date = String(params.date || getTodayString()).trim();
+  const unit = String(params.unit || '').trim();
+  const page = String(params.page || '').trim();
+
+  const parts = sheetName.split('|');
+  const subject = parts[0] || '國語';
+  const category = parts[1] || '甲本';
+
+  const scoreSheet = getScoreSheet(sheetName);
+  const colIndex = findOrCreateScoreAssignmentColumn(scoreSheet, date, unit, page);
+
+  // 同步在「工作表1」與「作業訂正矩陣」建立或對齊欄位
+  const hwSheet = getHwSheet();
+  findOrCreateCheckinColumn(hwSheet, date, subject, category, unit, page);
+
+  const matrixSheet = getCorrectionMatrixSheet();
+  findOrCreateAssignmentColumn(matrixSheet, date, subject, category, unit, page);
+
+  return {
+    success: true,
+    colIndex: colIndex,
+    date: date,
+    unit: unit,
+    page: page,
+    message: `已建立新作業【${subject} ${category} ${unit} ${page}】`
+  };
+}
+
+function findOrCreateCheckinColumn(hwSheet, date, subject, category, unit, page) {
+  let col = findCheckinColumn(hwSheet, date, subject, category, unit, page);
+  if (col >= 3) return col;
+
+  const lastCol = Math.max(hwSheet.getLastColumn(), 2);
+  const newCol = lastCol + 1;
+  hwSheet.getRange(1, newCol, 5, 1).setValues([
+    [date], [subject], [category], [unit], [page]
+  ]).setFontWeight("bold").setHorizontalAlignment("center").setBackground("#f1f5f9");
+  return newCol;
+}
+
+function getScorePresets() {
+  const props = PropertiesService.getScriptProperties();
+  const saved = props.getProperty('GRADE_PRESETS');
+  if (saved) {
+    try {
+      return { success: true, presets: JSON.parse(saved) };
+    } catch (e) {}
+  }
+  return { success: true, presets: DEFAULT_GRADE_PRESETS };
+}
+
+function saveScorePresets(params) {
+  params = params || {};
+  const presets = typeof params.presets === 'string' ? JSON.parse(params.presets) : (params.presets || DEFAULT_GRADE_PRESETS);
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('GRADE_PRESETS', JSON.stringify(presets));
+  return { success: true, presets: presets, message: '等第分數設定已儲存！' };
 }
 

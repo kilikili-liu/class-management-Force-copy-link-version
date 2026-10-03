@@ -762,6 +762,7 @@
       <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
       <a href="index.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">🎯 作業清點</a>
       <a href="correction_scanner.html" class="nav-btn" style="background:#0284c7; color:#fff; border-color:#38bdf8; text-decoration:none;">📱 訂正速掃</a>
+      <a href="grading.html" class="nav-btn" style="background:#8b5cf6; color:#fff; border:1px solid #a78bfa; text-decoration:none;">✍️ 批改登記</a>
       <a href="scanner.html" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none;">📷 作業速掃</a>
     </div>
   </header>
@@ -1282,6 +1283,9 @@
             a.target = '_top';
           } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
             a.href = `${baseGasUrl}?page=correction_scanner`;
+            a.target = '_top';
+          } else if (href === 'grading.html' || href.includes('page=grading')) {
+            a.href = `${baseGasUrl}?page=grading`;
             a.target = '_top';
           } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
             a.href = `${baseGasUrl}?page=sticker`;

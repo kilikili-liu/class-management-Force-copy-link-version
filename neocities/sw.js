@@ -3,12 +3,13 @@
  * 採用 Network-First 策略：優先獲取最新線上版本，網路中斷時自動使用快取
  */
 
-const CACHE_NAME = 'class-mgmt-pwa-v24';
+const CACHE_NAME = 'class-mgmt-pwa-v25';
 const CORE_ASSETS = [
   './index.html',
   './scanner.html',
   './correction.html',
   './correction_scanner.html',
+  './grading.html',
   './StickerGenerator.html',
   './manifest.json',
   './class_app.mobileconfig',

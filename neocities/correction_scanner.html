@@ -461,6 +461,7 @@
       <a href="index.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">🎯 純按鈕清點</a>
       <a href="scanner.html" class="nav-btn" style="text-decoration:none;">📥 作業收繳</a>
       <a href="correction.html" class="nav-btn" style="text-decoration:none;">✏️ 錯題主頁</a>
+      <a href="grading.html" class="nav-btn" style="background:#0284c7; color:#fff; text-decoration:none;">✍️ 批改登記</a>
     </div>
   </header>
 
@@ -1025,6 +1026,9 @@
             a.target = '_top';
           } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
             a.href = `${baseGasUrl}?page=correction_scanner`;
+            a.target = '_top';
+          } else if (href === 'grading.html' || href.includes('page=grading')) {
+            a.href = `${baseGasUrl}?page=grading`;
             a.target = '_top';
           } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
             a.href = `${baseGasUrl}?page=sticker`;
@@ -1808,8 +1812,8 @@
 
           if (res && res.success) {
             triggerFeedback('success');
-            let msg = `🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`;
-            if (res.madeUpCheckin) {
+            let msg = res.message || `🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`;
+            if (!res.message && res.madeUpCheckin) {
               msg += `（📢 該生原未在清點表登記，已自動補登為已繳交 1）`;
             }
             showToast(msg, 'orange');
