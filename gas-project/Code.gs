@@ -799,29 +799,14 @@ function addCorrectionRecordMatrix(params) {
     checkinDateFound = actualHwDate;
 
     if (!hasSubmitted) {
-      if (params.makeUpCheckin === true) {
-        // 老師確認要同步補登清點表為已繳交 (1)
-        hwSheet.getRange(studentRow, hwCol).setValue("1");
-        madeUpCheckin = true;
-        checkinStatus = 'made_up';
-      } else if (params.makeUpCheckin === false) {
-        // 老師選擇僅記錯題，不補登繳交
+      if (params.makeUpCheckin === false) {
         madeUpCheckin = false;
         checkinStatus = 'unsubmitted_kept';
       } else {
-        // 尚未詢問老師：回傳 needCheckinConfirm 給前端跳窗確認
-        return {
-          success: false,
-          needCheckinConfirm: true,
-          seat: seatStr,
-          subject: subject,
-          category: category,
-          unit: unit,
-          page: page,
-          date: actualHwDate,
-          colIndex: colIndex,
-          message: `座號 ${seatStr} 號在清點表中尚未登記繳交【${actualHwDate ? actualHwDate + ' ' : ''}${subject}${category} ${unit ? unit : ''}】`
-        };
+        // 預設直接自動同步在清點表補登為已繳交 (1)
+        hwSheet.getRange(studentRow, hwCol).setValue("1");
+        madeUpCheckin = true;
+        checkinStatus = 'made_up';
       }
     }
   }
@@ -831,7 +816,7 @@ function addCorrectionRecordMatrix(params) {
 
   let msg = `已標記 ${seatStr}號 在【${subject}${category}】需訂正 (X)`;
   if (madeUpCheckin) {
-    msg += `，並已同步補登清點表為已繳交 (1)`;
+    msg += `（📢 該生原未在清點表登記，已為其自動補登為已繳交 1）`;
   }
 
   return {

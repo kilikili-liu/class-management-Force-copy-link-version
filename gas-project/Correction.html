@@ -2148,17 +2148,12 @@
         }
         const res = await apiCallCorrection('addCorrectionRecordMatrix', params);
 
-        if (res && res.needCheckinConfirm) {
-          showMakeUpConfirmModal(params, res);
-          return;
-        }
-
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           await fetchCorrectionMatrixData();
           let msg = `🔴 已登錄 ${seatStr}號【${subject}${category} ${displayUnit || ''}】需訂正 (X)`;
           if (res.madeUpCheckin) {
-            msg += `，並已同步補登清點表 (1)`;
+            msg += `（📢 該生原未在清點表登記，已自動補登為已繳交 1）`;
           }
           showToastWithUndo(msg, {
             type: 'register',

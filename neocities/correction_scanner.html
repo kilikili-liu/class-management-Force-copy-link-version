@@ -1525,17 +1525,11 @@
             };
             const res = await gasApi('addCorrectionRecordMatrix', apiParams);
 
-            if (res && res.needCheckinConfirm) {
-              triggerFeedback('duplicate');
-              showMakeUpConfirmModal(apiParams, res);
-              return;
-            }
-
             if (res && res.success) {
               triggerFeedback('success');
               let msg = `🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`;
               if (res.madeUpCheckin) {
-                msg += `，並已補登清點表為已繳交 (1)`;
+                msg += `（📢 該生原未在清點表登記，已自動補登為已繳交 1）`;
               }
               showToast(msg, 'orange');
               currentAssignKey = res.key || `${subject}_${category}_${res.colIndex || ''}`;
@@ -1812,17 +1806,11 @@
 
           const res = await gasApi('addCorrectionRecordMatrix', apiParams);
 
-          if (res && res.needCheckinConfirm) {
-            triggerFeedback('duplicate');
-            showMakeUpConfirmModal(apiParams, res);
-            return;
-          }
-
           if (res && res.success) {
             triggerFeedback('success');
             let msg = `🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`;
             if (res.madeUpCheckin) {
-              msg += `，並已同步補登清點表為已繳交 (1)`;
+              msg += `（📢 該生原未在清點表登記，已自動補登為已繳交 1）`;
             }
             showToast(msg, 'orange');
             // 即時將焦點鎖定並切換至所掃描/產生的作業欄位 Key
