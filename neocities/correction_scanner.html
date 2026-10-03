@@ -591,6 +591,34 @@
     </div>
   </div>
 
+  <!-- ⚠️ 補登作業繳交確認 Modal -->
+  <div id="makeup-confirm-modal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 440px;">
+      <div class="modal-header" style="color: #f59e0b;">
+        <span>⚠️ 尚未繳交作業確認</span>
+        <button onclick="closeMakeUpModal()" style="background:none; border:none; color:#94a3b8; font-size:1.3rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <div class="modal-scroll-area">
+        <div style="background:#0f172a; border:1px solid rgba(245, 158, 11, 0.3); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+          <div id="makeup-modal-desc" style="font-size:0.88rem; color:#f8fafc; line-height:1.5;">
+            <!-- 動態填入說明 -->
+          </div>
+          <div style="font-size:0.8rem; color:#94a3b8; background:rgba(245, 158, 11, 0.1); border-left:3px solid #f59e0b; padding:6px 10px; border-radius:4px;">
+            💡 該生在「作業清點表」中尚無繳交紀錄。您可以選擇在此為該生<b>同步補登繳交 (1)</b>，或僅記錄錯題。
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display:flex; flex-direction:column; gap:8px; padding-top:10px;">
+        <button id="btn-makeup-sync" onclick="confirmMakeUpChoice(true)" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:10px 14px; border-radius:8px; font-weight:700; font-size:0.88rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 8px rgba(2,132,199,0.3);">
+          <span>✔️ 同步在清點表補登繳交 (1) 並記錯題</span>
+        </button>
+        <button id="btn-makeup-only-err" onclick="confirmMakeUpChoice(false)" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-weight:600; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <span>僅登記錯題 (清點表維持未繳交)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     // ── 關鍵底層補丁：在任何 video 標籤建立時，強制注入 iOS Safari WebKit 必備屬性 ──
     (function patchVideoElementCreation() {
@@ -1318,30 +1346,24 @@
       const listEl = document.getElementById('other-page-list');
       listEl.innerHTML = '';
 
-      let checkinAll = matrixDataCache.checkinAssignments || [];
-      let checkinList = checkinAll.filter(item =>
-        String(item.subject || '').trim() === String(subject || '').trim() &&
-        String(item.category || '').trim() === String(category || '').trim()
-      );
-
-      // 若快取無紀錄，向後端即時查詢作業清點表
-      if (checkinList.length === 0) {
-        try {
-          const chkRes = await gasApi('getCheckinAssignments', { subject, category });
-          if (chkRes && chkRes.success && Array.isArray(chkRes.list) && chkRes.list.length > 0) {
-            checkinList = chkRes.list;
-            if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
-            chkRes.list.forEach(item => {
-              const exists = matrixDataCache.checkinAssignments.some(c =>
-                c.subject === item.subject && c.category === item.category &&
-                c.unit === item.unit && c.page === item.page && c.date === item.date
-              );
-              if (!exists) matrixDataCache.checkinAssignments.push(item);
-            });
-          }
-        } catch (e) {
-          console.warn('即時查詢清點紀錄失敗:', e);
+      // 永遠即時向後端查詢「作業清點表」最新欄位，確保試算表改動 (例如 15 改成 16) 能 100% 即時呈現
+      let checkinList = [];
+      try {
+        const chkRes = await gasApi('getCheckinAssignments', { subject, category });
+        if (chkRes && chkRes.success && Array.isArray(chkRes.list)) {
+          checkinList = chkRes.list;
+          if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
+          matrixDataCache.checkinAssignments = matrixDataCache.checkinAssignments.filter(c =>
+            !(c.subject === subject && c.category === category)
+          ).concat(chkRes.list);
         }
+      } catch (e) {
+        console.warn('即時查詢清點紀錄失敗:', e);
+        // fallback to cache
+        checkinList = (matrixDataCache.checkinAssignments || []).filter(item =>
+          String(item.subject || '').trim() === String(subject || '').trim() &&
+          String(item.category || '').trim() === String(category || '').trim()
+        );
       }
 
       const assignments = matrixDataCache.assignments || [];
@@ -1493,18 +1515,29 @@
         if (mode === 'register') {
           showToast(`⏳ 正在為 ${seatStr}號 登錄【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正...`, 'orange');
           try {
-            const res = await gasApi('addCorrectionRecordMatrix', {
+            const apiParams = {
               seat: seatStr,
               subject: subject,
               category: category,
               unit: targetUnit,
               page: targetPage,
               date: targetDate
-            });
+            };
+            const res = await gasApi('addCorrectionRecordMatrix', apiParams);
+
+            if (res && res.needCheckinConfirm) {
+              triggerFeedback('duplicate');
+              showMakeUpConfirmModal(apiParams, res);
+              return;
+            }
 
             if (res && res.success) {
               triggerFeedback('success');
-              showToast(`🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`, 'orange');
+              let msg = `🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`;
+              if (res.madeUpCheckin) {
+                msg += `，並已補登清點表為已繳交 (1)`;
+              }
+              showToast(msg, 'orange');
               currentAssignKey = res.key || `${subject}_${category}_${res.colIndex || ''}`;
               try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
               await fetchMatrixData(true);
@@ -1583,6 +1616,72 @@
       }
     }
 
+    let pendingMakeUpParams = null;
+
+    function showMakeUpConfirmModal(params, serverRes) {
+      pendingMakeUpParams = { ...params };
+      const descEl = document.getElementById('makeup-modal-desc');
+      if (descEl) {
+        const seatStr = serverRes.seat || params.seat;
+        const sub = serverRes.subject || params.subject;
+        const cat = serverRes.category || params.category;
+        const u = serverRes.unit || params.unit || '';
+        const p = serverRes.page || params.page || '';
+        const d = serverRes.date || params.date || '';
+        descEl.innerHTML = `
+          座號 <b style="color:#38bdf8; font-size:1.05rem;">${seatStr}</b> 號 在「作業清點表」中尚未登記繳交：<br>
+          <div style="margin-top:6px; padding:6px 10px; background:#1e293b; border-radius:6px; color:#f59e0b; font-weight:700;">
+            ${d ? '[' + d + '] ' : ''}${sub} ${cat}${u ? ' 單元 ' + u : ''}${p ? ' (' + p + ')' : ''}
+          </div>
+        `;
+      }
+      document.getElementById('makeup-confirm-modal').classList.remove('hidden');
+    }
+
+    function closeMakeUpModal() {
+      document.getElementById('makeup-confirm-modal').classList.add('hidden');
+      pendingMakeUpParams = null;
+      pendingScanData = null;
+      isProcessingScan = false;
+    }
+
+    async function confirmMakeUpChoice(shouldMakeUp) {
+      if (!pendingMakeUpParams) {
+        closeMakeUpModal();
+        return;
+      }
+      const params = { ...pendingMakeUpParams, makeUpCheckin: shouldMakeUp };
+      closeMakeUpModal();
+
+      const seatStr = params.seat;
+      const sub = params.subject;
+      const cat = params.category;
+      const u = params.unit || '';
+
+      showToast(`⏳ 正在為 ${seatStr}號 登錄錯題${shouldMakeUp ? '並補登繳交' : ''}...`, 'orange');
+      try {
+        const res = await gasApi('addCorrectionRecordMatrix', params);
+        if (res && res.success) {
+          triggerFeedback('success');
+          let msg = `🟧 已登錄 ${seatStr}號【${sub} ${cat}${u ? ' ' + u : ''}】需訂正 (X)`;
+          if (res.madeUpCheckin) {
+            msg += `，並已同步補登清點表為已繳交 (1)`;
+          }
+          showToast(msg, 'orange');
+          currentAssignKey = res.key || `${sub}_${cat}_${res.colIndex || ''}`;
+          try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+          await fetchMatrixData(true);
+        } else {
+          triggerFeedback('error');
+          showToast(`❌ 登記失敗: ${res ? res.message : ''}`, 'error');
+        }
+      } catch (err) {
+        showToast('❌ 網路連線異常', 'error');
+      } finally {
+        setTimeout(() => { isProcessingScan = false; }, 1000);
+      }
+    }
+
     async function onScanSuccess(decodedText) {
       const now = Date.now();
       if (decodedText === lastScannedPayload && (now - lastScanTime) < 3000) return;
@@ -1655,32 +1754,25 @@
             targetPage = currAssign.page || '';
             targetDate = currAssign.date || '';
           } else {
-            // 條碼科目/種類與當前不同，或首次掃碼：查詢清點頁作業列表
-            let checkinAll = matrixDataCache.checkinAssignments || [];
-            let checkinList = checkinAll.filter(item =>
-              String(item.subject || '').trim() === String(subject || '').trim() &&
-              String(item.category || '').trim() === String(category || '').trim()
-            );
-
-            // 若快取無符合紀錄，即時向後端查詢作業清點表
-            if (checkinList.length === 0) {
-              try {
-                showToast(`🔍 正在查詢清點紀錄【${subject} ${category}】...`, 'info');
-                const chkRes = await gasApi('getCheckinAssignments', { subject, category });
-                if (chkRes && chkRes.success && Array.isArray(chkRes.list) && chkRes.list.length > 0) {
-                  checkinList = chkRes.list;
-                  if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
-                  chkRes.list.forEach(item => {
-                    const exists = matrixDataCache.checkinAssignments.some(c =>
-                      c.subject === item.subject && c.category === item.category &&
-                      c.unit === item.unit && c.page === item.page && c.date === item.date
-                    );
-                    if (!exists) matrixDataCache.checkinAssignments.push(item);
-                  });
-                }
-              } catch (err) {
-                console.warn('即時查詢清點紀錄失敗:', err);
+            // 條碼科目/種類與當前不同，或首次掃碼：即時向後端查詢作業清點表最新列表
+            let checkinList = [];
+            try {
+              showToast(`🔍 正在查詢清點紀錄【${subject} ${category}】...`, 'info');
+              const chkRes = await gasApi('getCheckinAssignments', { subject, category });
+              if (chkRes && chkRes.success && Array.isArray(chkRes.list)) {
+                checkinList = chkRes.list;
+                if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
+                matrixDataCache.checkinAssignments = matrixDataCache.checkinAssignments.filter(c =>
+                  !(c.subject === subject && c.category === category)
+                ).concat(chkRes.list);
               }
+            } catch (err) {
+              console.warn('即時查詢清點紀錄失敗:', err);
+              // fallback to cache
+              checkinList = (matrixDataCache.checkinAssignments || []).filter(item =>
+                String(item.subject || '').trim() === String(subject || '').trim() &&
+                String(item.category || '').trim() === String(category || '').trim()
+              );
             }
 
             if (checkinList.length > 1) {
@@ -1719,9 +1811,20 @@
           }
 
           const res = await gasApi('addCorrectionRecordMatrix', apiParams);
+
+          if (res && res.needCheckinConfirm) {
+            triggerFeedback('duplicate');
+            showMakeUpConfirmModal(apiParams, res);
+            return;
+          }
+
           if (res && res.success) {
             triggerFeedback('success');
-            showToast(`🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`, 'orange');
+            let msg = `🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`;
+            if (res.madeUpCheckin) {
+              msg += `，並已同步補登清點表為已繳交 (1)`;
+            }
+            showToast(msg, 'orange');
             // 即時將焦點鎖定並切換至所掃描/產生的作業欄位 Key
             currentAssignKey = res.key || `${subject}_${category}_${res.colIndex || ''}`;
             try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}

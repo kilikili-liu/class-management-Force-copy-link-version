@@ -697,6 +697,34 @@
     </div>
   </div>
 
+  <!-- ⚠️ 補登作業繳交確認 Modal -->
+  <div id="makeup-confirm-modal" class="prompt-modal-overlay hidden">
+    <div class="prompt-modal-card" style="max-width:440px; text-align:left; max-height:calc(100vh - 16px); display:flex; flex-direction:column; overflow:hidden; padding:12px 14px; gap:8px;">
+      <div style="font-weight:700; font-size:1.05rem; color:#f59e0b; display:flex; align-items:center; justify-content:space-between; flex-shrink:0;">
+        <span>⚠️ 尚未繳交作業確認</span>
+        <button onclick="closeMakeUpModal()" style="background:none; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <div style="overflow-y:auto; flex:1 1 auto; min-height:0; display:flex; flex-direction:column; gap:8px; padding-right:2px;">
+        <div style="background:#0f172a; border:1px solid rgba(245, 158, 11, 0.3); border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:8px;">
+          <div id="makeup-modal-desc" style="font-size:0.88rem; color:#f8fafc; line-height:1.5;">
+            <!-- 動態填入說明 -->
+          </div>
+          <div style="font-size:0.8rem; color:#94a3b8; background:rgba(245, 158, 11, 0.1); border-left:3px solid #f59e0b; padding:6px 10px; border-radius:4px;">
+            💡 該生在「作業清點表」中尚無繳交紀錄。您可以選擇在此為該生<b>同步補登繳交 (1)</b>，或僅記錄錯題。
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; border-top:1px solid #334155; padding-top:8px; flex-shrink:0;">
+        <button id="btn-makeup-sync" onclick="confirmMakeUpChoice(true)" style="background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:none; padding:10px 14px; border-radius:8px; font-weight:700; font-size:0.88rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 2px 8px rgba(2,132,199,0.3);">
+          <span>✔️ 同步在清點表補登繳交 (1) 並記錯題</span>
+        </button>
+        <button id="btn-makeup-only-err" onclick="confirmMakeUpChoice(false)" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-weight:600; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <span>僅登記錯題 (清點表維持未繳交)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 📌 編輯作業單元與頁碼 Modal -->
   <div id="meta-modal" class="prompt-modal-overlay hidden">
     <div class="prompt-modal-card" style="max-width:420px; text-align:left;">
@@ -1497,26 +1525,20 @@
       const listEl = document.getElementById('other-page-list');
       listEl.innerHTML = '';
 
-      let checkinList = getCheckinListForCurrentSubjectCategory();
-
-      // 若快取無紀錄，即時向後端查詢作業清點表
-      if (checkinList.length === 0) {
-        try {
-          const chkRes = await apiCallCorrection('getCheckinAssignments', { subject, category });
-          if (chkRes && chkRes.success && Array.isArray(chkRes.list) && chkRes.list.length > 0) {
-            checkinList = chkRes.list;
-            if (!matrixData.checkinAssignments) matrixData.checkinAssignments = [];
-            chkRes.list.forEach(item => {
-              const exists = matrixData.checkinAssignments.some(c =>
-                c.subject === item.subject && c.category === item.category &&
-                c.unit === item.unit && c.page === item.page && c.date === item.date
-              );
-              if (!exists) matrixData.checkinAssignments.push(item);
-            });
-          }
-        } catch (e) {
-          console.warn('即時查詢清點紀錄失敗:', e);
+      // 永遠即時向後端查詢「作業清點表」最新欄位，確保試算表改動 (例如 15 改成 16) 能 100% 即時呈現
+      let checkinList = [];
+      try {
+        const chkRes = await apiCallCorrection('getCheckinAssignments', { subject, category });
+        if (chkRes && chkRes.success && Array.isArray(chkRes.list)) {
+          checkinList = chkRes.list;
+          if (!matrixData.checkinAssignments) matrixData.checkinAssignments = [];
+          matrixData.checkinAssignments = matrixData.checkinAssignments.filter(c =>
+            !(c.subject === subject && c.category === category)
+          ).concat(chkRes.list);
         }
+      } catch (e) {
+        console.warn('即時查詢清點紀錄失敗:', e);
+        checkinList = getCheckinListForCurrentSubjectCategory();
       }
 
       const assignments = matrixData.assignments || [];
@@ -2032,6 +2054,71 @@
       }
     }
 
+    let pendingMakeUpParams = null;
+
+    function showMakeUpConfirmModal(params, serverRes) {
+      pendingMakeUpParams = { ...params };
+      const descEl = document.getElementById('makeup-modal-desc');
+      if (descEl) {
+        const seatStr = serverRes.seat || params.seat;
+        const sub = serverRes.subject || params.subject;
+        const cat = serverRes.category || params.category;
+        const u = serverRes.unit || params.unit || '';
+        const p = serverRes.page || params.page || '';
+        const d = serverRes.date || params.date || '';
+        descEl.innerHTML = `
+          座號 <b style="color:#38bdf8; font-size:1.05rem;">${seatStr}</b> 號 在「作業清點表」中尚未登記繳交：<br>
+          <div style="margin-top:6px; padding:6px 10px; background:#1e293b; border-radius:6px; color:#f59e0b; font-weight:700;">
+            ${d ? '[' + d + '] ' : ''}${sub} ${cat}${u ? ' 單元 ' + u : ''}${p ? ' (' + p + ')' : ''}
+          </div>
+        `;
+      }
+      document.getElementById('makeup-confirm-modal').classList.remove('hidden');
+    }
+
+    function closeMakeUpModal() {
+      document.getElementById('makeup-confirm-modal').classList.add('hidden');
+      pendingMakeUpParams = null;
+    }
+
+    async function confirmMakeUpChoice(shouldMakeUp) {
+      if (!pendingMakeUpParams) {
+        closeMakeUpModal();
+        return;
+      }
+      const params = { ...pendingMakeUpParams, makeUpCheckin: shouldMakeUp };
+      closeMakeUpModal();
+
+      const seatStr = params.seat;
+      const sub = params.subject;
+      const cat = params.category;
+      const u = params.unit || '';
+
+      showToastWithUndo(`⏳ 正在為 ${seatStr}號 登錄錯題${shouldMakeUp ? '並補登繳交' : ''}...`, null);
+      try {
+        const res = await apiCallCorrection('addCorrectionRecordMatrix', params);
+        if (res && res.success) {
+          audioSuccess.play().catch(()=>{});
+          await fetchCorrectionMatrixData();
+          let msg = `🔴 已登錄 ${seatStr}號【${sub}${cat} ${u ? u : ''}】需訂正 (X)`;
+          if (res.madeUpCheckin) {
+            msg += `，並已同步補登清點表 (1)`;
+          }
+          showToastWithUndo(msg, {
+            type: 'register',
+            seat: seatStr,
+            colIndex: res.colIndex,
+            subject: sub,
+            category: cat
+          });
+        } else {
+          showToastWithUndo(`❌ 登錄失敗：${res ? res.message : ''}`, null);
+        }
+      } catch (err) {
+        showToastWithUndo(`❌ 請求連線異常：${err.message}`, null);
+      }
+    }
+
     // Register error for seat (writes 'X' to matrix column)
     async function registerErrorForSeat(seatStr) {
       const subject = document.getElementById('reg-subject').value;
@@ -2060,10 +2147,20 @@
           params.colIndex = existingAssign.colIndex;
         }
         const res = await apiCallCorrection('addCorrectionRecordMatrix', params);
+
+        if (res && res.needCheckinConfirm) {
+          showMakeUpConfirmModal(params, res);
+          return;
+        }
+
         if (res.success) {
           audioSuccess.play().catch(()=>{});
           await fetchCorrectionMatrixData();
-          showToastWithUndo(`🔴 已登錄 ${seatStr}號【${subject}${category} ${displayUnit || ''}】需訂正 (X)`, {
+          let msg = `🔴 已登錄 ${seatStr}號【${subject}${category} ${displayUnit || ''}】需訂正 (X)`;
+          if (res.madeUpCheckin) {
+            msg += `，並已同步補登清點表 (1)`;
+          }
+          showToastWithUndo(msg, {
             type: 'register',
             seat: seatStr,
             colIndex: res.colIndex,

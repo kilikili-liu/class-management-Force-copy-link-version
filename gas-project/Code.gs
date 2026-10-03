@@ -708,6 +708,47 @@ function findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page
   return newCol;
 }
 
+function findCheckinColumn(hwSheet, date, subject, category, unit, page) {
+  const lastCol = hwSheet.getLastColumn();
+  if (lastCol < 3) return -1;
+  const headers = hwSheet.getRange(1, 3, 5, lastCol - 2).getDisplayValues();
+
+  const normTargetDate = normalizeDateString(date);
+  const targetSub = String(subject || '').trim();
+  const targetCat = String(category || '').trim();
+  const targetUnit = String(unit || '').trim();
+  const targetPage = String(page || '').trim();
+
+  // 1. 精準比對 (date, subject, category, unit, page)
+  for (let c = headers[0].length - 1; c >= 0; c--) {
+    const hDate = normalizeDateString(headers[0][c]);
+    const hSub = String(headers[1][c] || '').trim();
+    const hCat = String(headers[2][c] || '').trim();
+    const hUnit = String(headers[3][c] || '').trim();
+    const hPage = String(headers[4][c] || '').trim();
+
+    if (hSub === targetSub && hCat === targetCat && hUnit === targetUnit && hPage === targetPage) {
+      if (!normTargetDate || hDate === normTargetDate) {
+        return c + 3;
+      }
+    }
+  }
+
+  // 2. 次優比對 (subject, category, unit, page)
+  for (let c = headers[0].length - 1; c >= 0; c--) {
+    const hSub = String(headers[1][c] || '').trim();
+    const hCat = String(headers[2][c] || '').trim();
+    const hUnit = String(headers[3][c] || '').trim();
+    const hPage = String(headers[4][c] || '').trim();
+
+    if (hSub === targetSub && hCat === targetCat && hUnit === targetUnit && hPage === targetPage) {
+      return c + 3;
+    }
+  }
+
+  return -1;
+}
+
 function addCorrectionRecordMatrix(params) {
   const seatNum = parseInt(params.seat, 10);
   const subject = String(params.subject || '國語').trim();
@@ -742,21 +783,71 @@ function addCorrectionRecordMatrix(params) {
   }
 
   const seatStr = String(seatNum).padStart(2, '0');
+
+  // ── 檢查在「作業清點表」(工作表1) 中該生是否已有繳交紀錄 ──
+  let madeUpCheckin = false;
+  let checkinStatus = 'already_submitted';
+  let checkinDateFound = date;
+
+  const hwSheet = getHwSheet();
+  const hwCol = findCheckinColumn(hwSheet, date, subject, category, unit, page);
+  if (hwCol >= 3) {
+    const studentRow = 5 + seatNum;
+    const checkinVal = String(hwSheet.getRange(studentRow, hwCol).getValue() || '').trim();
+    const hasSubmitted = (checkinVal === "1");
+    const actualHwDate = normalizeDateString(hwSheet.getRange(1, hwCol).getValue()) || date;
+    checkinDateFound = actualHwDate;
+
+    if (!hasSubmitted) {
+      if (params.makeUpCheckin === true) {
+        // 老師確認要同步補登清點表為已繳交 (1)
+        hwSheet.getRange(studentRow, hwCol).setValue("1");
+        madeUpCheckin = true;
+        checkinStatus = 'made_up';
+      } else if (params.makeUpCheckin === false) {
+        // 老師選擇僅記錯題，不補登繳交
+        madeUpCheckin = false;
+        checkinStatus = 'unsubmitted_kept';
+      } else {
+        // 尚未詢問老師：回傳 needCheckinConfirm 給前端跳窗確認
+        return {
+          success: false,
+          needCheckinConfirm: true,
+          seat: seatStr,
+          subject: subject,
+          category: category,
+          unit: unit,
+          page: page,
+          date: actualHwDate,
+          colIndex: colIndex,
+          message: `座號 ${seatStr} 號在清點表中尚未登記繳交【${actualHwDate ? actualHwDate + ' ' : ''}${subject}${category} ${unit ? unit : ''}】`
+        };
+      }
+    }
+  }
+
   const row = 5 + seatNum;
   sheet.getRange(row, colIndex).setValue('X').setHorizontalAlignment("center").setFontWeight("bold");
 
+  let msg = `已標記 ${seatStr}號 在【${subject}${category}】需訂正 (X)`;
+  if (madeUpCheckin) {
+    msg += `，並已同步補登清點表為已繳交 (1)`;
+  }
+
   return {
     success: true,
-    message: `已標記 ${seatStr}號 在【${subject}${category}】需訂正 (X)`,
+    message: msg,
     colIndex: colIndex,
     key: `${subject}_${category}_${colIndex}`,
     subject: subject,
     category: category,
     unit: unit,
     page: page,
-    date: date,
+    date: checkinDateFound,
     seat: seatStr,
-    status: 'X'
+    status: 'X',
+    madeUpCheckin: madeUpCheckin,
+    checkinStatus: checkinStatus
   };
 }
 
