@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>學校自用版・純淨基底階梯測試 (Pure Baseline Step Test)</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-orange: #f97316;
+      --accent-amber: #f59e0b;
+      --border-color: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 頂部簡易狀態列 */
+    header {
+      background: #090d16;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      z-index: 50;
+    }
+    header h1 {
+      font-size: 0.95rem;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-btns {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-header {
+      background: #334155;
+      color: #fff;
+      border: 1px solid #475569;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* 取樣尺寸 4 階按鈕 + 原生加速開關 */
+    .size-toolbar {
+      background: #1e293b;
+      padding: 8px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-color);
+      z-index: 40;
+      flex-wrap: wrap;
+    }
+    .size-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+    }
+    .size-label {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .btn-size {
+      background: #0f172a;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .btn-size:hover {
+      color: #fff;
+      border-color: #64748b;
+    }
+    .btn-size.active {
+      background: var(--accent-blue);
+      color: #0f172a;
+      border-color: var(--accent-blue);
+      font-weight: bold;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+    }
+
+    .btn-accel {
+      background: #0f172a;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .btn-accel.active {
+      background: var(--accent-amber);
+      color: #0f172a;
+      border-color: var(--accent-amber);
+      font-weight: bold;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+
+    /* 主體佈局（支援橫向與直向） */
+    .main-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* 橫向模式下左右分欄（完全同學校自用版） */
+    @media (orientation: landscape) {
+      .main-container {
+        flex-direction: row;
+      }
+    }
+
+    /* 相機畫面容器（100% 複製學校自用版 camera-panel CSS） */
+    .camera-panel {
+      flex: 1.2;
+      background: #000;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #reader {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+    }
+    #reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
+    /* 取樣瞄準框（100% 複製學校自用版 viewfinder-box CSS） */
+    .scanner-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .viewfinder-box {
+      width: 190px;
+      height: 190px;
+      max-width: 90%;
+      max-height: 90%;
+      border: 3px solid var(--accent-blue);
+      border-radius: 16px;
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65);
+      position: relative;
+      transition: all 0.25s ease;
+    }
+
+    .viewfinder-box::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; height: 2px;
+      background: var(--accent-blue);
+      box-shadow: 0 0 8px var(--accent-blue);
+      animation: scan-line 2s ease-in-out infinite alternate;
+    }
+    @keyframes scan-line {
+      0%   { top: 5%; opacity: 0.3; }
+      50%  { opacity: 1; }
+      100% { top: 95%; opacity: 0.3; }
+    }
+
+    .viewfinder-box.success {
+      border-color: var(--accent-green) !important;
+      box-shadow: 0 0 0 4000px rgba(34, 197, 94, 0.35), 0 0 30px var(--accent-green) !important;
+      background: rgba(34, 197, 94, 0.25) !important;
+    }
+
+    .viewfinder-tip {
+      margin-top: 14px;
+      background: rgba(15, 23, 42, 0.85);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid #334155;
+    }
+
+    /* 右側/下方測試數據儀表板 */
+    .info-panel {
+      flex: 0.8;
+      background: var(--card-bg);
+      border-top: 1px solid var(--border-color);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+    }
+    @media (orientation: landscape) {
+      .info-panel {
+        border-top: none;
+        border-left: 1px solid var(--border-color);
+      }
+    }
+
+    .data-card {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .data-title {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      margin-bottom: 4px;
+    }
+    .data-val {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: var(--accent-green);
+      font-family: monospace;
+      word-break: break-all;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+    .stat-item {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      padding: 6px;
+      border-radius: 6px;
+    }
+    .stat-num {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: var(--accent-blue);
+      font-family: monospace;
+    }
+    .stat-label {
+      font-size: 0.65rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    .log-list {
+      flex: 1;
+      min-height: 80px;
+      max-height: 140px;
+      overflow-y: auto;
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 6px;
+      font-family: monospace;
+      font-size: 0.72rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-entry {
+      padding: 4px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      border-left: 3px solid var(--accent-green);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .toast-banner {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accent-blue);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      z-index: 100;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .toast-banner.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🏫 學校自用版・純淨基底階梯測試</h1>
+    <div class="header-btns">
+      <button class="btn-header" onclick="resetStats()">🧹 歸零</button>
+      <button class="btn-header" onclick="switchNextCamera()">🔄 鏡頭</button>
+      <button class="btn-header" onclick="location.reload()">⚡ 重整</button>
+    </div>
+  </header>
+
+  <!-- 取樣尺寸 4 階按鈕 + 原生加速開關 -->
+  <div class="size-toolbar">
+    <div class="size-group">
+      <span class="size-label">取樣框：</span>
+      <button class="btn-size" id="btn-size-180" onclick="setQrboxSize(180)">180px (基準)</button>
+      <button class="btn-size" id="btn-size-240" onclick="setQrboxSize(240)">240px (中)</button>
+      <button class="btn-size" id="btn-size-300" onclick="setQrboxSize(300)">300px (大)</button>
+      <button class="btn-size" id="btn-size-400" onclick="setQrboxSize(400)">400px (iPad)</button>
+    </div>
+    <div class="accel-group">
+      <button class="btn-accel" id="btn-accel" onclick="toggleNativeAccel()">⚡ 原生加速: 關</button>
+    </div>
+  </div>
+
+  <div class="main-container">
+
+    <!-- 相機畫面與取景框（100% 學校自用版架構） -->
+    <div class="camera-panel">
+      <div id="reader"></div>
+      <div class="scanner-overlay">
+        <div id="viewfinder" class="viewfinder-box"></div>
+        <div id="viewfinder-tip-txt" class="viewfinder-tip">🎯 請將條碼置於取樣框內</div>
+      </div>
+    </div>
+
+    <!-- 測試指標與歷史日誌 -->
+    <div class="info-panel">
+      <div class="data-card">
+        <div class="data-title">剛剛掃出的內容 (最新)</div>
+        <div class="data-val" id="last-code">尚未掃描</div>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-item">
+          <div class="stat-num" id="stat-total">0</div>
+          <div class="stat-label">成功次數</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num" id="stat-latency">--</div>
+          <div class="stat-label">反應間隔(ms)</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num" id="stat-engine">300px (軟解)</div>
+          <div class="stat-label">取樣規格</div>
+        </div>
+      </div>
+
+      <div style="font-size:0.75rem; color:#94a3b8; display:flex; justify-content:space-between; margin-top:4px;">
+        <span>掃描紀錄清單</span>
+        <span id="cam-name" style="color:var(--accent-blue);">相機啟動中...</span>
+      </div>
+      <div class="log-list" id="log-list">
+        <div style="text-align:center; color:#64748b; padding-top:25px;">等待條碼進入取樣框...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="toast-banner" id="toast-banner"></div>
+
+  <script>
+    /* ============================================================
+     * 100% 複製自學校自用版 (school_scanner.html) 的相機核心邏輯
+     * 控制變數：currentQrboxSize (180/240/300/400) + useNativeAccel (true/false)
+     * ============================================================ */
+    let html5QrCode = null;
+    let availableCameras = [];
+    let currentCameraIndex = 0;
+    let currentQrboxSize = 300; // 預設 300px（全能甜點值）
+    let useNativeAccel = false; // 預設關閉原生加速（對照組純軟解）
+    let isSwitching = false;
+
+    let scanCount = 0;
+    let lastScanTime = 0;
+    let audioCtx = null;
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      // 設置初始按鈕 active
+      document.getElementById('btn-size-' + currentQrboxSize)?.classList.add('active');
+      const vf = document.getElementById('viewfinder');
+      vf.style.width = (currentQrboxSize + 10) + 'px';
+      vf.style.height = (currentQrboxSize + 10) + 'px';
+
+      await initAndStartCamera(true);
+    });
+
+    // 完全等同學校自用版：枚舉相機，找後置，用 cameraId 直啟 10fps + 指定 qrbox
+    async function initAndStartCamera(preferRear = true) {
+      updateEngineDisplay();
+      showToast(`⏳ 正在啟動相機 (${currentQrboxSize}px, 原生加速:${useNativeAccel ? '開' : '關'})...`);
+
+      const config = {
+        fps: 10,
+        qrbox: { width: currentQrboxSize, height: currentQrboxSize }
+      };
+
+      try {
+        if (availableCameras.length === 0) {
+          availableCameras = await Html5Qrcode.getCameras();
+        }
+
+        if (!availableCameras || availableCameras.length === 0) {
+          showToast('❌ 找不到任何相機');
+          return;
+        }
+
+        // 優先找後置主鏡頭（特別針對 iPhone/iPad 多鏡頭，避開 Ultra Wide 超廣角）
+        if (preferRear) {
+          let rearIdx = availableCameras.findIndex(c =>
+            /back.*wide|wide.*back|後置.*廣角/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
+          );
+          if (rearIdx < 0) {
+            rearIdx = availableCameras.findIndex(c =>
+              /back|rear|environment|後|後置/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
+            );
+          }
+          if (rearIdx < 0) {
+            rearIdx = availableCameras.findIndex(c =>
+              /back|rear|environment|後|後置/i.test(c.label)
+            );
+          }
+          currentCameraIndex = rearIdx >= 0 ? rearIdx : availableCameras.length - 1;
+        }
+
+        const cameraId = availableCameras[currentCameraIndex].id;
+
+        // 實例化 html5-qrcode，注入 experimentalFeatures
+        html5QrCode = new Html5Qrcode("reader", {
+          verbose: false,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: useNativeAccel
+          }
+        });
+
+        await html5QrCode.start(cameraId, config, onScanSuccess);
+
+        const label = availableCameras[currentCameraIndex].label || `相機 ${currentCameraIndex + 1}`;
+        document.getElementById('cam-name').textContent = label.slice(0, 15);
+        showToast(`🟢 掃碼器就緒 (${currentQrboxSize}px, 加速:${useNativeAccel ? '開' : '關'})`);
+
+      } catch (err) {
+        showToast('❌ 相機啟動失敗: ' + err);
+      }
+    }
+
+    // 階梯式切換取樣尺寸
+    async function setQrboxSize(size) {
+      if (currentQrboxSize === size && html5QrCode && html5QrCode.isScanning) return;
+      if (isSwitching) return;
+      isSwitching = true;
+
+      try {
+        currentQrboxSize = size;
+
+        // 更新按鈕樣式
+        document.querySelectorAll('.btn-size').forEach(btn => {
+          btn.classList.toggle('active', parseInt(btn.id.replace('btn-size-', '')) === size);
+        });
+
+        // 動態調整瞄準外框尺寸 (配合 10px 襯墊)
+        const vf = document.getElementById('viewfinder');
+        vf.style.width = (size + 10) + 'px';
+        vf.style.height = (size + 10) + 'px';
+
+        updateEngineDisplay();
+        showToast(`🔄 切換取樣框至 ${size}px...`);
+
+        // 安全停止並以相同鏡頭重啟
+        if (html5QrCode) {
+          try { await html5QrCode.stop(); } catch(e) {}
+          html5QrCode = null;
+        }
+        await initAndStartCamera(false);
+      } finally {
+        isSwitching = false;
+      }
+    }
+
+    // 切換原生硬體加速 (開/關)
+    async function toggleNativeAccel() {
+      if (isSwitching) return;
+      isSwitching = true;
+
+      try {
+        useNativeAccel = !useNativeAccel;
+        const btn = document.getElementById('btn-accel');
+        btn.textContent = useNativeAccel ? '⚡ 原生加速: 開' : '⚡ 原生加速: 關';
+        btn.classList.toggle('active', useNativeAccel);
+
+        const hasSupport = ('BarcodeDetector' in window);
+        if (useNativeAccel && !hasSupport) {
+          showToast('⚠️ 瀏覽器無內建 BarcodeDetector，將自動回退軟解');
+        } else {
+          showToast(`⚡ 原生加速: ${useNativeAccel ? '已啟用' : '已關閉'}`);
+        }
+
+        updateEngineDisplay();
+
+        if (html5QrCode) {
+          try { await html5QrCode.stop(); } catch(e) {}
+          html5QrCode = null;
+        }
+        await initAndStartCamera(false);
+      } finally {
+        isSwitching = false;
+      }
+    }
+
+    function updateEngineDisplay() {
+      const mode = useNativeAccel ? '硬體加速' : '純軟解';
+      document.getElementById('stat-engine').textContent = `${currentQrboxSize}px (${mode})`;
+    }
+
+    // 歸零統計數據
+    function resetStats() {
+      scanCount = 0;
+      lastScanTime = 0;
+      document.getElementById('stat-total').textContent = '0';
+      document.getElementById('stat-latency').textContent = '--';
+      document.getElementById('last-code').textContent = '尚未掃描';
+      document.getElementById('log-list').innerHTML = '<div style="text-align:center; color:#64748b; padding-top:25px;">已歸零，等待條碼進入取樣框...</div>';
+      showToast('🧹 數據已歸零');
+    }
+
+    // 成功掃碼回調
+    function onScanSuccess(decodedText) {
+      const now = Date.now();
+      const interval = lastScanTime ? (now - lastScanTime) : 0;
+      lastScanTime = now;
+
+      scanCount++;
+      document.getElementById('stat-total').textContent = scanCount;
+      document.getElementById('stat-latency').textContent = interval ? `${interval}` : '0';
+      document.getElementById('last-code').textContent = decodedText;
+
+      // 學校版取景框綠色閃爍
+      const vf = document.getElementById('viewfinder');
+      vf.classList.add('success');
+      setTimeout(() => { vf.classList.remove('success'); }, 800);
+
+      // 音效與振動
+      playBeep();
+      if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+
+      // 加入日誌
+      addLog(decodedText, interval);
+    }
+
+    function addLog(text, interval) {
+      const list = document.getElementById('log-list');
+      if (scanCount === 1) list.innerHTML = '';
+
+      const item = document.createElement('div');
+      item.className = 'log-entry';
+      item.innerHTML = `
+        <span>🏷️ <strong>${escapeHtml(text)}</strong></span>
+        <span style="color:var(--accent-blue);">+${interval}ms</span>
+      `;
+      list.insertBefore(item, list.firstChild);
+    }
+
+    // 切換下一顆鏡頭
+    async function switchNextCamera() {
+      if (availableCameras.length <= 1) {
+        showToast('⚠️ 本裝置只有一個相機');
+        return;
+      }
+      currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+
+      if (html5QrCode) {
+        try { await html5QrCode.stop(); } catch(e) {}
+        html5QrCode = null;
+      }
+      await initAndStartCamera(false);
+    }
+
+    function playBeep() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+      } catch(e) {}
+    }
+
+    function showToast(msg) {
+      const banner = document.getElementById('toast-banner');
+      banner.textContent = msg;
+      banner.classList.add('show');
+      setTimeout(() => banner.classList.remove('show'), 2000);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+  </script>
+</body>
+</html>

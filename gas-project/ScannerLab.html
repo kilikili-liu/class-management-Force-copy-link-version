@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>QR 掃碼效能與相機參數實驗室 (Scanner Lab)</title>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <!-- 引入支援繁體中文 UTF-8 與全自動 Version (50~600字) 的 QR Code 產生庫 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --bg-card: #1e293b;
+      --bg-input: #334155;
+      --border-color: #475569;
+      --accent-blue: #38bdf8;
+      --accent-green: #22c55e;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #c084fc;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    header {
+      background: #090d16;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+    header h1 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-blue);
+      border: 1px solid var(--accent-blue);
+      font-weight: 600;
+    }
+
+    /* 攝影機畫面區塊 */
+    .viewport-section {
+      position: relative;
+      width: 100%;
+      height: 38vh;
+      min-height: 250px;
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #reader {
+      width: 100% !important;
+      height: 100% !important;
+      border: none !important;
+    }
+    #reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+    #qr-shaded-region {
+      display: none !important;
+    }
+
+    /* 動態視覺取樣框（即時對齊 qrbox 參數） */
+    .visual-qrbox-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    .visual-box {
+      border: 2px dashed var(--accent-blue);
+      background: rgba(56, 189, 248, 0.08);
+      border-radius: 12px;
+      transition: width 0.2s, height 0.2s, border-color 0.2s;
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 6px;
+    }
+
+    .visual-box.full-frame {
+      border: 2px solid var(--accent-purple);
+      background: rgba(192, 132, 252, 0.05);
+      border-radius: 0;
+      width: 96% !important;
+      height: 94% !important;
+    }
+
+    .visual-box.success-flash {
+      border-color: var(--accent-green) !important;
+      background: rgba(34, 197, 94, 0.25) !important;
+      box-shadow: 0 0 25px rgba(34, 197, 94, 0.6);
+    }
+
+    .box-tag {
+      font-size: 0.68rem;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    /* 頂部即時浮動數據 */
+    .hud-bar {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      right: 8px;
+      display: flex;
+      justify-content: space-between;
+      gap: 6px;
+      z-index: 25;
+      pointer-events: none;
+    }
+    .hud-pill {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-family: monospace;
+      color: #e2e8f0;
+    }
+
+    /* 控制面板區塊 */
+    .dashboard {
+      flex: 1;
+      padding: 14px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: var(--bg-primary);
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* 預設配置按鈕列 */
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+    }
+    .btn-preset {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+    }
+    .btn-preset:active {
+      transform: scale(0.97);
+    }
+    .btn-preset.active {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+    .btn-preset .sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      display: block;
+      margin-top: 2px;
+      font-weight: normal;
+    }
+
+    /* 表單項目 */
+    .form-group {
+      margin-bottom: 12px;
+    }
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    .form-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .form-label span.val {
+      color: var(--accent-blue);
+      font-family: monospace;
+      font-weight: bold;
+    }
+
+    .slider {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: var(--bg-input);
+      outline: none;
+      -webkit-appearance: none;
+    }
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      cursor: pointer;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+    .toggle-row label {
+      font-size: 0.8rem;
+      color: var(--text-main);
+    }
+
+    /* 按鈕 */
+    .btn-action {
+      background: var(--accent-blue);
+      color: #0f172a;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      width: 100%;
+      transition: background 0.15s;
+    }
+    .btn-action:active { background: #0284c7; }
+    .btn-action.btn-restart {
+      background: var(--accent-green);
+    }
+    .btn-action.btn-generator {
+      background: var(--accent-purple);
+      color: #fff;
+    }
+
+    /* 掃碼統計與日誌 */
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      text-align: center;
+    }
+    .stat-box {
+      background: var(--bg-input);
+      padding: 6px 4px;
+      border-radius: 6px;
+    }
+    .stat-val {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+      font-family: monospace;
+    }
+    .stat-lbl {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .log-box {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      height: 125px;
+      overflow-y: auto;
+      padding: 6px;
+      font-family: monospace;
+      font-size: 0.72rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-item {
+      padding: 4px 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.04);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .log-item.cms-code {
+      border-left: 3px solid var(--accent-green);
+      background: rgba(34, 197, 94, 0.1);
+    }
+    .log-item.dense-code {
+      border-left: 3px solid var(--accent-purple);
+      background: rgba(192, 132, 252, 0.12);
+    }
+    .log-item.general-qr {
+      border-left: 3px solid var(--accent-blue);
+    }
+
+    /* 高密度測試碼產生器彈窗 */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      max-width: 420px;
+      width: 100%;
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .qr-preview-box {
+      background: #fff;
+      padding: 14px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 220px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid var(--accent-blue);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      z-index: 2000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🔬 掃碼效能與相機實驗室</h1>
+    <span class="badge" id="detected-os-badge">偵測系統中...</span>
+  </header>
+
+  <!-- 鏡頭與視覺取景框 -->
+  <section class="viewport-section" id="viewport-section">
+    <div id="reader"></div>
+
+    <!-- 動態計算取樣範圍預覽框 -->
+    <div class="visual-qrbox-overlay">
+      <div class="visual-box" id="visual-box">
+        <span class="box-tag" id="box-tag">180 x 180</span>
+      </div>
+    </div>
+
+    <!-- 頂部即時浮動監控數據 (HUD) -->
+    <div class="hud-bar">
+      <div class="hud-pill" id="hud-res">解析度: --</div>
+      <div class="hud-pill" id="hud-density">字數: 0 字</div>
+      <button onclick="toggleCameraFacing()" class="hud-pill" style="cursor:pointer; background:rgba(2,132,199,0.9); border-color:#38bdf8; color:#fff; pointer-events:auto; font-weight:bold;">🔄 翻轉鏡頭</button>
+    </div>
+  </section>
+
+  <!-- 控制面板 -->
+  <main class="dashboard">
+
+    <!-- 常用預設組合（一鍵切換對比） -->
+    <div class="card">
+      <div class="card-title">
+        <span>⚡ 實驗模式預設組合 (快速對比)</span>
+        <button class="btn-action btn-generator" style="width:auto; padding:4px 10px; font-size:0.75rem;" onclick="openQrGeneratorModal()">
+          🖨️ 產生高字數測試碼
+        </button>
+      </div>
+      <div class="preset-grid">
+        <button class="btn-preset active" onclick="applyPreset('school')">
+          🏫 學校自用版 (CMS秒掃)
+          <span class="sub">10fps · 180px · 實體鏡頭</span>
+        </button>
+        <button class="btn-preset" onclick="applyPreset('dense_high_capacity')">
+          🧬 高密度幾百字大碼
+          <span class="sub">10fps · 300px · 1080p高清 · 純ZXing</span>
+        </button>
+        <button class="btn-preset" onclick="applyPreset('sharing')">
+          📦 副本分享版
+          <span class="sub">15fps · 動態320px · 虛擬鏡頭</span>
+        </button>
+        <button class="btn-preset" onclick="applyPreset('max_size')">
+          🔍 滿版全畫面取樣
+          <span class="sub">10fps · 全畫面(無qrbox)</span>
+        </button>
+        <button class="btn-preset" onclick="applyPreset('ios_optimized')">
+          🍎 iOS 穩定秒掃
+          <span class="sub">12fps · 220px · facingMode</span>
+        </button>
+        <button class="btn-preset" onclick="applyPreset('android_optimized')">
+          🤖 Android 旗艦穩定
+          <span class="sub">10fps · 200px · 實體主鏡頭ID</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 即時參數微調 -->
+    <div class="card">
+      <div class="card-title">
+        <span>⚙️ 參數微調 (即時修改並重啟測試)</span>
+        <button class="btn-action btn-restart" style="width:auto; padding:4px 10px; font-size:0.75rem;" onclick="restartCameraWithCurrentSettings()">
+          🔄 套用並重啟鏡頭
+        </button>
+      </div>
+
+      <!-- 1. 解碼 FPS -->
+      <div class="form-group">
+        <div class="form-label">
+          <span>解碼頻率 (FPS)：每秒運算次數</span>
+          <span class="val" id="val-fps">10 FPS</span>
+        </div>
+        <input type="range" class="slider" id="slider-fps" min="5" max="30" step="1" value="10" oninput="onFpsSliderChange(this.value)">
+      </div>
+
+      <!-- 2. QRBox 取樣方式 -->
+      <div class="form-group">
+        <div class="form-label">
+          <span>取樣框模式 (qrbox)</span>
+          <span class="val" id="val-qrbox-mode">固定 180px</span>
+        </div>
+        <select id="select-qrbox-mode" onchange="onQrboxModeChange(this.value)">
+          <option value="fixed">固定大小 (Fixed px，自用版 180px)</option>
+          <option value="dynamic">動態比例 (佔視窗 70%~80%)</option>
+          <option value="full">滿版全畫面 (qrbox: None，演算法全視野掃描)</option>
+        </select>
+      </div>
+
+      <!-- 固定大小滑桿（僅在 fixed 模式下顯示） -->
+      <div class="form-group" id="grp-fixed-size">
+        <div class="form-label">
+          <span>固定取樣框邊長 (像素，高密度字數碼建議 >= 280px)</span>
+          <span class="val" id="val-fixed-size">180 px</span>
+        </div>
+        <input type="range" class="slider" id="slider-fixed-size" min="100" max="420" step="10" value="180" oninput="onFixedSizeSliderChange(this.value)">
+      </div>
+
+      <!-- 3. 相機解析度建議（高密度幾百字條碼最關鍵） -->
+      <div class="form-group">
+        <div class="form-label">
+          <span>相機視訊解析度要求 (幾百字細碼強烈建議 1080p)</span>
+        </div>
+        <select id="select-resolution">
+          <option value="default">預設 (瀏覽器自動)</option>
+          <option value="720p">高清 720p (1280x720)</option>
+          <option value="1080p">超清 1080p (1920x1080，幾百字細密碼必備)</option>
+          <option value="480p">低解析度 480p (640x480)</option>
+        </select>
+      </div>
+
+      <!-- 4. 相機調用模式 (Android vs iOS 關鍵設定) -->
+      <div class="form-group">
+        <div class="form-label">相機調用模式</div>
+        <select id="select-camera-mode" onchange="onCameraModeChange(this.value)">
+          <option value="deviceId">實體硬體 ID (學校自用版：優先後置主相機)</option>
+          <option value="environment">虛擬後鏡頭 (facingMode: "environment")</option>
+          <option value="user">前置自拍鏡頭 (facingMode: "user")</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="grp-device-list">
+        <div class="form-label">實體相機硬體清單 (偵測到多鏡頭時可自選)</div>
+        <select id="select-camera-device" onchange="onDeviceSelectChange()"></select>
+      </div>
+
+      <!-- 5. 實驗性 BarcodeDetector 開關 -->
+      <div class="toggle-row">
+        <label for="chk-barcodedetector">啟用原生 BarcodeDetector (實驗性加速)</label>
+        <input type="checkbox" id="chk-barcodedetector" onchange="updateLiveTag()">
+      </div>
+
+      <!-- 6. 提示音開關 -->
+      <div class="toggle-row">
+        <label for="chk-beep">掃到時播放合成蜂鳴嗶聲 (Web Audio API)</label>
+        <input type="checkbox" id="chk-beep" checked>
+      </div>
+    </div>
+
+    <!-- 即時效能統計與高密度字數監控 -->
+    <div class="card">
+      <div class="card-title">
+        <span>📊 掃碼效能與字數極限統計</span>
+        <button onclick="clearStats()" style="background:none; border:none; color:var(--accent-rose); font-size:0.75rem; cursor:pointer;">清空數據</button>
+      </div>
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="stat-val" id="stat-total">0</div>
+          <div class="stat-lbl">累計成功次數</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-cms">0</div>
+          <div class="stat-lbl">CMS 碼次數</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-max-chars" style="color:var(--accent-purple);">0 字</div>
+          <div class="stat-lbl">解出最大字數</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="stat-avg-latency">--</div>
+          <div class="stat-lbl">平均間隔(ms)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 掃描歷史日誌 -->
+    <div class="card">
+      <div class="card-title">
+        <span>📝 掃碼紀錄日誌 (顯示字數與密度)</span>
+        <button onclick="copyLogReport()" style="background:none; border:none; color:var(--accent-blue); font-size:0.75rem; cursor:pointer;">複製測試報告</button>
+      </div>
+      <div class="log-box" id="log-box">
+        <div style="color:var(--text-muted); text-align:center; padding-top:40px;">尚未掃到條碼，請將相機對準 QR Code</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- 高密度測試碼產生器 Modal -->
+  <div class="modal-overlay" id="qr-modal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:0.95rem; color:var(--accent-purple);">🖨️ 高密度測試 QR Code 產生器</h3>
+        <button onclick="closeQrGeneratorModal()" style="background:none; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">✕</button>
+      </div>
+      <div style="font-size:0.75rem; color:var(--text-muted);">
+        選擇不同字數容量的測試條碼，測試鏡頭在多大字數/多高密度時依然能穩定秒解：
+      </div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button id="btn-qr-cms" onclick="generateDenseQr('cms')" class="btn-preset qr-modal-btn active" style="flex:1; min-width:80px; text-align:center;">12字 (CMS)</button>
+        <button id="btn-qr-url_80" onclick="generateDenseQr('url_80')" class="btn-preset qr-modal-btn" style="flex:1; min-width:80px; text-align:center;">89字 (GAS網址)</button>
+        <button id="btn-qr-json_250" onclick="generateDenseQr('json_250')" class="btn-preset qr-modal-btn" style="flex:1; min-width:80px; text-align:center;">220字 (高密度)</button>
+        <button id="btn-qr-dense_500" onclick="generateDenseQr('dense_500')" class="btn-preset qr-modal-btn" style="flex:1; min-width:80px; text-align:center;">550字 (超密碼)</button>
+      </div>
+
+      <div style="margin-top:4px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-bottom:4px;">
+          <span>自訂測試內容 (可直接貼上任意文字/學號/JSON)：</span>
+          <span id="custom-char-count" style="color:var(--accent-blue); font-family:monospace;">0 字</span>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <input type="text" id="custom-qr-input" placeholder="在此輸入或貼上任意文字..." oninput="document.getElementById('custom-char-count').textContent = this.value.length + ' 字'" style="flex:1; font-size:0.75rem; padding:6px 8px;">
+          <button class="btn-action" style="width:auto; padding:6px 12px; font-size:0.75rem; white-space:nowrap;" onclick="generateCustomQr()">產生</button>
+        </div>
+      </div>
+
+      <div class="qr-preview-box">
+        <div id="qrcode-canvas-container"></div>
+        <div id="qr-info-label" style="color:#000; font-size:0.75rem; font-weight:bold; margin-top:8px; font-family:monospace;">
+          12 字元 · 版本: V1/V2 · 格子大
+        </div>
+      </div>
+
+      <div style="font-size:0.7rem; color:var(--text-muted); line-height:1.4;">
+        💡 提示：您可以用電腦開啟此網頁顯示大條碼，拿手機直接對著螢幕測試；或者截圖列印測試！
+      </div>
+      <button class="btn-action" onclick="closeQrGeneratorModal()">完成關閉</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    /* ============================================================
+     * 全域狀態與設定變數
+     * ============================================================ */
+    let html5QrCode = null;
+    let availableCameras = [];
+    let currentCameraId = null;
+    let currentFps = 10;
+    let qrboxMode = 'fixed';
+    let fixedSize = 180;
+    let cameraMode = 'deviceId';
+    let useBarcodeDetector = false;
+    let resolutionPreset = 'default';
+
+    // 統計數據
+    let totalScanCount = 0;
+    let cmsCodeCount = 0;
+    let maxCharLength = 0;
+    let lastScanTimestamp = 0;
+    let scanLatencies = [];
+    let scanHistory = [];
+    let audioCtx = null;
+    let qrGeneratorInstance = null;
+
+    /* ============================================================
+     * OS 偵測與初始化
+     * ============================================================ */
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isAndroid = /android/i.test(navigator.userAgent);
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      const badge = document.getElementById('detected-os-badge');
+      if (isIos) {
+        badge.textContent = '🍎 偵測為 iOS 系統';
+        badge.style.borderColor = '#c084fc';
+        badge.style.color = '#c084fc';
+        applyPreset('ios_optimized', false);
+      } else if (isAndroid) {
+        badge.textContent = '🤖 偵測為 Android 系統';
+        badge.style.borderColor = '#22c55e';
+        badge.style.color = '#22c55e';
+        applyPreset('school', false);
+      } else {
+        badge.textContent = '💻 桌面/PC 系統';
+        applyPreset('school', false);
+      }
+
+      await startCameraWithCurrentConfig();
+    });
+
+    /* ============================================================
+     * 預設組合 (Presets)
+     * ============================================================ */
+    function applyPreset(name, shouldRestart = true) {
+      document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('active'));
+
+      if (name === 'school') {
+        currentFps = 10;
+        qrboxMode = 'fixed';
+        fixedSize = 180;
+        cameraMode = 'environment';
+        resolutionPreset = 'default';
+        useBarcodeDetector = false;
+        showToast('📌 套用【學校自用版】：10fps / 180px / 專精 CMS 碼秒掃');
+      } else if (name === 'dense_high_capacity') {
+        currentFps = 10;
+        qrboxMode = 'dynamic';
+        fixedSize = 320;
+        cameraMode = 'environment';
+        resolutionPreset = 'default';
+        useBarcodeDetector = false;
+        showToast('🧬 套用【高密度大字數碼】：10fps / 動態320px / 支援 190~300 字');
+      } else if (name === 'sharing') {
+        currentFps = 15;
+        qrboxMode = 'dynamic';
+        fixedSize = 300;
+        cameraMode = 'environment';
+        resolutionPreset = 'default';
+        useBarcodeDetector = true;
+        showToast('📌 套用【副本分享版】：15fps / 動態300px / 虛擬後鏡頭');
+      } else if (name === 'max_size') {
+        currentFps = 10;
+        qrboxMode = 'full';
+        cameraMode = 'environment';
+        resolutionPreset = 'default';
+        useBarcodeDetector = false;
+        showToast('🔍 套用【滿版全畫面取樣】：無 qrbox 盲區 · 挑戰 220~550 字極限大碼');
+      } else if (name === 'ios_optimized') {
+        currentFps = 12;
+        qrboxMode = 'fixed';
+        fixedSize = 240;
+        cameraMode = 'environment';
+        resolutionPreset = 'default';
+        useBarcodeDetector = false;
+        showToast('🍎 套用【iOS 穩定秒掃】：12fps / 240px / facingMode: environment');
+      } else if (name === 'android_optimized') {
+        currentFps = 10;
+        qrboxMode = 'dynamic';
+        fixedSize = 300;
+        cameraMode = 'environment';
+        resolutionPreset = 'default';
+        useBarcodeDetector = false;
+        showToast('🤖 套用【Android 旗艦穩定】：10fps / 動態300px / 純ZXing');
+      }
+
+      syncUIControls();
+      updateVisualBox();
+
+      if (shouldRestart) {
+        restartCameraWithCurrentSettings();
+      }
+    }
+
+    function syncUIControls() {
+      document.getElementById('slider-fps').value = currentFps;
+      document.getElementById('val-fps').textContent = `${currentFps} FPS`;
+
+      document.getElementById('select-qrbox-mode').value = qrboxMode;
+      document.getElementById('slider-fixed-size').value = fixedSize;
+      document.getElementById('val-fixed-size').textContent = `${fixedSize} px`;
+
+      document.getElementById('grp-fixed-size').style.display = (qrboxMode === 'fixed') ? 'block' : 'none';
+      document.getElementById('val-qrbox-mode').textContent =
+        qrboxMode === 'fixed' ? `固定 ${fixedSize}px` : (qrboxMode === 'dynamic' ? '動態 80%' : '滿版全畫面');
+
+      document.getElementById('select-resolution').value = resolutionPreset;
+      document.getElementById('select-camera-mode').value = cameraMode;
+      document.getElementById('chk-barcodedetector').checked = useBarcodeDetector;
+    }
+
+    /* ============================================================
+     * UI 事件處理
+     * ============================================================ */
+    function onFpsSliderChange(val) {
+      currentFps = parseInt(val, 10);
+      document.getElementById('val-fps').textContent = `${currentFps} FPS`;
+    }
+
+    function onQrboxModeChange(val) {
+      qrboxMode = val;
+      document.getElementById('grp-fixed-size').style.display = (val === 'fixed') ? 'block' : 'none';
+      document.getElementById('val-qrbox-mode').textContent =
+        val === 'fixed' ? `固定 ${fixedSize}px` : (val === 'dynamic' ? '動態 80%' : '滿版全畫面');
+      updateVisualBox();
+    }
+
+    function onFixedSizeSliderChange(val) {
+      fixedSize = parseInt(val, 10);
+      document.getElementById('val-fixed-size').textContent = `${fixedSize} px`;
+      document.getElementById('val-qrbox-mode').textContent = `固定 ${fixedSize}px`;
+      updateVisualBox();
+    }
+
+    function onCameraModeChange(val) {
+      cameraMode = val;
+      document.getElementById('grp-device-list').style.display = (val === 'deviceId') ? 'block' : 'none';
+    }
+
+    function onDeviceSelectChange() {
+      const sel = document.getElementById('select-camera-device');
+      currentCameraId = sel.value;
+    }
+
+    function updateLiveTag() {
+      useBarcodeDetector = document.getElementById('chk-barcodedetector').checked;
+    }
+
+    function updateVisualBox() {
+      const box = document.getElementById('visual-box');
+      const tag = document.getElementById('box-tag');
+
+      if (qrboxMode === 'full') {
+        box.className = 'visual-box full-frame';
+        tag.textContent = '滿版全畫面 (100% 取樣)';
+      } else if (qrboxMode === 'dynamic') {
+        box.className = 'visual-box';
+        box.style.width = '75vw';
+        box.style.height = '75vw';
+        box.style.maxWidth = '300px';
+        box.style.maxHeight = '300px';
+        tag.textContent = '動態比例 (約 75%)';
+      } else {
+        box.className = 'visual-box';
+        box.style.width = `${fixedSize}px`;
+        box.style.height = `${fixedSize}px`;
+        box.style.maxWidth = 'none';
+        box.style.maxHeight = 'none';
+        tag.textContent = `${fixedSize} x ${fixedSize} px`;
+      }
+    }
+
+    /* ============================================================
+     * 相機啟動與重啟
+     * ============================================================ */
+    async function restartCameraWithCurrentSettings() {
+      resolutionPreset = document.getElementById('select-resolution').value;
+      cameraMode = document.getElementById('select-camera-mode').value;
+      if (cameraMode === 'deviceId') {
+        const selDev = document.getElementById('select-camera-device');
+        if (selDev && selDev.value) currentCameraId = selDev.value;
+      }
+      await stopActiveCamera();
+      await startCameraWithCurrentConfig();
+    }
+
+    async function stopActiveCamera() {
+      if (html5QrCode) {
+        try {
+          if (html5QrCode.isScanning) {
+            await html5QrCode.stop();
+          }
+          html5QrCode.clear();
+        } catch (e) {
+          console.warn('[Camera] 停止相機時警告:', e);
+        }
+        html5QrCode = null;
+      }
+      await new Promise(r => setTimeout(r, 120));
+    }
+
+    function toggleCameraFacing() {
+      if (cameraMode === 'user') {
+        cameraMode = 'environment';
+      } else {
+        cameraMode = 'user';
+      }
+      document.getElementById('select-camera-mode').value = cameraMode;
+      document.getElementById('grp-device-list').style.display = (cameraMode === 'deviceId') ? 'block' : 'none';
+      showToast(`🔄 切換為 ${cameraMode === 'user' ? '前置鏡頭(螢幕同側)' : '後置鏡頭(背側)'}`);
+      restartCameraWithCurrentSettings();
+    }
+
+    async function startCameraWithCurrentConfig() {
+      showToast('⏳ 正在啟動相機...', 'info');
+
+      if (availableCameras.length === 0) {
+        try {
+          const cams = await Html5Qrcode.getCameras();
+          if (cams && cams.length > 0) {
+            availableCameras = cams;
+            populateCameraDropdown(cams);
+          }
+        } catch(e) {}
+      }
+
+      let scanConfig = { fps: currentFps };
+
+      if (qrboxMode === 'fixed') {
+        scanConfig.qrbox = { width: fixedSize, height: fixedSize };
+      } else if (qrboxMode === 'dynamic') {
+        scanConfig.qrbox = (vfW, vfH) => {
+          const minEdge = Math.min(vfW, vfH);
+          const edge = Math.max(180, Math.min(320, Math.floor(minEdge * 0.75)));
+          return { width: edge, height: edge };
+        };
+      }
+
+      const constructorOptions = {
+        verbose: false,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: useBarcodeDetector
+        }
+      };
+
+      html5QrCode = new Html5Qrcode("reader", constructorOptions);
+
+      // 1. 決定目標相機約束（startTarget）
+      // html5-qrcode 嚴格規範：
+      // - 若為物件，只能有單一屬性：{ facingMode: "environment" } 或 { facingMode: "user" }
+      // - 若為指定相機，必須是純字串 cameraId
+      let startTarget;
+      if (cameraMode === 'deviceId') {
+        const selDev = document.getElementById('select-camera-device');
+        if (selDev && selDev.value) {
+          currentCameraId = selDev.value;
+        } else if (!currentCameraId && availableCameras.length > 0) {
+          const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
+          currentCameraId = rearIdx >= 0 ? availableCameras[rearIdx].id : availableCameras[0].id;
+        }
+        startTarget = currentCameraId ? String(currentCameraId) : { facingMode: "environment" };
+      } else if (cameraMode === 'user') {
+        startTarget = { facingMode: "user" };
+      } else {
+        startTarget = { facingMode: "environment" };
+      }
+
+      // 2. 解析度約束：若使用者選擇 1080p 或 720p，必須透過 scanConfig.videoConstraints 傳入
+      // 且必須把鏡頭方向一起包入 videoConstraints，否則會被覆蓋！
+      if (resolutionPreset === '1080p' || resolutionPreset === '720p') {
+        const idealW = (resolutionPreset === '1080p') ? 1920 : 1280;
+        const idealH = (resolutionPreset === '1080p') ? 1080 : 720;
+        if (typeof startTarget === 'string') {
+          scanConfig.videoConstraints = {
+            deviceId: { exact: startTarget },
+            width: { ideal: idealW },
+            height: { ideal: idealH }
+          };
+        } else {
+          scanConfig.videoConstraints = {
+            facingMode: startTarget.facingMode,
+            width: { ideal: idealW },
+            height: { ideal: idealH }
+          };
+        }
+      } else {
+        delete scanConfig.videoConstraints;
+      }
+
+      try {
+        await html5QrCode.start(startTarget, scanConfig, onScanSuccess);
+      } catch (firstErr) {
+        console.warn('[Camera] 首次啟動失敗，回退至最穩定的預設後置模式:', firstErr);
+        try {
+          await stopActiveCamera();
+          html5QrCode = new Html5Qrcode("reader", { verbose: false });
+          delete scanConfig.videoConstraints;
+          const fallbackTarget = (cameraMode === 'user') ? { facingMode: "user" } : { facingMode: "environment" };
+          await html5QrCode.start(fallbackTarget, scanConfig, onScanSuccess);
+        } catch (retryErr) {
+          console.error('[Camera] 相機啟動完全失敗:', retryErr);
+          showToast('❌ 相機啟動失敗: ' + (retryErr.message || retryErr));
+          return;
+        }
+      }
+
+      const video = document.querySelector('#reader video');
+      if (video) {
+        video.setAttribute('playsinline', 'true');
+        video.setAttribute('webkit-playsinline', 'true');
+        video.muted = true;
+        video.addEventListener('loadedmetadata', updateVideoHud);
+        updateVideoHud();
+      }
+
+      const isFront = (cameraMode === 'user');
+      showToast(`🟢 ${isFront ? '前鏡頭(螢幕)' : '後鏡頭(背側)'} 就緒 (${currentFps}fps, ${resolutionPreset}, ${qrboxMode})`);
+    }
+
+    function populateCameraDropdown(cams) {
+      const sel = document.getElementById('select-camera-device');
+      sel.innerHTML = '';
+      cams.forEach((c, idx) => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.label || `相機 ${idx + 1}`;
+        sel.appendChild(opt);
+      });
+      if (currentCameraId) sel.value = currentCameraId;
+    }
+
+    function updateVideoHud() {
+      const video = document.querySelector('#reader video');
+      if (video && video.videoWidth > 0) {
+        document.getElementById('hud-res').textContent = `${video.videoWidth}x${video.videoHeight}`;
+      }
+    }
+
+    /* ============================================================
+     * 掃碼回報與高密度字數分析
+     * ============================================================ */
+    function onScanSuccess(decodedText) {
+      const now = Date.now();
+      const interval = lastScanTimestamp ? (now - lastScanTimestamp) : 0;
+      lastScanTimestamp = now;
+
+      const charLen = decodedText.length;
+      if (charLen > maxCharLength) {
+        maxCharLength = charLen;
+        document.getElementById('stat-max-chars').textContent = `${maxCharLength} 字`;
+      }
+
+      const isCms = /^\d{1,2}_[\u4e00-\u9fa5A-Za-z0-9]+_\d{4}$/.test(decodedText);
+      const isDense = charLen >= 150;
+
+      totalScanCount++;
+      if (isCms) cmsCodeCount++;
+      if (interval > 0 && interval < 10000) {
+        scanLatencies.push(interval);
+        if (scanLatencies.length > 20) scanLatencies.shift();
+      }
+
+      const avgLatency = scanLatencies.length > 0
+        ? Math.round(scanLatencies.reduce((a, b) => a + b, 0) / scanLatencies.length)
+        : '--';
+
+      // 更新 HUD
+      document.getElementById('hud-latency').textContent = `間隔: ${interval}ms`;
+      document.getElementById('hud-density').textContent = `字數: ${charLen} 字 (${isDense ? '高密度' : (charLen > 50 ? '中密度' : '低密度')})`;
+      document.getElementById('stat-total').textContent = totalScanCount;
+      document.getElementById('stat-cms').textContent = cmsCodeCount;
+      document.getElementById('stat-avg-latency').textContent = avgLatency;
+
+      // 閃綠框
+      const vBox = document.getElementById('visual-box');
+      vBox.classList.add('success-flash');
+      setTimeout(() => vBox.classList.remove('success-flash'), 300);
+
+      // 提示音
+      if (document.getElementById('chk-beep').checked) {
+        playBeep(isDense ? 1040 : (isCms ? 880 : 660), 0.08);
+      }
+      if (navigator.vibrate) navigator.vibrate(80);
+
+      addLogEntry(decodedText, isCms, isDense, charLen, interval);
+    }
+
+    function addLogEntry(text, isCms, isDense, charLen, interval) {
+      const logBox = document.getElementById('log-box');
+      if (totalScanCount === 1) logBox.innerHTML = '';
+
+      const timeStr = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+      const item = document.createElement('div');
+      item.className = `log-item ${isDense ? 'dense-code' : (isCms ? 'cms-code' : 'general-qr')}`;
+
+      const cfgSummary = `${currentFps}fps/${qrboxMode === 'fixed' ? fixedSize+'px' : qrboxMode}/${resolutionPreset}`;
+      const typeBadge = isDense ? `🧬 [${charLen}字·高密度]` : (isCms ? `🏷️ [${charLen}字·CMS]` : `📦 [${charLen}字·一般]`);
+
+      item.innerHTML = `
+        <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:65%;">
+          <strong>${typeBadge}</strong> <span title="${escapeHtml(text)}">${escapeHtml(text.slice(0, 25))}${text.length > 25 ? '...' : ''}</span>
+          <span style="color:var(--text-muted); font-size:0.65rem;">(${cfgSummary})</span>
+        </div>
+        <div style="color:var(--accent-blue); font-size:0.68rem; text-align:right;">+${interval}ms<br>${timeStr}</div>
+      `;
+
+      logBox.insertBefore(item, logBox.firstChild);
+
+      scanHistory.unshift({
+        time: timeStr,
+        charLen,
+        text,
+        isCms,
+        isDense,
+        interval,
+        fps: currentFps,
+        qrboxMode,
+        fixedSize,
+        resolutionPreset,
+        cameraMode,
+        useBarcodeDetector
+      });
+      if (scanHistory.length > 100) scanHistory.pop();
+    }
+
+    function playBeep(freq = 800, duration = 0.08) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function clearStats() {
+      totalScanCount = 0;
+      cmsCodeCount = 0;
+      maxCharLength = 0;
+      scanLatencies = [];
+      scanHistory = [];
+      document.getElementById('stat-total').textContent = '0';
+      document.getElementById('stat-cms').textContent = '0';
+      document.getElementById('stat-max-chars').textContent = '0 字';
+      document.getElementById('stat-avg-latency').textContent = '--';
+      document.getElementById('hud-latency').textContent = '間隔: -- ms';
+      document.getElementById('hud-density').textContent = '字數: 0 字';
+      document.getElementById('log-box').innerHTML = '<div style="color:var(--text-muted); text-align:center; padding-top:40px;">數據已清空</div>';
+      showToast('🧹 已清空統計數據與日誌');
+    }
+
+    function copyLogReport() {
+      if (scanHistory.length === 0) {
+        showToast('⚠️ 目前沒有任何掃碼日誌可複製');
+        return;
+      }
+      const header = `=== QR 掃碼實驗日誌 (${new Date().toLocaleString()}) ===\n` +
+                     `系統: ${navigator.userAgent}\n` +
+                     `累計掃描: ${totalScanCount} 次 (CMS: ${cmsCodeCount}, 最高字數: ${maxCharLength} 字)\n` +
+                     `平均間隔: ${document.getElementById('stat-avg-latency').textContent} ms\n\n`;
+      const lines = scanHistory.map((s, idx) =>
+        `#${scanHistory.length - idx} [${s.time}] 字數:${s.charLen}字 | +${s.interval}ms | 內容:"${s.text.slice(0, 30)}" | 配置: ${s.fps}fps, ${s.qrboxMode}(${s.fixedSize}px), 解析度:${s.resolutionPreset}, 相機:${s.cameraMode}, 原生加速:${s.useBarcodeDetector}`
+      ).join('\n');
+
+      navigator.clipboard.writeText(header + lines).then(() => {
+        showToast('📋 已將測試報告複製到剪貼簿！');
+      }).catch(err => {
+        showToast('❌ 複製失敗: ' + err);
+      });
+    }
+
+    /* ============================================================
+     * 高密度測試碼產生器模組
+     * ============================================================ */
+    function openQrGeneratorModal() {
+      document.getElementById('qr-modal').classList.add('show');
+      generateDenseQr('cms');
+    }
+    function closeQrGeneratorModal() {
+      document.getElementById('qr-modal').classList.remove('show');
+    }
+
+    function generateCustomQr() {
+      const input = document.getElementById('custom-qr-input');
+      const text = input ? input.value.trim() : '';
+      if (!text) {
+        showToast('⚠️ 請先輸入要產生的測試文字');
+        return;
+      }
+      generateDenseQr('custom', text);
+    }
+
+    function generateDenseQr(type, customText = null) {
+      let content = '';
+      let desc = '';
+
+      if (customText !== null) {
+        content = customText;
+        desc = `${content.length} 字元 · 自訂文字 · 自動版本`;
+      } else if (type === 'cms') {
+        content = '01_國作_0925';
+        desc = `${content.length} 字元 · CMS 作業碼 · 低密度 (格子大塊清晰)`;
+      } else if (type === 'url_80') {
+        content = 'https://script.google.com/macros/s/AKfycby0123456789abcdefghijklmnopqrstuvwxyzABCDEF/exec';
+        desc = `${content.length} 字元 · Google Apps Script 部署 URL · 中密度`;
+      } else if (type === 'json_250') {
+        content = JSON.stringify({
+          app: "ClassManagement",
+          version: "2.4.0",
+          records: [
+            { id: "01", name: "王小明", score: 95, state: "submitted", note: "訂正第3題" },
+            { id: "02", name: "李小美", score: 100, state: "perfect", note: "全對" }
+          ]
+        });
+        desc = `${content.length} 字元 · 結構化 JSON 陣列 · 高密度 (格子密細)`;
+      } else if (type === 'dense_500') {
+        content = "【班級作業點收與錯題訂正系統高密度基準測試測試碼】本條碼包含大量中英文字元，專為測試攝影機解析度極限而設計。當二維碼字數達到五百字以上時，黑白方塊將變得極度密集（Version 18 以上，矩陣約 89x89 格）。在低解析度或取樣框過小時，相機易因模糊失焦無法解出。請使用 1080p 超清與 300px 取樣框測試！0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()_+~";
+        desc = `${content.length} 字元 · 超高密度長文本 · 極限測試 (格子極其細密)`;
+      }
+
+      // 按鈕高亮
+      document.querySelectorAll('.qr-modal-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById(`btn-qr-${type}`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const container = document.getElementById('qrcode-canvas-container');
+      container.innerHTML = '';
+
+      try {
+        if (typeof qrcode !== 'undefined') {
+          // qrcode(0, 'M')：typeNumber 0 全自動選擇最小足夠版本 (1~40)，支援中英文
+          const qr = qrcode(0, 'M');
+          qr.addData(content);
+          qr.make();
+          const modCount = qr.getModuleCount();
+          // cell size 自動依 module 數調整，維持約 220~240px 大小
+          const cellSize = Math.max(2, Math.floor(230 / modCount));
+          container.innerHTML = qr.createImgTag(cellSize, 4);
+          const img = container.querySelector('img');
+          if (img) {
+            img.style.maxWidth = '230px';
+            img.style.height = 'auto';
+            img.style.imageRendering = 'pixelated';
+            img.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+          }
+          desc += ` · 矩陣: ${modCount}x${modCount} 格`;
+        } else {
+          // 網路備援 API
+          container.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=230x230&data=${encodeURIComponent(content)}" width="230" height="230" style="image-rendering:pixelated;">`;
+        }
+      } catch (err) {
+        console.error('[QR Generator] 產生失敗:', err);
+        container.innerHTML = `<div style="color:var(--accent-rose); font-size:0.8rem; padding:20px;">❌ 產生失敗: ${escapeHtml(err.message || err)}</div>`;
+      }
+
+      document.getElementById('qr-info-label').textContent = desc;
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+  </script>
+</body>
+</html>

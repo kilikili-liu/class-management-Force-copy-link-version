@@ -17,8 +17,8 @@ const VACANT_KEYWORDS = ['空號', '轉出'];
  */
 function isVacantSeat(name) {
   const n = String(name || '').trim();
-  if (!n) return false;
-  return VACANT_KEYWORDS.some(kw => n.includes(kw));
+  if (!n) return true;
+  return VACANT_KEYWORDS.some(kw => n.includes(kw)) || n === '空' || n.includes('空號') || n.includes('轉出');
 }
 
 function doGet(e) {
