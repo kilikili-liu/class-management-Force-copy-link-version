@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>✍️ 班級作業批改與成績登記</title>
-  <script src="local_config.js" onerror="void 0"></script>
   <style>
     :root {
       --bg-dark: #090d16;
@@ -813,7 +812,7 @@
       <div class="modal-body">
         <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.5;">請貼上您的 Google Apps Script 正式部署網址 (Web App URL)：</p>
         <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 10px; border-radius:6px; font-size:0.8rem; width:100%;">
-        <button type="button" class="header-btn" style="width:100%; margin-top:10px; background:#4f46e5; color:#fff; border-color:#6366f1; padding:8px 12px;" onclick="resetToOfficialGasUrl()">⚡ 一鍵填入最新官方部署網址</button>
+        <button type="button" class="header-btn" style="width:100%; margin-top:10px; background:#334155; color:#cbd5e1; border-color:#475569; padding:8px 12px;" onclick="clearPairGasUrl()">🗑️ 清空並解除目前綁定</button>
       </div>
       <div class="modal-footer">
         <button class="header-btn" onclick="closePairModal()">取消</button>
@@ -843,8 +842,6 @@
     let isSaving = false;
 
     // ── 連線與 API 設定 ──
-    const OFFICIAL_GAS_URL = 'https://script.google.com/macros/s/AKfycby2OYGRrTwOm3jvN6qeLZeO6AVFrB9RdqYufffQgDhBBH6vND6x_Xo_P3EuXqrv9yzf/exec';
-
     function cleanGasUrl(url) {
       if (!url || typeof url !== 'string') return '';
       let clean = url.trim();
@@ -858,24 +855,38 @@
     }
 
     function getGasApiUrl() {
+      // 1. 網址列參數（例如掃碼進入帶入的 ?api_url=...）優先權最高，並立即寫入本機儲存
       const urlParams = new URLSearchParams(window.location.search);
       const paramGas = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
       if (paramGas) {
         const clean = cleanGasUrl(paramGas);
-        try { localStorage.setItem('class_management_gas_api_url', clean); } catch(e){}
+        try {
+          localStorage.setItem('class_management_gas_api_url', clean);
+          localStorage.setItem('class_mgmt_gas_api_url', clean);
+        } catch(e){}
         return clean;
       }
+
+      // 2. 若當前就在 GAS 容器網址內執行，直接取用容器網址
       if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL.includes('script.google.com')) {
         return cleanGasUrl(window._GAS_WEBAPP_URL);
       }
-      if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL.includes('script.google.com')) {
-        return cleanGasUrl(window.GAS_API_URL);
+      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+        return cleanGasUrl(location.href.split('?')[0]);
       }
+
+      // 3. 【核心連線依據】：使用者掃碼或手動設定儲存在 localStorage 的試算表網址！
+      // 跨清點、訂正、批改三大功能完全一致，使用者建立副本後以其自己掃碼綁定的網址為唯一標準
       const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
         return cleanGasUrl(stored);
       }
-      return OFFICIAL_GAS_URL;
+
+      // 4. 若本機尚未進行任何掃碼或綁定，僅作為開發備用 fallback
+      if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL.includes('script.google.com')) {
+        return cleanGasUrl(window.GAS_API_URL);
+      }
+      return '';
     }
 
     let GAS_API_URL = getGasApiUrl();
@@ -1023,18 +1034,8 @@
           updateSelectedStudentDisplay();
           showToast(`🟢 已載入【${currentSheetName}】批改資料`, 'success');
         } else {
-          // 若後端回傳未知的 API 動作，表示連線到舊版本 GAS 部署，自動修復切換至最新官方網址
           if (res && res.message && res.message.includes('未知的 API 動作')) {
-            console.warn('連線到舊版 GAS 部署，自動修復為最新官方網址:', OFFICIAL_GAS_URL);
-            showToast('⚠️ 偵測到舊版 GAS 連線，正在自動修正為最新版本...', 'orange');
-            GAS_API_URL = OFFICIAL_GAS_URL;
-            try {
-              localStorage.setItem('class_management_gas_api_url', OFFICIAL_GAS_URL);
-              localStorage.setItem('class_mgmt_gas_api_url', OFFICIAL_GAS_URL);
-            } catch(e){}
-            setTimeout(() => {
-              fetchGradingData(targetColIndex);
-            }, 600);
+            showToast('⚠️ 目前綁定的試算表尚未發布最新評分程式，請至該試算表「擴充功能 > Apps Script > 管理部署」發布新版本', 'orange');
             return;
           }
           showToast('❌ 載入失敗: ' + (res ? res.message : ''), 'error');
@@ -1535,9 +1536,15 @@
       fetchGradingData();
     }
 
-    function resetToOfficialGasUrl() {
-      document.getElementById('gas-url-input').value = OFFICIAL_GAS_URL;
-      savePairGasUrl();
+    function clearPairGasUrl() {
+      document.getElementById('gas-url-input').value = '';
+      try {
+        localStorage.removeItem('class_management_gas_api_url');
+        localStorage.removeItem('class_mgmt_gas_api_url');
+      } catch(e){}
+      GAS_API_URL = '';
+      closePairModal();
+      showToast('⚠️ 已解除試算表綁定，請重新輸入或掃碼連線', 'info');
     }
 
     // ── 工具函式 ──
