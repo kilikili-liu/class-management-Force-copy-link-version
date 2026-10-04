@@ -1407,8 +1407,13 @@ function getGradingData(params) {
 
   const presetsRes = getScorePresets();
 
+  // 檢查 8 大成績分頁是否都已建立（供前端決定是否顯示「初始化分頁」按鈕）
+  const ssAll = SpreadsheetApp.getActiveSpreadsheet();
+  const allScoreSheetsReady = SCORE_SHEET_NAMES.every(n => !!ssAll.getSheetByName(n));
+
   return {
     success: true,
+    allScoreSheetsReady: allScoreSheetsReady,
     sheetName: sheetName,
     subject: subject,
     category: category,

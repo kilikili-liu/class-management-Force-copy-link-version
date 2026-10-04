@@ -649,7 +649,7 @@
     </div>
 
     <div class="header-right">
-      <button class="header-btn" onclick="initAllSheetsFromUI()" style="color:#38bdf8; border-color:#0284c7;" title="一鍵初始化目前試算表的 8 大作業成績分頁">📁 初始化分頁</button>
+      <button class="header-btn" id="btn-init-sheets" onclick="initAllSheetsFromUI()" style="display:none; color:#38bdf8; border-color:#0284c7;" title="一鍵初始化目前試算表的 8 大作業成績分頁">📁 初始化分頁</button>
       <button class="header-btn" onclick="forceHardReload()" style="color:#facc15; border-color:#facc15;" title="強制更新最新版本">🔄 刷新</button>
       <button class="header-btn" onclick="openPairModal()">🔗 連線</button>
       <a href="correction.html" class="header-btn" id="link-correction">✏️ 訂正</a>
@@ -813,7 +813,7 @@
       <div class="modal-body">
         <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.5;">請貼上您的 Google Apps Script 正式部署網址 (Web App URL)：</p>
         <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 10px; border-radius:6px; font-size:0.8rem; width:100%;">
-        <button type="button" class="header-btn" style="width:100%; margin-top:10px; background:#0284c7; color:#fff; border-color:#38bdf8; padding:8px 12px;" onclick="initAllSheetsFromUI()">📁 為此試算表一鍵初始化 8 大成績分頁</button>
+        <button type="button" class="header-btn" id="btn-init-sheets-modal" style="display:none; width:100%; margin-top:10px; background:#0284c7; color:#fff; border-color:#38bdf8; padding:8px 12px;" onclick="initAllSheetsFromUI()">📁 為此試算表一鍵初始化 8 大成績分頁</button>
         <button type="button" class="header-btn" style="width:100%; margin-top:8px; background:#334155; color:#cbd5e1; border-color:#475569; padding:8px 12px;" onclick="clearPairGasUrl()">🗑️ 清空並解除目前綁定</button>
       </div>
       <div class="modal-footer">
@@ -980,13 +980,21 @@
       });
     }
 
-    // ── 一鍵初始化 8 大成績分頁 ──
+    // ── 一鍵初始化 8 大成績分頁（僅在分頁尚未建齊時顯示，建好後自動隱藏） ──
+    function updateInitButtonsVisibility(show) {
+      const b1 = document.getElementById('btn-init-sheets');
+      const b2 = document.getElementById('btn-init-sheets-modal');
+      if (b1) b1.style.display = show ? '' : 'none';
+      if (b2) b2.style.display = show ? '' : 'none';
+    }
+
     async function initAllSheetsFromUI() {
       if (!confirm('是否要為目前試算表一鍵建立並初始化 8 大作業成績分頁（國語甲乙本、習作、數習、社習、日記、作文）？\n\n建立後將自動帶入學生座號與名單！')) return;
       showToast('⏳ 正在為您的試算表建立 8 大作業成績分頁，請稍候約 5~10 秒...', 'info');
       try {
         const res = await gasApi('initAllScoreSheets');
         if (res && res.success) {
+          updateInitButtonsVisibility(false);
           showToast('🎉 ' + res.message, 'success');
           fetchGradingData();
         } else {
@@ -1046,6 +1054,7 @@
         const res = await gasApi('getGradingData', params);
         if (res && res.success) {
           gradingDataCache = res;
+          updateInitButtonsVisibility(res.allScoreSheetsReady === false);
           if (res.presets) {
             gradePresets = { ...DEFAULT_PRESETS, ...res.presets };
             try { localStorage.setItem('class_mgmt_grade_presets', JSON.stringify(gradePresets)); } catch(e){}
