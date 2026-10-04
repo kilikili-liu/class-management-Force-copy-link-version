@@ -640,6 +640,7 @@
     </div>
 
     <div class="header-right">
+      <button class="header-btn" onclick="forceHardReload()" style="color:#facc15; border-color:#facc15;" title="強制更新最新版本">🔄 刷新</button>
       <button class="header-btn" onclick="openPairModal()">🔗 連線</button>
       <a href="correction.html" class="header-btn" id="link-correction">✏️ 訂正</a>
       <a href="index.html" class="header-btn" id="link-index">🎯 清點</a>
@@ -1500,6 +1501,28 @@
       const linkIdx = document.getElementById('link-index');
       if (linkCor) { linkCor.href = `${baseGas}?page=correction`; linkCor.target = '_top'; }
       if (linkIdx) { linkIdx.href = `${baseGas}`; linkIdx.target = '_top'; }
+    }
+
+    function forceHardReload() {
+      showToast('🔄 正在強制更新最新版面...', 'info');
+      try {
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            names.forEach(name => caches.delete(name));
+          });
+        }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(reg => reg.unregister());
+          });
+        }
+      } catch(e){}
+
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('_t', Date.now());
+        window.location.href = url.toString();
+      }, 400);
     }
   </script>
 </body>
