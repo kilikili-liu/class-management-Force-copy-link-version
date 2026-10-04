@@ -111,6 +111,106 @@
       color: #38bdf8;
     }
 
+    /* 統一通用頂部導航按鈕樣式 */
+    .header-nav-btn {
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      box-sizing: border-box;
+      letter-spacing: 1px;
+    }
+    .nav-btn-scan {
+      background: rgba(2, 132, 199, 0.12);
+      color: #38bdf8;
+      border: 1px solid #0284c7;
+    }
+    .nav-btn-scan:hover, .nav-btn-scan:active {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .nav-btn-check {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      border: 1px solid #10b981;
+    }
+    .nav-btn-check:hover, .nav-btn-check:active {
+      background: #10b981;
+      color: #ffffff;
+    }
+    .nav-btn-check.active {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+    .nav-btn-cor {
+      background: rgba(249, 115, 22, 0.12);
+      color: #fb923c;
+      border: 1px solid #f97316;
+    }
+    .nav-btn-cor:hover, .nav-btn-cor:active {
+      background: #f97316;
+      color: #ffffff;
+    }
+    .nav-btn-cor.active {
+      background: #f97316;
+      color: #ffffff;
+      border-color: #f97316;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+    }
+    .nav-btn-grade {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid #a855f7;
+    }
+    .nav-btn-grade:hover, .nav-btn-grade:active {
+      background: #a855f7;
+      color: #ffffff;
+    }
+    .nav-btn-grade.active {
+      background: #a855f7;
+      color: #ffffff;
+      border-color: #a855f7;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+    }
+    .nav-btn-pair {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #475569;
+    }
+    .nav-btn-pair:hover, .nav-btn-pair:active {
+      background: #334155;
+      color: #ffffff;
+      border-color: #64748b;
+    }
+    .nav-btn-reload {
+      background: rgba(250, 204, 21, 0.12);
+      color: #facc15;
+      border: 1px solid #facc15;
+    }
+    .nav-btn-reload:hover, .nav-btn-reload:active {
+      background: #facc15;
+      color: #0f172a;
+    }
+    .nav-btn-sticker {
+      background: rgba(13, 148, 136, 0.12);
+      color: #2dd4bf;
+      border: 1px solid #0d9488;
+    }
+    .nav-btn-sticker:hover, .nav-btn-sticker:active {
+      background: #0d9488;
+      color: #ffffff;
+    }
+
     .header-right {
       display: flex;
       align-items: center;
@@ -649,11 +749,12 @@
     </div>
 
     <div class="header-right">
-      <button class="header-btn" id="btn-init-sheets" onclick="initAllSheetsFromUI()" style="display:none; color:#38bdf8; border-color:#0284c7;" title="一鍵初始化目前試算表的 8 大作業成績分頁">📁 初始化分頁</button>
-      <button class="header-btn" onclick="forceHardReload()" style="color:#facc15; border-color:#facc15;" title="強制更新最新版本">🔄 刷新</button>
-      <button class="header-btn" onclick="openPairModal()">🔗 連線</button>
-      <a href="correction.html" class="header-btn" id="link-correction">✏️ 訂正</a>
-      <a href="index.html" class="header-btn" id="link-index">🎯 清點</a>
+      <button class="header-nav-btn nav-btn-pair" id="btn-init-sheets" onclick="initAllSheetsFromUI()" style="display:none; color:#38bdf8; border-color:#0284c7;" title="一鍵初始化目前試算表的 8 大作業成績分頁">初始化</button>
+      <a href="index.html" class="header-nav-btn nav-btn-check" id="link-index" title="作業清點">清點</a>
+      <a href="correction.html" class="header-nav-btn nav-btn-cor" id="link-correction" title="錯題訂正">訂正</a>
+      <span class="header-nav-btn nav-btn-grade active" title="目前在作業批改">批改</span>
+      <button class="header-nav-btn nav-btn-pair" onclick="openPairModal()" title="連線設定">連線</button>
+      <button class="header-nav-btn nav-btn-reload" onclick="forceHardReload()" title="強制更新最新版本">刷新</button>
     </div>
   </header>
 

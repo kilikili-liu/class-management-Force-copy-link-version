@@ -80,6 +80,106 @@
     }
     .nav-btn:hover { background: #475569; color: #fff; }
 
+    /* 統一通用頂部導航按鈕樣式 */
+    .header-nav-btn {
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      box-sizing: border-box;
+      letter-spacing: 1px;
+    }
+    .nav-btn-scan {
+      background: rgba(2, 132, 199, 0.12);
+      color: #38bdf8;
+      border: 1px solid #0284c7;
+    }
+    .nav-btn-scan:hover, .nav-btn-scan:active {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .nav-btn-check {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      border: 1px solid #10b981;
+    }
+    .nav-btn-check:hover, .nav-btn-check:active {
+      background: #10b981;
+      color: #ffffff;
+    }
+    .nav-btn-check.active {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+    .nav-btn-cor {
+      background: rgba(249, 115, 22, 0.12);
+      color: #fb923c;
+      border: 1px solid #f97316;
+    }
+    .nav-btn-cor:hover, .nav-btn-cor:active {
+      background: #f97316;
+      color: #ffffff;
+    }
+    .nav-btn-cor.active {
+      background: #f97316;
+      color: #ffffff;
+      border-color: #f97316;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+    }
+    .nav-btn-grade {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid #a855f7;
+    }
+    .nav-btn-grade:hover, .nav-btn-grade:active {
+      background: #a855f7;
+      color: #ffffff;
+    }
+    .nav-btn-grade.active {
+      background: #a855f7;
+      color: #ffffff;
+      border-color: #a855f7;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+    }
+    .nav-btn-pair {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #475569;
+    }
+    .nav-btn-pair:hover, .nav-btn-pair:active {
+      background: #334155;
+      color: #ffffff;
+      border-color: #64748b;
+    }
+    .nav-btn-reload {
+      background: rgba(250, 204, 21, 0.12);
+      color: #facc15;
+      border: 1px solid #facc15;
+    }
+    .nav-btn-reload:hover, .nav-btn-reload:active {
+      background: #facc15;
+      color: #0f172a;
+    }
+    .nav-btn-sticker {
+      background: rgba(13, 148, 136, 0.12);
+      color: #2dd4bf;
+      border: 1px solid #0d9488;
+    }
+    .nav-btn-sticker:hover, .nav-btn-sticker:active {
+      background: #0d9488;
+      color: #ffffff;
+    }
+
     /* Top Main 3 Tabs */
     .view-switcher-bar {
       display: flex;
@@ -759,11 +859,12 @@
       <span class="title-short">✏️ 錯題訂正</span>
     </div>
     <div class="header-nav-box">
-      <button id="btn-pwa-install" class="nav-btn" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <a href="index.html" class="nav-btn" style="background:#334155; color:#cbd5e1; border:1px solid #475569; text-decoration:none;">🎯 作業清點</a>
-      <a href="correction_scanner.html" class="nav-btn" style="background:#0284c7; color:#fff; border-color:#38bdf8; text-decoration:none;">📱 訂正速掃</a>
-      <a href="grading.html" class="nav-btn" style="background:#8b5cf6; color:#fff; border:1px solid #a78bfa; text-decoration:none;">✍️ 批改登記</a>
-      <a href="scanner.html" class="nav-btn" style="background:#059669; color:#fff; border:1px solid #34d399; text-decoration:none;">📷 作業速掃</a>
+      <button id="btn-pwa-install" class="header-nav-btn nav-btn-scan" style="display:none;" onclick="triggerPwaInstall()">安裝</button>
+      <a href="correction_scanner.html" id="link-cor-scanner" class="header-nav-btn nav-btn-scan" title="訂正速掃">掃碼</a>
+      <a href="index.html" id="link-index" class="header-nav-btn nav-btn-check" title="作業清點">清點</a>
+      <span class="header-nav-btn nav-btn-cor active" title="目前在錯題訂正">訂正</span>
+      <a href="grading.html" id="link-grading" class="header-nav-btn nav-btn-grade" title="作業批改">批改</a>
+      <button id="nav-btn-pair" class="header-nav-btn nav-btn-pair" onclick="openPairModal()" title="連線設定">連線</button>
     </div>
   </header>
 
@@ -966,6 +1067,25 @@
       </div>
       <div class="modal-footer">
         <button class="btn-modal-close-all" onclick="closeUncorrectedModal()">關閉選單</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔗 連線設定彈窗 -->
+  <div class="modal-backdrop" id="pair-modal">
+    <div class="modal-card" style="max-width: 420px;">
+      <div class="modal-header">
+        <div class="modal-title">🔗 Google Apps Script 連線設定</div>
+        <button class="modal-close" onclick="closePairModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 16px;">
+        <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.5; margin-bottom:10px;">請貼上您的 Google Apps Script 正式部署網址 (Web App URL)：</p>
+        <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="background:#0f172a; border:1px solid #475569; color:#fff; padding:8px 10px; border-radius:6px; font-size:0.82rem; width:100%; box-sizing:border-box;">
+        <button type="button" class="header-nav-btn nav-btn-pair" style="width:100%; margin-top:12px; height:34px;" onclick="clearPairGasUrl()">🗑️ 清空並解除目前綁定</button>
+      </div>
+      <div class="modal-footer" style="padding: 10px 16px; background:#0f172a; border-top:1px solid #334155; display:flex; justify-content:flex-end; gap:8px;">
+        <button class="header-nav-btn nav-btn-pair" onclick="closePairModal()">取消</button>
+        <button class="header-nav-btn nav-btn-scan" style="background:#0284c7; color:#fff;" onclick="savePairGasUrl()">儲存連線</button>
       </div>
     </div>
   </div>
@@ -1248,23 +1368,70 @@
 
     let hasUserSelectedSubjectCategory = false;
 
+    // ── 連線設定彈窗 ──
+    function openPairModal() {
+      const input = document.getElementById('gas-url-input');
+      if (input) input.value = GAS_API_URL || localStorage.getItem('class_mgmt_gas_api_url') || '';
+      const modal = document.getElementById('pair-modal');
+      if (modal) modal.classList.add('show');
+    }
+    function closePairModal() {
+      const modal = document.getElementById('pair-modal');
+      if (modal) modal.classList.remove('show');
+    }
+    function savePairGasUrl() {
+      const input = document.getElementById('gas-url-input');
+      const val = input ? input.value.trim() : '';
+      if (!val) {
+        showToast('⚠️ 請輸入有效的 GAS 網址', 'orange');
+        return;
+      }
+      const clean = cleanGasUrl(val);
+      GAS_API_URL = clean;
+      try {
+        localStorage.setItem('class_management_gas_api_url', clean);
+        localStorage.setItem('class_mgmt_gas_api_url', clean);
+      } catch(e){}
+      closePairModal();
+      showToast('🟢 連線設定已儲存！', 'green');
+      fetchCorrectionMatrixData();
+    }
+    function clearPairGasUrl() {
+      const input = document.getElementById('gas-url-input');
+      if (input) input.value = '';
+      try {
+        localStorage.removeItem('class_management_gas_api_url');
+        localStorage.removeItem('class_mgmt_gas_api_url');
+      } catch(e){}
+      GAS_API_URL = '';
+      closePairModal();
+      showToast('⚠️ 已解除試算表綁定', 'orange');
+    }
+
     // ── 雙環境路由自動適配 (Google Apps Script vs Neocities 靜態網頁) ──
     function adaptInternalLinks() {
       const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
 
-      if (!isGas) return;
-
-      // 在 GAS 原生環境下，相機權限被 Google 沙箱封鎖，隱藏無效的相機掃碼按鈕
-      document.querySelectorAll('a[href*="scanner.html"], a[href*="correction_scanner.html"]').forEach(btn => {
-        btn.style.display = 'none';
-      });
-      const indexBtn = document.querySelector('a[href*="index.html"]');
-      if (indexBtn) {
-        indexBtn.style.background = '#0284c7';
-        indexBtn.style.color = '#fff';
-        indexBtn.style.borderColor = '#38bdf8';
+      if (!isGas) {
+        checkIosPwaButton();
+        document.querySelectorAll('a[href]').forEach(a => {
+          const href = a.getAttribute('href');
+          if (!href) return;
+          const currentApi = (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) ? GAS_API_URL : (localStorage.getItem('class_mgmt_gas_api_url') || '');
+          const apiParam = currentApi ? `?api_url=${encodeURIComponent(currentApi)}` : '';
+          if (href.includes('page=correction_scanner') || href === 'correction_scanner.html') {
+            a.href = `correction_scanner.html${apiParam}`;
+          } else if (href.includes('page=scanner') || href === 'scanner.html') {
+            a.href = `scanner.html${apiParam}`;
+          } else if (href.includes('page=index') || href === 'index.html') {
+            a.href = `index.html${apiParam}`;
+          } else if (href.includes('page=grading') || href === 'grading.html') {
+            a.href = `grading.html${apiParam}`;
+          }
+        });
+        return;
       }
 
       function applyGasUrls(baseGasUrl) {

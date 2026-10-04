@@ -95,6 +95,106 @@
     }
     .nav-btn:hover { background: #475569; color: #fff; }
 
+    /* 統一通用頂部導航按鈕樣式 */
+    .header-nav-btn {
+      height: 30px;
+      padding: 0 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      box-sizing: border-box;
+      letter-spacing: 1px;
+    }
+    .nav-btn-scan {
+      background: rgba(2, 132, 199, 0.12);
+      color: #38bdf8;
+      border: 1px solid #0284c7;
+    }
+    .nav-btn-scan:hover, .nav-btn-scan:active {
+      background: #0284c7;
+      color: #ffffff;
+    }
+    .nav-btn-check {
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      border: 1px solid #10b981;
+    }
+    .nav-btn-check:hover, .nav-btn-check:active {
+      background: #10b981;
+      color: #ffffff;
+    }
+    .nav-btn-check.active {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+    .nav-btn-cor {
+      background: rgba(249, 115, 22, 0.12);
+      color: #fb923c;
+      border: 1px solid #f97316;
+    }
+    .nav-btn-cor:hover, .nav-btn-cor:active {
+      background: #f97316;
+      color: #ffffff;
+    }
+    .nav-btn-cor.active {
+      background: #f97316;
+      color: #ffffff;
+      border-color: #f97316;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+    }
+    .nav-btn-grade {
+      background: rgba(168, 85, 247, 0.12);
+      color: #c084fc;
+      border: 1px solid #a855f7;
+    }
+    .nav-btn-grade:hover, .nav-btn-grade:active {
+      background: #a855f7;
+      color: #ffffff;
+    }
+    .nav-btn-grade.active {
+      background: #a855f7;
+      color: #ffffff;
+      border-color: #a855f7;
+      box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+    }
+    .nav-btn-pair {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #475569;
+    }
+    .nav-btn-pair:hover, .nav-btn-pair:active {
+      background: #334155;
+      color: #ffffff;
+      border-color: #64748b;
+    }
+    .nav-btn-reload {
+      background: rgba(250, 204, 21, 0.12);
+      color: #facc15;
+      border: 1px solid #facc15;
+    }
+    .nav-btn-reload:hover, .nav-btn-reload:active {
+      background: #facc15;
+      color: #0f172a;
+    }
+    .nav-btn-sticker {
+      background: rgba(13, 148, 136, 0.12);
+      color: #2dd4bf;
+      border: 1px solid #0d9488;
+    }
+    .nav-btn-sticker:hover, .nav-btn-sticker:active {
+      background: #0d9488;
+      color: #ffffff;
+    }
+
     .header-controls { display: flex; align-items: center; gap: 6px; }
     .btn-icon {
       background: #334155; color: var(--text-main); border: 1px solid #475569;
@@ -380,16 +480,16 @@
 
   <header>
     <div class="header-title-box">
-      <div class="header-title">📱 班級作業 QR碼 速掃工具</div>
-      <a href="correction_scanner.html" class="nav-btn" style="color:#38bdf8;">📱 訂正掃碼</a>
-      <a href="correction.html" class="nav-btn">✏️ 錯題主頁</a>
+      <div class="header-title">📱 班級作業速掃</div>
     </div>
     <div class="header-controls">
-      <button class="btn-icon" id="btn-pwa-install" style="display:none; background:#0284c7; color:#fff; border-color:#38bdf8;" onclick="triggerPwaInstall()">📲 安裝App</button>
-      <a href="index.html" class="btn-icon" id="btn-mode-toggle" style="background:#0284c7; color:#fff; border-color:#38bdf8; text-decoration:none;">🎯 純按鈕清點</a>
-      <button class="btn-icon" onclick="switchNextCamera()">🔄 切換鏡頭</button>
-      <button class="btn-icon" onclick="promptManualGasUrl()" title="連線設定">🔗 連線設定</button>
-      <button class="btn-icon" onclick="openMetaModal()">⚙️ 細節</button>
+      <button class="header-nav-btn nav-btn-pair" id="btn-pwa-install" style="display:none;" onclick="triggerPwaInstall()">安裝</button>
+      <button class="header-nav-btn nav-btn-pair" onclick="switchNextCamera()" title="切換前後鏡頭">鏡頭</button>
+      <a href="index.html" id="link-index" class="header-nav-btn nav-btn-check" title="作業清點">清點</a>
+      <a href="correction.html" id="link-correction" class="header-nav-btn nav-btn-cor" title="錯題訂正">訂正</a>
+      <a href="grading.html" id="link-grading" class="header-nav-btn nav-btn-grade" title="作業批改">批改</a>
+      <button class="header-nav-btn nav-btn-pair" onclick="promptManualGasUrl()" title="連線設定">連線</button>
+      <button class="header-nav-btn nav-btn-pair" onclick="openMetaModal()" title="細節設定">細節</button>
     </div>
   </header>
 
@@ -832,7 +932,23 @@
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
 
-      if (!isGas) return;
+      if (!isGas) {
+        checkIosPwaButton();
+        document.querySelectorAll('a[href]').forEach(a => {
+          const href = a.getAttribute('href');
+          if (!href) return;
+          const currentApi = (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) ? GAS_API_URL : (localStorage.getItem('class_mgmt_gas_api_url') || '');
+          const apiParam = currentApi ? `?api_url=${encodeURIComponent(currentApi)}` : '';
+          if (href.includes('page=correction') || href === 'correction.html') {
+            a.href = `correction.html${apiParam}`;
+          } else if (href.includes('page=index') || href === 'index.html') {
+            a.href = `index.html${apiParam}`;
+          } else if (href.includes('page=grading') || href === 'grading.html') {
+            a.href = `grading.html${apiParam}`;
+          }
+        });
+        return;
+      }
 
       function applyGasUrls(baseGasUrl) {
         if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
@@ -850,6 +966,9 @@
             a.target = '_top';
           } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
             a.href = `${baseGasUrl}?page=correction_scanner`;
+            a.target = '_top';
+          } else if (href === 'grading.html' || href.includes('page=grading')) {
+            a.href = `${baseGasUrl}?page=grading`;
             a.target = '_top';
           } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
             a.href = `${baseGasUrl}?page=sticker`;
