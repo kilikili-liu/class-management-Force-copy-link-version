@@ -17,7 +17,7 @@ const VACANT_KEYWORDS = ['空號', '轉出'];
  */
 function isVacantSeat(name) {
   const n = String(name || '').trim();
-  if (!n) return true;
+  if (!n) return false; // 姓名未填寫時，仍為有效學生（顯示座號）
   return VACANT_KEYWORDS.some(kw => n.includes(kw)) || n === '空' || n.includes('空號') || n.includes('轉出');
 }
 

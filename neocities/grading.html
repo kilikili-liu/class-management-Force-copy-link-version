@@ -869,12 +869,20 @@
         return clean;
       }
 
-      // 2. 若當前就在 GAS 容器網址內執行，直接取用容器網址
+      // 2. 若當前就在 GAS 容器網址內執行，直接取用容器網址或外層 referrer
       if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL.includes('script.google.com')) {
         return cleanGasUrl(window._GAS_WEBAPP_URL);
       }
       if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
         return cleanGasUrl(location.href.split('?')[0]);
+      }
+      if (document.referrer && document.referrer.includes('script.google.com/macros/s/')) {
+        const cleanRef = cleanGasUrl(document.referrer.split('?')[0]);
+        try {
+          localStorage.setItem('class_management_gas_api_url', cleanRef);
+          localStorage.setItem('class_mgmt_gas_api_url', cleanRef);
+        } catch(e){}
+        return cleanRef;
       }
 
       // 3. 【核心連線依據】：使用者掃碼或手動設定儲存在 localStorage 的試算表網址！
@@ -1068,9 +1076,10 @@
 
     function isStudentVacant(st) {
       if (!st) return false;
-      if (st.isVacant === true) return true;
       const n = String(st.name || '').trim();
-      if (!n || n === '空號' || n === '轉出' || n === '空' || n.includes('空號') || n.includes('轉出')) return true;
+      if (!n) return false; // 姓名尚未填寫時，保留顯示座號按鈕
+      if (st.isVacant === true) return true;
+      if (n === '空號' || n === '轉出' || n === '空' || n.includes('空號') || n.includes('轉出')) return true;
       return false;
     }
 
@@ -1583,8 +1592,20 @@
                     location.hostname.includes('googleusercontent.com');
       if (!isGas) return;
 
-      const baseGas = window._GAS_WEBAPP_URL || GAS_API_URL;
+      // 優先偵測目前網頁自身所在的 GAS Web App URL（精準對齊當前副本）
+      let baseGas = '';
+      if (location.hostname.includes('script.google.com')) {
+        baseGas = location.href.split('?')[0];
+      } else if (document.referrer && document.referrer.includes('script.google.com/macros/s/')) {
+        baseGas = document.referrer.split('?')[0];
+      } else if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL.includes('script.google.com')) {
+        baseGas = window._GAS_WEBAPP_URL;
+      } else if (typeof GAS_API_URL === 'string' && GAS_API_URL.includes('script.google.com')) {
+        baseGas = GAS_API_URL;
+      }
+
       if (!baseGas) return;
+      baseGas = cleanGasUrl(baseGas);
 
       const linkCor = document.getElementById('link-correction');
       const linkIdx = document.getElementById('link-index');
