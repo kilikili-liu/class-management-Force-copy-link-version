@@ -21,6 +21,15 @@ function isVacantSeat(name) {
   return VACANT_KEYWORDS.some(kw => n.includes(kw)) || n === '空' || n.includes('空號') || n.includes('轉出');
 }
 
+function onOpen() {
+  try {
+    SpreadsheetApp.getUi()
+      .createMenu('🎯 班級作業管理')
+      .addItem('📁 一鍵初始化 8 大成績分頁', 'initAllScoreSheets')
+      .addToUi();
+  } catch (e) {}
+}
+
 function doGet(e) {
   const params = (e && e.parameter) ? e.parameter : {};
 
@@ -1130,13 +1139,32 @@ function getScoreSheet(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = ss.getSheetByName(sheetName);
   if (!sheet) {
-    sheet = ss.insertSheet(sheetName);
+    const lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(10000);
+      sheet = ss.getSheetByName(sheetName);
+      if (!sheet) {
+        sheet = ss.insertSheet(sheetName);
+        initScoreSheetStructure(sheet);
+      }
+    } catch (e) {
+      sheet = ss.getSheetByName(sheetName);
+      if (!sheet) {
+        throw new Error(`無法建立成績分頁【${sheetName}】: ${e.message}`);
+      }
+    } finally {
+      try { lock.releaseLock(); } catch(e){}
+    }
+  } else {
+    if (sheet.getLastRow() < 3) {
+      initScoreSheetStructure(sheet);
+    }
   }
-  initScoreSheetStructure(sheet);
   return sheet;
 }
 
 function initScoreSheetStructure(sheet) {
+  if (!sheet) return;
   const lastRow = sheet.getLastRow();
   if (lastRow < 3) {
     sheet.getRange(1, 1, 3, 2).setValues([
@@ -1167,10 +1195,53 @@ function initScoreSheetStructure(sheet) {
 }
 
 function initAllScoreSheets() {
-  SCORE_SHEET_NAMES.forEach(name => {
-    getScoreSheet(name);
-  });
-  return { success: true, message: `已成功初始化 8 大成績分頁` };
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // 1. 預先讀取學生名單
+    const hwSheet = getHwSheet();
+    let studentNames = [];
+    if (hwSheet.getLastRow() >= 6) {
+      const numRows = Math.min(CLASS_SIZE, hwSheet.getLastRow() - 5);
+      studentNames = hwSheet.getRange(6, 2, numRows, 1).getDisplayValues();
+    }
+    const studentRows = [];
+    for (let i = 1; i <= CLASS_SIZE; i++) {
+      const seatStr = String(i).padStart(2, '0');
+      const name = (studentNames[i - 1] && studentNames[i - 1][0]) ? studentNames[i - 1][0] : '';
+      studentRows.push([seatStr, name]);
+    }
+
+    // 2. 批次初始化 8 大分頁
+    SCORE_SHEET_NAMES.forEach(name => {
+      let sheet = ss.getSheetByName(name);
+      if (!sheet) {
+        sheet = ss.insertSheet(name);
+      }
+      if (sheet.getLastRow() < 3) {
+        sheet.getRange(1, 1, 3, 2).setValues([
+          ["", "日期"],
+          ["", "單元"],
+          ["", "頁數"]
+        ]).setFontWeight("bold").setBackground("#e2e8f0").setHorizontalAlignment("center");
+      }
+      if (sheet.getLastRow() < CLASS_SIZE + 3) {
+        sheet.getRange(4, 1, CLASS_SIZE, 2).setValues(studentRows).setHorizontalAlignment("center");
+        sheet.getRange(4, 1, CLASS_SIZE, 1).setFontWeight("bold").setBackground("#f8fafc");
+      }
+    });
+
+    // 3. 確保作業訂正矩陣分頁亦就緒
+    getCorrectionMatrixSheet();
+
+    return { success: true, message: `已成功初始化 8 大成績分頁與訂正矩陣！` };
+  } catch (err) {
+    return { success: false, message: '初始化失敗: ' + err.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch(e){}
+  }
 }
 
 function findOrCreateScoreAssignmentColumn(sheet, date, unit, page) {

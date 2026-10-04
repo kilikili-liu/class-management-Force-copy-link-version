@@ -649,6 +649,7 @@
     </div>
 
     <div class="header-right">
+      <button class="header-btn" onclick="initAllSheetsFromUI()" style="color:#38bdf8; border-color:#0284c7;" title="一鍵初始化目前試算表的 8 大作業成績分頁">📁 初始化分頁</button>
       <button class="header-btn" onclick="forceHardReload()" style="color:#facc15; border-color:#facc15;" title="強制更新最新版本">🔄 刷新</button>
       <button class="header-btn" onclick="openPairModal()">🔗 連線</button>
       <a href="correction.html" class="header-btn" id="link-correction">✏️ 訂正</a>
@@ -812,7 +813,8 @@
       <div class="modal-body">
         <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.5;">請貼上您的 Google Apps Script 正式部署網址 (Web App URL)：</p>
         <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 10px; border-radius:6px; font-size:0.8rem; width:100%;">
-        <button type="button" class="header-btn" style="width:100%; margin-top:10px; background:#334155; color:#cbd5e1; border-color:#475569; padding:8px 12px;" onclick="clearPairGasUrl()">🗑️ 清空並解除目前綁定</button>
+        <button type="button" class="header-btn" style="width:100%; margin-top:10px; background:#0284c7; color:#fff; border-color:#38bdf8; padding:8px 12px;" onclick="initAllSheetsFromUI()">📁 為此試算表一鍵初始化 8 大成績分頁</button>
+        <button type="button" class="header-btn" style="width:100%; margin-top:8px; background:#334155; color:#cbd5e1; border-color:#475569; padding:8px 12px;" onclick="clearPairGasUrl()">🗑️ 清空並解除目前綁定</button>
       </div>
       <div class="modal-footer">
         <button class="header-btn" onclick="closePairModal()">取消</button>
@@ -900,18 +902,34 @@
             .handleScannerApiAction(action, params);
         });
       } else {
-        if (!GAS_API_URL) throw new Error('尚未設定 GAS API 網址');
+        if (!GAS_API_URL) throw new Error('尚未設定 GAS API 網址，請先點擊右上角「🔗 連線」綁定');
         const cleanBase = cleanGasUrl(GAS_API_URL);
         const url = new URL(cleanBase);
         url.searchParams.set('action', action);
         for (const [k, v] of Object.entries(params)) {
           url.searchParams.set(k, v);
         }
-        return await singleGasApiFetch(url.toString());
+        const retries = (action === 'getGradingData' || action === 'initAllScoreSheets') ? 1 : 0;
+        return await gasApiFetch(url.toString(), retries, 25000);
       }
     }
 
-    function singleGasApiFetch(url, timeoutMs = 18000) {
+    async function gasApiFetch(url, retries = 1, timeoutMs = 25000) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          return await singleGasApiFetch(url, timeoutMs);
+        } catch (err) {
+          console.warn(`[GAS API] 第 ${attempt + 1} 次連線失敗: ${err.message}`);
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 1200));
+          } else {
+            throw err;
+          }
+        }
+      }
+    }
+
+    function singleGasApiFetch(url, timeoutMs = 25000) {
       return new Promise((resolve, reject) => {
         const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
         const sep = url.includes('?') ? '&' : '?';
@@ -923,7 +941,7 @@
           if (isSettled) return;
           isSettled = true;
           cleanup();
-          reject(new Error('伺服器回應逾時'));
+          reject(new Error('伺服器回應較慢 (逾時)，可能是首次建立分頁或冷啟動中，請再試一次'));
         }, timeoutMs);
 
         function cleanup() {
@@ -939,41 +957,36 @@
           resolve(data);
         };
 
-        fetch(finalUrl, { method: 'GET', redirect: 'follow', credentials: 'omit' })
-          .then(res => res.text())
-          .then(text => {
-            if (isSettled) return;
-            const trimmed = (text || '').trim();
-            let parsed = null;
-            if (trimmed.startsWith(callbackName + '(')) {
-              const inner = trimmed.substring(callbackName.length + 1).replace(/\);?$/, '');
-              try { parsed = JSON.parse(inner); } catch(e){}
-            } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-              try { parsed = JSON.parse(trimmed); } catch(e){}
-            }
-            if (parsed) {
-              isSettled = true;
-              clearTimeout(timer);
-              cleanup();
-              resolve(parsed);
-            } else {
-              throw new Error('無法解析伺服器回應');
-            }
-          })
-          .catch(err => {
-            if (isSettled) return;
-            scriptTag = document.createElement('script');
-            scriptTag.src = finalUrl;
-            scriptTag.onerror = () => {
-              if (isSettled) return;
-              isSettled = true;
-              clearTimeout(timer);
-              cleanup();
-              reject(new Error('連線失敗'));
-            };
-            document.body.appendChild(scriptTag);
-          });
+        // 直接採用跨域最穩定之 JSONP Script 標籤，不發送多餘 fetch 避免引發伺服器分頁建立競爭衝突
+        scriptTag = document.createElement('script');
+        scriptTag.crossOrigin = 'anonymous';
+        scriptTag.src = finalUrl;
+        scriptTag.onerror = () => {
+          if (isSettled) return;
+          isSettled = true;
+          clearTimeout(timer);
+          cleanup();
+          reject(new Error('連線失敗 (請確認 GAS 部署「誰可以存取」是否設為「所有人」)'));
+        };
+        document.head.appendChild(scriptTag);
       });
+    }
+
+    // ── 一鍵初始化 8 大成績分頁 ──
+    async function initAllSheetsFromUI() {
+      if (!confirm('是否要為目前試算表一鍵建立並初始化 8 大作業成績分頁（國語甲乙本、習作、數習、社習、日記、作文）？\n\n建立後將自動帶入學生座號與名單！')) return;
+      showToast('⏳ 正在為您的試算表建立 8 大作業成績分頁，請稍候約 5~10 秒...', 'info');
+      try {
+        const res = await gasApi('initAllScoreSheets');
+        if (res && res.success) {
+          showToast('🎉 ' + res.message, 'success');
+          fetchGradingData();
+        } else {
+          showToast('❌ 初始化失敗: ' + (res ? res.message : ''), 'error');
+        }
+      } catch(err) {
+        showToast('❌ 連線異常: ' + err.message, 'error');
+      }
     }
 
     // ── 初始化 ──
