@@ -127,16 +127,34 @@
       background: var(--bg-dark);
     }
 
-    /* 📋 左側：30 座號矩陣區 */
+    /* 📋 左側：30 座號矩陣區 (可上下滾動) */
     .seat-grid-container {
       flex: 1.25;
-      padding: 8px;
+      padding: 6px 8px;
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      grid-template-rows: repeat(6, 1fr);
+      grid-auto-rows: 58px;
       gap: 6px;
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
       border-right: 1px solid #1e293b;
+      touch-action: pan-y;
+    }
+
+    /* 自訂美化捲軸 */
+    .seat-grid-container::-webkit-scrollbar {
+      width: 5px;
+    }
+    .seat-grid-container::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    .seat-grid-container::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    .seat-grid-container::-webkit-scrollbar-thumb:hover {
+      background: #475569;
     }
 
     .seat-card {
@@ -150,6 +168,8 @@
       cursor: pointer;
       transition: transform 0.1s, border-color 0.15s, box-shadow 0.15s;
       position: relative;
+      min-height: 56px;
+      box-sizing: border-box;
     }
 
     .seat-card:active {
@@ -241,12 +261,12 @@
     /* ✍️ 右側：左手操作評分控制台 */
     .action-panel {
       flex: 1.15;
-      padding: 8px 12px;
+      padding: 6px 10px;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
       gap: 6px;
       overflow: hidden;
+      height: 100%;
     }
 
     /* 1. 等第快捷橫列 (7等第 + ⚙️) */
@@ -254,6 +274,7 @@
       display: grid;
       grid-template-columns: repeat(8, 1fr);
       gap: 5px;
+      flex-shrink: 0;
     }
 
     .grade-btn {
@@ -261,7 +282,7 @@
       color: #f1f5f9;
       border: 1px solid #475569;
       border-radius: 6px;
-      padding: 7px 0;
+      padding: 6px 0;
       font-size: 0.85rem;
       font-weight: 800;
       cursor: pointer;
@@ -284,124 +305,34 @@
       color: #94a3b8;
     }
 
-    /* 2. 中間核心區 (左邊需訂正/下一號，最右邊正方形大字成績框) */
-    .middle-action-row {
+    /* 2. 下半部雙欄佈局 (左側九宮格塞入並延伸到底，右側看板 + 最右下操作鈕) */
+    .panel-lower-grid {
       display: flex;
-      align-items: stretch;
-      justify-content: space-between;
-      gap: 12px;
       flex: 1;
-      max-height: 125px;
-    }
-
-    .mid-left-controls {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
       gap: 8px;
-      flex: 1;
+      overflow: hidden;
+      min-height: 0;
     }
 
-    .toggle-correction-btn {
-      flex: 1;
-      background: #1e293b;
-      color: #94a3b8;
-      border: 2px solid #334155;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.15s;
-    }
-    .toggle-correction-btn.active {
-      background: rgba(249, 115, 22, 0.2);
-      border-color: #f97316;
-      color: #f97316;
-      box-shadow: 0 0 10px rgba(249, 115, 22, 0.3);
-    }
-    .toggle-correction-btn:active {
-      transform: scale(0.97);
-    }
-
-    .next-student-btn {
-      flex: 1;
-      background: #0284c7;
-      color: #ffffff;
-      border: none;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-weight: 800;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.15s;
-      box-shadow: 0 3px 8px rgba(2, 132, 199, 0.4);
-    }
-    .next-student-btn:active {
-      transform: scale(0.97);
-      background: #0369a1;
-    }
-
-    /* 📺 最右側正方形高對比大看板 (絕不被左手遮擋) */
-    .score-display-box {
-      width: 125px;
-      height: 125px;
-      background: #030712;
-      border: 2px solid #38bdf8;
-      border-radius: 12px;
+    /* 左半：數字鍵盤區 (往上塞入並往下延伸到底) */
+    .keypad-section {
+      flex: 1.25;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: space-between;
-      padding: 6px 4px;
-      flex-shrink: 0;
-      box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+      gap: 4px;
+      height: 100%;
+      min-height: 0;
     }
 
-    .display-seat-info {
-      font-size: 0.85rem;
-      font-weight: 800;
-      color: #facc15;
-      text-align: center;
-      line-height: 1.1;
-    }
-
-    .display-score-huge {
-      font-size: 2.4rem;
-      font-weight: 900;
-      color: #ffffff;
-      line-height: 1;
-      letter-spacing: -1px;
-      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-    }
-    .display-score-huge.empty {
-      color: #475569;
-      font-size: 1.8rem;
-    }
-
-    .display-grade-badge {
-      font-size: 0.75rem;
-      font-weight: 800;
-      padding: 2px 8px;
-      border-radius: 10px;
-      background: #1e293b;
-      color: #38bdf8;
-      border: 1px solid #38bdf8;
-    }
-
-    /* 3. 數字微調鍵盤 */
     .keypad-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      gap: 5px;
-      height: 110px;
+      grid-template-rows: repeat(4, 1fr);
+      gap: 4px;
+      flex: 1;
+      height: 100%;
+      min-height: 0;
     }
 
     .key-btn {
@@ -409,7 +340,7 @@
       color: #f8fafc;
       border: 1px solid #334155;
       border-radius: 6px;
-      font-size: 1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       cursor: pointer;
       display: flex;
@@ -424,7 +355,7 @@
     .key-btn.action-key {
       background: #0f172a;
       color: #94a3b8;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
     .key-btn.hundred-key {
       color: #facc15;
@@ -436,15 +367,128 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       color: #64748b;
       padding-top: 2px;
+      flex-shrink: 0;
     }
     .bottom-opts label {
       display: flex;
       align-items: center;
       gap: 4px;
       cursor: pointer;
+    }
+
+    /* 右半：上方看板 + 最右下需訂正與下一號 */
+    .right-action-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* 📺 最右側正方形高對比大看板 (右上) */
+    .score-display-box {
+      width: 100%;
+      flex: 1.1;
+      max-height: 125px;
+      background: #030712;
+      border: 2px solid #38bdf8;
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 6px;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .display-seat-info {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #facc15;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .display-score-huge {
+      font-size: 2.1rem;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: -1px;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    }
+    .display-score-huge.empty {
+      color: #475569;
+      font-size: 1.6rem;
+    }
+
+    .display-grade-badge {
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+    }
+
+    /* 最右下操作鈕群 (需訂正 + 下一號) */
+    .right-bottom-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .toggle-correction-btn {
+      height: 38px;
+      background: #1e293b;
+      color: #94a3b8;
+      border: 1.5px solid #334155;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .toggle-correction-btn.active {
+      background: rgba(249, 115, 22, 0.2);
+      border-color: #f97316;
+      color: #f97316;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.3);
+    }
+    .toggle-correction-btn:active {
+      transform: scale(0.97);
+    }
+
+    .next-student-btn {
+      height: 40px;
+      background: #0284c7;
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+    }
+    .next-student-btn:active {
+      transform: scale(0.97);
+      background: #0369a1;
     }
 
     /* 彈窗樣式 (Modal) */
@@ -625,55 +669,63 @@
         <button class="grade-btn settings-btn" onclick="openSettingsModal()" title="修改等第預設分數">⚙️</button>
       </div>
 
-      <!-- 2. 中間核心區 (左邊需訂正/下一號，最右邊正方形大字成績框) -->
-      <div class="middle-action-row">
-        <div class="mid-left-controls">
-          <button id="toggle-correction-btn" class="toggle-correction-btn" onclick="toggleNeedCorrection()">
-            <span id="correction-icon">🟧</span>
-            <span>需訂正</span>
-          </button>
-          <button class="next-student-btn" onclick="goToNextStudent()">
-            <span>⏭️ 下一號</span>
-          </button>
+      <!-- 2. 下半部雙欄 (左側數字九宮格延伸到底，右側看板與最右下操作鈕) -->
+      <div class="panel-lower-grid">
+
+        <!-- 左半：數字鍵盤區 (往上塞入並往下延伸到底) -->
+        <div class="keypad-section">
+          <div class="keypad-grid">
+            <button class="key-btn" onclick="onNumKey('7')">7</button>
+            <button class="key-btn" onclick="onNumKey('8')">8</button>
+            <button class="key-btn" onclick="onNumKey('9')">9</button>
+            <button class="key-btn action-key" onclick="onNumKey('backspace')">⌫</button>
+
+            <button class="key-btn" onclick="onNumKey('4')">4</button>
+            <button class="key-btn" onclick="onNumKey('5')">5</button>
+            <button class="key-btn" onclick="onNumKey('6')">6</button>
+            <button class="key-btn hundred-key" onclick="onNumKey('100')">100</button>
+
+            <button class="key-btn" onclick="onNumKey('1')">1</button>
+            <button class="key-btn" onclick="onNumKey('2')">2</button>
+            <button class="key-btn" onclick="onNumKey('3')">3</button>
+            <button class="key-btn action-key" onclick="onNumKey('clear')">C</button>
+
+            <button class="key-btn" style="grid-column: span 2;" onclick="onNumKey('0')">0</button>
+            <button class="key-btn" onclick="onNumKey('.')">.</button>
+            <button class="key-btn action-key" style="background:#0284c7; color:#fff; font-weight:800;" onclick="submitCurrentScore()">💾</button>
+          </div>
+
+          <!-- 底部微型設定 -->
+          <div class="bottom-opts">
+            <label>
+              <input type="checkbox" id="auto-advance-chk" style="accent-color: #38bdf8;">
+              <span>給分自動跳號</span>
+            </label>
+            <span id="save-status-indicator" style="color: #10b981;">🟢 連線就緒</span>
+          </div>
         </div>
 
-        <!-- 📺 最右側正方形高對比大看板 (不被左手手腕遮擋) -->
-        <div class="score-display-box" id="score-display-box">
-          <div class="display-seat-info" id="display-seat-info">01 號 姓名</div>
-          <div class="display-score-huge empty" id="display-score-huge">--</div>
-          <div class="display-grade-badge" id="display-grade-badge">尚未給分</div>
+        <!-- 右半：上方看板 + 最右下操作鈕群 -->
+        <div class="right-action-col">
+          <!-- 📺 右上正方形高對比大看板 (不被左手手腕遮擋) -->
+          <div class="score-display-box" id="score-display-box">
+            <div class="display-seat-info" id="display-seat-info">01 號 姓名</div>
+            <div class="display-score-huge empty" id="display-score-huge">--</div>
+            <div class="display-grade-badge" id="display-grade-badge">尚未給分</div>
+          </div>
+
+          <!-- 最右下：需訂正 + 下一號 (縮小精簡，塞在最右下) -->
+          <div class="right-bottom-btns">
+            <button id="toggle-correction-btn" class="toggle-correction-btn" onclick="toggleNeedCorrection()">
+              <span id="correction-icon">🟧</span>
+              <span>需訂正</span>
+            </button>
+            <button class="next-student-btn" onclick="goToNextStudent()">
+              <span>⏭️ 下一號</span>
+            </button>
+          </div>
         </div>
-      </div>
 
-      <!-- 3. 數字微調鍵盤 (非等第給分時使用) -->
-      <div class="keypad-grid">
-        <button class="key-btn" onclick="onNumKey('7')">7</button>
-        <button class="key-btn" onclick="onNumKey('8')">8</button>
-        <button class="key-btn" onclick="onNumKey('9')">9</button>
-        <button class="key-btn action-key" onclick="onNumKey('backspace')">⌫ 退格</button>
-
-        <button class="key-btn" onclick="onNumKey('4')">4</button>
-        <button class="key-btn" onclick="onNumKey('5')">5</button>
-        <button class="key-btn" onclick="onNumKey('6')">6</button>
-        <button class="key-btn hundred-key" onclick="onNumKey('100')">100</button>
-
-        <button class="key-btn" onclick="onNumKey('1')">1</button>
-        <button class="key-btn" onclick="onNumKey('2')">2</button>
-        <button class="key-btn" onclick="onNumKey('3')">3</button>
-        <button class="key-btn action-key" onclick="onNumKey('clear')">C 清除</button>
-
-        <button class="key-btn" style="grid-column: span 2;" onclick="onNumKey('0')">0</button>
-        <button class="key-btn" onclick="onNumKey('.')">.</button>
-        <button class="key-btn action-key" style="background:#0284c7; color:#fff; font-weight:800;" onclick="submitCurrentScore()">💾 儲存</button>
-      </div>
-
-      <!-- 底部選項 -->
-      <div class="bottom-opts">
-        <label>
-          <input type="checkbox" id="auto-advance-chk" style="accent-color: #38bdf8;">
-          <span>給分後自動跳下一號 (備用)</span>
-        </label>
-        <span id="save-status-indicator" style="color: #10b981;">🟢 已連線就緒</span>
       </div>
 
     </div>
@@ -1032,12 +1084,13 @@
       selectedSeat = seatNum;
       currentInputScore = "";
 
-      // 更新卡片選中外框
+      // 更新卡片選中外框並自動滾動至可見區域
       for (let s = 1; s <= 30; s++) {
         const card = document.getElementById(`seat-card-${s}`);
         if (!card) continue;
         if (s === selectedSeat) {
           card.classList.add('selected');
+          try { card.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch(e){}
         } else {
           card.classList.remove('selected');
         }
