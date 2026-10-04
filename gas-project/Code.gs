@@ -1109,7 +1109,7 @@ function getGasWebAppUrl() {
 const SCORE_SHEET_NAMES = [
   "國語|甲本",
   "國語|乙本",
-  "國語|習作",
+  "國語|國習",
   "國語|圈詞",
   "數學|數習",
   "社會|社習",

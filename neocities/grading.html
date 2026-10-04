@@ -630,7 +630,7 @@
       <select id="subject-select" class="subject-select" onchange="onSubjectChange()">
         <option value="國語|甲本">國語 甲本</option>
         <option value="國語|乙本">國語 乙本</option>
-        <option value="國語|習作">國語 習作</option>
+        <option value="國語|國習">國語 國習</option>
         <option value="國語|圈詞">國語 圈詞</option>
         <option value="數學|數習">數學 數習</option>
         <option value="社會|社習">社會 社習</option>
@@ -989,7 +989,7 @@
     }
 
     async function initAllSheetsFromUI() {
-      if (!confirm('是否要為目前試算表一鍵建立並初始化 8 大作業成績分頁（國語甲乙本、習作、數習、社習、日記、作文）？\n\n建立後將自動帶入學生座號與名單！')) return;
+      if (!confirm('是否要為目前試算表一鍵建立並初始化 8 大作業成績分頁（國語甲乙本、國習、數習、社習、日記、作文）？\n\n建立後將自動帶入學生座號與名單！')) return;
       showToast('⏳ 正在為您的試算表建立 8 大作業成績分頁，請稍候約 5~10 秒...', 'info');
       try {
         const res = await gasApi('initAllScoreSheets');
