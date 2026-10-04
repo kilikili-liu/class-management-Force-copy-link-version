@@ -1182,15 +1182,15 @@
           if (!href) return;
           const currentApi = (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) ? GAS_API_URL : (safeStorage.getItem('class_mgmt_gas_api_url') || '');
           const apiParam = currentApi ? `?api_url=${encodeURIComponent(currentApi)}` : '';
-          if (href.includes('page=scanner')) {
+          if (href.includes('page=scanner') || href.includes('scanner.html')) {
             a.href = `scanner.html${apiParam}`;
-          } else if (href.includes('page=correction_scanner')) {
+          } else if (href.includes('page=correction_scanner') || href.includes('correction_scanner.html')) {
             a.href = `correction_scanner.html${apiParam}`;
-          } else if (href.includes('page=correction')) {
+          } else if (href.includes('page=correction') || href.includes('correction.html')) {
             a.href = `correction.html${apiParam}`;
-          } else if (href.includes('page=grading')) {
+          } else if (href.includes('page=grading') || href.includes('grading.html')) {
             a.href = `grading.html${apiParam}`;
-          } else if (href.includes('page=sticker')) {
+          } else if (href.includes('page=sticker') || href.includes('StickerGenerator.html')) {
             a.href = `StickerGenerator.html${apiParam}`;
           }
         });

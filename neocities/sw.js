@@ -3,7 +3,7 @@
  * 採用 Network-First 策略：優先獲取最新線上版本，網路中斷時自動使用快取
  */
 
-const CACHE_NAME = 'class-mgmt-pwa-v33';
+const CACHE_NAME = 'class-mgmt-pwa-v34';
 const CORE_ASSETS = [
   './index.html',
   './scanner.html',
@@ -18,19 +18,25 @@ const CORE_ASSETS = [
   './icon-512.png'
 ];
 
-// 安裝事件：預先下載核心靜態資源並立即接管
+// 安裝事件：預先下載核心靜態資源並立即接管（強制從網路獲取最新內容，避開瀏覽器 HTTP 快取）
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(CORE_ASSETS).catch(err => {
-        console.warn('[SW] Pre-caching core assets warning:', err);
-      });
+    caches.open(CACHE_NAME).then(async cache => {
+      for (const asset of CORE_ASSETS) {
+        try {
+          const req = new Request(asset, { cache: 'reload' });
+          const res = await fetch(req);
+          if (res.ok) await cache.put(asset, res);
+        } catch(e) {
+          console.warn('[SW] Pre-caching warning for:', asset, e);
+        }
+      }
     })
   );
 });
 
-// 啟動事件：清除舊版本快取並立刻控制頁面
+// 啟動事件：清除所有舊版本快取並立刻控制頁面
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -53,9 +59,13 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // 2. 本站資源：Network-First 策略（確保修改 Neocities 後使用者無感立即更新）
+  // 2. 本站導航與靜態資源：確保導航時使用 no-cache 避開本機過期檔案
+  const fetchReq = (req.mode === 'navigate') 
+    ? new Request(req.url, { cache: 'no-cache', headers: req.headers })
+    : req;
+
   event.respondWith(
-    fetch(req)
+    fetch(fetchReq)
       .then(networkResponse => {
         if (networkResponse && networkResponse.status === 200) {
           const resClone = networkResponse.clone();

@@ -463,7 +463,7 @@
   <!-- PWA 自動更新提示條 (方案1: 背景檢查 + 浮動提示) -->
   <div id="pwa-update-banner" style="display:none; position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:999999; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:1px solid #38bdf8; padding:8px 14px; border-radius:30px; box-shadow:0 8px 24px rgba(0,0,0,0.6); font-size:0.85rem; font-weight:700; align-items:center; gap:8px; white-space:nowrap;">
     <span>✨ 發現系統新版本！</span>
-    <button onclick="window.location.reload()" style="background:#22c55e; color:#0f172a; border:none; padding:4px 12px; border-radius:14px; font-weight:700; cursor:pointer; font-size:0.8rem; box-shadow:0 2px 6px rgba(0,0,0,0.3);">立即套用更新</button>
+    <button onclick="forcePwaUpdate()" style="background:#22c55e; color:#0f172a; border:none; padding:4px 12px; border-radius:14px; font-weight:700; cursor:pointer; font-size:0.8rem; box-shadow:0 2px 6px rgba(0,0,0,0.3);">立即套用更新</button>
     <button onclick="document.getElementById('pwa-update-banner').style.display='none'" style="background:transparent; color:#cbd5e1; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:0 4px;" title="稍後更新">&times;</button>
   </div>
 
@@ -568,6 +568,22 @@
     // ── PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
     let deferredInstallPrompt = null;
     const hadPriorController = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
+
+    function forcePwaUpdate() {
+      try {
+        if ('caches' in window) {
+          caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+        }
+      } catch(e){}
+      setTimeout(() => {
+        const u = new URL(window.location.href);
+        u.searchParams.set('_t', Date.now());
+        window.location.href = u.toString();
+      }, 300);
+    }
 
     function showPwaUpdateBanner() {
       const banner = document.getElementById('pwa-update-banner');
@@ -728,8 +744,12 @@
     // 手動檢視或設定 GAS 網址
     function promptManualGasUrl() {
       const current = GAS_API_URL || '尚未設定';
-      const entered = prompt(`⚙️ 班級試算表連線設定\n目前綁定網址：\n${current}\n\n若需更改，請貼上 GAS Web App 網址或純部署 ID (AKfy...)：\n(清空並按確定可解除綁定)`, GAS_API_URL || '');
+      const entered = prompt(`⚙️ 班級試算表連線設定\n目前綁定網址：\n${current}\n\n若需更改，請貼上 GAS Web App 網址或純部署 ID (AKfy...)：\n(輸入 reload 可強制清除快取更新最新版面)\n(清空並按確定可解除綁定)`, GAS_API_URL || '');
       if (entered === null) return;
+      if (entered.trim().toLowerCase() === 'reload' || entered.trim() === '刷新') {
+        forcePwaUpdate();
+        return;
+      }
       if (entered.trim() === '') {
         localStorage.removeItem('class_management_gas_api_url');
         localStorage.removeItem('class_mgmt_gas_api_url');
