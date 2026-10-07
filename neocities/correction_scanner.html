@@ -244,10 +244,11 @@
     }
 
     .viewfinder-box {
-      width: 90%;
-      height: 86%;
-      border-radius: 14px;
-      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.25);
+      width: min(290px, 88%, 70vh);
+      height: min(290px, 88%, 70vh);
+      aspect-ratio: 1 / 1;
+      border-radius: 16px;
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.4);
       position: relative;
       transition: all 0.2s ease;
     }
@@ -266,7 +267,7 @@
     /* 相機效果邊框 (橘色登記 vs 藍色銷案) */
     .viewfinder-box.status-register-effect {
       border: 3px solid #f97316;
-      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.25), 0 0 16px rgba(249, 115, 22, 0.6);
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.4), 0 0 16px rgba(249, 115, 22, 0.6);
     }
     .viewfinder-box.status-register-effect::after {
       background: #f97316;
@@ -275,7 +276,7 @@
 
     .viewfinder-box.status-clear-effect {
       border: 3px solid #38bdf8;
-      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.25), 0 0 16px rgba(56, 189, 248, 0.6);
+      box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.4), 0 0 16px rgba(56, 189, 248, 0.6);
     }
     .viewfinder-box.status-clear-effect::after {
       background: #38bdf8;
@@ -299,49 +300,43 @@
       white-space: nowrap;
     }
 
-    /* 模式切換按鈕區 */
-    .mode-switch-box {
-      display: flex;
-      background: #1e293b;
-      padding: 4px;
-      border-radius: 8px;
-      gap: 4px;
-      border: 1px solid #334155;
-    }
-    .mode-btn {
-      flex: 1;
-      padding: 6px 4px;
-      border: none;
+    /* 頂部模式切換按鈕 (登記 / 銷案) */
+    .header-mode-btn {
+      height: 30px;
+      padding: 0 10px;
       border-radius: 6px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: 700;
-      color: #94a3b8;
-      background: transparent;
       cursor: pointer;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      transition: all 0.2s;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      box-sizing: border-box;
+      letter-spacing: 1px;
     }
-    .mode-btn.active-register { background: rgba(249, 115, 22, 0.25); color: #fb923c; border: 1px solid #f97316; }
-    .mode-btn.active-clear { background: rgba(56, 189, 248, 0.25); color: #38bdf8; border: 1px solid #38bdf8; }
-
-    .cam-controls { display: flex; gap: 6px; }
-    .btn-action {
-      flex: 1;
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: var(--text-main);
-      padding: 6px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
+    .header-mode-btn.mode-reg {
+      background: rgba(249, 115, 22, 0.12);
+      color: #fb923c;
+      border: 1px solid #f97316;
+    }
+    .header-mode-btn.mode-reg.active {
+      background: #f97316;
+      color: #ffffff;
+      border-color: #f97316;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.4);
+    }
+    .header-mode-btn.mode-clear {
+      background: rgba(2, 132, 199, 0.12);
+      color: #38bdf8;
+      border: 1px solid #0284c7;
+    }
+    .header-mode-btn.mode-clear.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
     }
 
     /* 右欄：燈號矩陣與作業控制 */
@@ -554,9 +549,12 @@
   <header>
     <div class="header-title-box">
       <div class="header-title">✏️ 訂正速掃</div>
+      <button id="btn-mode-reg" class="header-mode-btn mode-reg active" onclick="setScanMode('register')">登記</button>
+      <button id="btn-mode-clear" class="header-mode-btn mode-clear" onclick="setScanMode('clear')">銷案</button>
     </div>
     <div style="display: flex; gap: 6px; align-items: center;">
       <button id="btn-pwa-install" class="header-nav-btn nav-btn-pair" style="display:none;" onclick="triggerPwaInstall()">安裝</button>
+      <button class="header-nav-btn nav-btn-pair" onclick="switchNextCamera()" title="切換前後鏡頭">鏡頭</button>
       <a href="index.html" id="link-index" class="header-nav-btn nav-btn-check" title="作業清點">清點</a>
       <a href="correction.html" id="link-correction" class="header-nav-btn nav-btn-cor" title="錯題訂正">訂正</a>
       <a href="grading.html" id="link-grading" class="header-nav-btn nav-btn-grade" title="作業批改">批改</a>
@@ -569,16 +567,6 @@
 
     <!-- 左欄：相機與模式控制 -->
     <div class="left-panel">
-      <!-- 模式切換 -->
-      <div class="mode-switch-box">
-        <button id="btn-mode-reg" class="mode-btn active-register" onclick="setScanMode('register')">
-          🟧 登記錯題 (X)
-        </button>
-        <button id="btn-mode-clear" class="mode-btn" onclick="setScanMode('clear')">
-          🟦 錯題銷案 (O)
-        </button>
-      </div>
-
       <!-- 相機畫框與掃描標記 -->
       <div class="camera-wrapper">
         <div id="reader"></div>
@@ -586,11 +574,6 @@
           <div id="viewfinder" class="viewfinder-box status-register-effect"></div>
           <div id="viewfinder-tip-txt" class="viewfinder-tip">🎯 作業本 QR碼 置於框內 登記錯題</div>
         </div>
-      </div>
-
-      <!-- 相機按鈕 -->
-      <div class="cam-controls">
-        <button class="btn-action" onclick="switchNextCamera()">🔄 切換鏡頭</button>
       </div>
     </div>
 
@@ -1228,14 +1211,14 @@
       const tip = document.getElementById('viewfinder-tip-txt');
 
       if (mode === 'register') {
-        btnReg.className = 'mode-btn active-register';
-        btnClear.className = 'mode-btn';
+        if (btnReg) btnReg.className = 'header-mode-btn mode-reg active';
+        if (btnClear) btnClear.className = 'header-mode-btn mode-clear';
         if (vf) vf.className = 'viewfinder-box status-register-effect';
         if (tip) tip.textContent = '🎯 作業本 QR碼 置於框內 登記錯題';
         showToast('已切換為：🟧 登記錯題模式 (標為 X)', 'orange');
       } else {
-        btnReg.className = 'mode-btn';
-        btnClear.className = 'mode-btn active-clear';
+        if (btnReg) btnReg.className = 'header-mode-btn mode-reg';
+        if (btnClear) btnClear.className = 'header-mode-btn mode-clear active';
         if (vf) vf.className = 'viewfinder-box status-clear-effect';
         if (tip) tip.textContent = '🎯 作業本 QR碼 置於框內 錯題銷案';
         showToast('已切換為：🟦 錯題銷案模式 (標為 O)', 'success');
