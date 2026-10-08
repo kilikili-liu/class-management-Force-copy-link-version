@@ -1082,6 +1082,8 @@
         <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.5; margin-bottom:10px;">請貼上您的 Google Apps Script 正式部署網址 (Web App URL)：</p>
         <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="background:#0f172a; border:1px solid #475569; color:#fff; padding:8px 10px; border-radius:6px; font-size:0.82rem; width:100%; box-sizing:border-box;">
         <button type="button" class="header-nav-btn nav-btn-pair" style="width:100%; margin-top:12px; height:34px;" onclick="clearPairGasUrl()">🗑️ 清空並解除目前綁定</button>
+        <button type="button" class="header-nav-btn" style="width:100%; margin-top:8px; height:34px; background:rgba(239, 68, 68, 0.12); border:1px solid #ef4444; color:#fca5a5; font-weight:700;" onclick="forceHardReload()">🔄 清除快取並強制刷新最新版</button>
+        <a href="StickerGenerator.html" class="header-nav-btn nav-btn-sticker" style="width:100%; margin-top:8px; height:34px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; box-sizing:border-box;">🏷️ QRcode貼紙</a>
       </div>
       <div class="modal-footer" style="padding: 10px 16px; background:#0f172a; border-top:1px solid #334155; display:flex; justify-content:flex-end; gap:8px;">
         <button class="header-nav-btn nav-btn-pair" onclick="closePairModal()">取消</button>
@@ -1094,6 +1096,27 @@
     // ── PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
     let deferredInstallPrompt = null;
     const hadPriorController = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
+
+    function forceHardReload() {
+      try {
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            names.forEach(name => caches.delete(name));
+          });
+        }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(reg => reg.unregister());
+          });
+        }
+      } catch(e){}
+
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('_t', Date.now());
+        window.location.href = url.toString();
+      }, 300);
+    }
 
     function showPwaUpdateBanner() {
       const banner = document.getElementById('pwa-update-banner');

@@ -754,7 +754,6 @@
       <a href="correction.html" class="header-nav-btn nav-btn-cor" id="link-correction" title="錯題訂正">訂正</a>
       <span class="header-nav-btn nav-btn-grade active" title="目前在作業批改">批改</span>
       <button class="header-nav-btn nav-btn-pair" onclick="openPairModal()" title="連線設定">連線</button>
-      <button class="header-nav-btn nav-btn-reload" onclick="forceHardReload()" title="強制更新最新版本">刷新</button>
     </div>
   </header>
 
@@ -916,6 +915,8 @@
         <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:8px 10px; border-radius:6px; font-size:0.8rem; width:100%;">
         <button type="button" class="header-btn" id="btn-init-sheets-modal" style="display:none; width:100%; margin-top:10px; background:#0284c7; color:#fff; border-color:#38bdf8; padding:8px 12px;" onclick="initAllSheetsFromUI()">📁 為此試算表一鍵初始化 8 大成績分頁</button>
         <button type="button" class="header-btn" style="width:100%; margin-top:8px; background:#334155; color:#cbd5e1; border-color:#475569; padding:8px 12px;" onclick="clearPairGasUrl()">🗑️ 清空並解除目前綁定</button>
+        <button type="button" class="header-btn" style="width:100%; margin-top:8px; background:rgba(239, 68, 68, 0.12); border:1px solid #ef4444; color:#fca5a5; padding:8px 12px; border-radius:6px; font-weight:700; cursor:pointer;" onclick="forceHardReload()">🔄 清除快取並強制刷新最新版</button>
+        <a href="StickerGenerator.html" class="header-btn" style="width:100%; margin-top:8px; background:rgba(20, 184, 166, 0.15); border:1px solid #14b8a6; color:#2dd4bf; padding:8px 12px; border-radius:6px; font-weight:700; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; box-sizing:border-box;">🏷️ QRcode貼紙</a>
       </div>
       <div class="modal-footer">
         <button class="header-btn" onclick="closePairModal()">取消</button>

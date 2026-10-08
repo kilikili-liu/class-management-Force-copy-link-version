@@ -695,7 +695,7 @@
   <!-- PWA 自動更新提示條 (方案1: 背景檢查 + 浮動提示) -->
   <div id="pwa-update-banner" style="display:none; position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:999999; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:1px solid #38bdf8; padding:8px 14px; border-radius:30px; box-shadow:0 8px 24px rgba(0,0,0,0.6); font-size:0.85rem; font-weight:700; align-items:center; gap:8px; white-space:nowrap;">
     <span>✨ 發現系統新版本！</span>
-    <button onclick="window.location.reload()" style="background:#22c55e; color:#0f172a; border:none; padding:4px 12px; border-radius:14px; font-weight:700; cursor:pointer; font-size:0.8rem; box-shadow:0 2px 6px rgba(0,0,0,0.3);">立即套用更新</button>
+    <button onclick="forceHardReload()" style="background:#22c55e; color:#0f172a; border:none; padding:4px 12px; border-radius:14px; font-weight:700; cursor:pointer; font-size:0.8rem; box-shadow:0 2px 6px rgba(0,0,0,0.3);">立即套用更新</button>
     <button onclick="document.getElementById('pwa-update-banner').style.display='none'" style="background:transparent; color:#cbd5e1; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:0 4px;" title="稍後更新">&times;</button>
   </div>
 
@@ -727,11 +727,14 @@
         <button class="pair-modal-close" onclick="closePairModal()">&times;</button>
       </div>
       <div class="pair-modal-content">
-        <!-- 額外工具捷徑：QRcode 貼紙產生器 -->
-        <div style="margin-bottom: 14px;">
-          <a href="StickerGenerator.html" id="link-modal-sticker" style="display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(13, 148, 136, 0.25)); border:1px solid #14b8a6; color:#2dd4bf; padding:10px 14px; border-radius:8px; font-size:0.92rem; font-weight:700; text-decoration:none; box-sizing:border-box;">
+        <!-- 額外工具捷徑：QRcode 貼紙產生器 與 強制刷新 -->
+        <div style="margin-bottom: 14px; display: flex; gap: 8px;">
+          <a href="StickerGenerator.html" id="link-modal-sticker" style="flex: 1; display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(13, 148, 136, 0.25)); border:1px solid #14b8a6; color:#2dd4bf; padding:10px 14px; border-radius:8px; font-size:0.92rem; font-weight:700; text-decoration:none; box-sizing:border-box;">
             🏷️ QRcode貼紙
           </a>
+          <button type="button" onclick="forceHardReload()" style="display:flex; align-items:center; justify-content:center; gap:6px; background:rgba(239, 68, 68, 0.12); border:1px solid #ef4444; color:#fca5a5; padding:10px 14px; border-radius:8px; font-size:0.88rem; font-weight:700; cursor:pointer; box-sizing:border-box; white-space:nowrap;">
+            🔄 強制刷新
+          </button>
         </div>
 
         <!-- 頂部分頁切換：🤖 Android 手機 vs 🍎 iOS 手機 -->
@@ -1055,6 +1058,27 @@
     // ── 📲 PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
     let deferredInstallPrompt = null;
     const hadPriorController = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
+
+    function forceHardReload() {
+      try {
+        if ('caches' in window) {
+          caches.keys().then(names => {
+            names.forEach(name => caches.delete(name));
+          });
+        }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs => {
+            regs.forEach(reg => reg.unregister());
+          });
+        }
+      } catch(e){}
+
+      setTimeout(() => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('_t', Date.now());
+        window.location.href = url.toString();
+      }, 300);
+    }
 
     function showPwaUpdateBanner() {
       const banner = document.getElementById('pwa-update-banner');
@@ -2181,6 +2205,7 @@
     window.updateMakeUpSubmitBtn = updateMakeUpSubmitBtn;
     window.submitMakeUpChecked = submitMakeUpChecked;
     window.triggerPwaInstall = triggerPwaInstall;
+    window.forceHardReload = forceHardReload;
   </script>
 </body>
 </html>
