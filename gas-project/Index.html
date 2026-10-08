@@ -278,6 +278,7 @@
       .seat-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
     }
     @media (max-width: 600px) {
+      #link-sticker { display: none !important; }
       header { padding: 6px 8px; gap: 4px; }
       .header-title { font-size: 0.95rem; }
       .title-short { display: inline; }
@@ -726,6 +727,13 @@
         <button class="pair-modal-close" onclick="closePairModal()">&times;</button>
       </div>
       <div class="pair-modal-content">
+        <!-- 額外工具捷徑：QRcode 貼紙產生器 -->
+        <div style="margin-bottom: 14px;">
+          <a href="StickerGenerator.html" id="link-modal-sticker" style="display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(13, 148, 136, 0.25)); border:1px solid #14b8a6; color:#2dd4bf; padding:10px 14px; border-radius:8px; font-size:0.92rem; font-weight:700; text-decoration:none; box-sizing:border-box;">
+            🏷️ QRcode貼紙
+          </a>
+        </div>
+
         <!-- 頂部分頁切換：🤖 Android 手機 vs 🍎 iOS 手機 -->
         <div class="pair-view-tabs">
           <button class="pair-view-tab active" id="pair-tab-android" onclick="switchPairSystem('android')">🤖 Android 手機</button>
@@ -747,6 +755,7 @@
               <button class="pair-chip-btn" data-page="correction_scanner.html" data-gaspage="correction_scanner" onclick="selectPairTool(this)">📱 訂正掃碼工具</button>
               <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏️ 錯題訂正主頁</button>
               <button class="pair-chip-btn" data-page="grading.html" data-gaspage="grading" onclick="selectPairTool(this)">✍️ 批改登記主頁</button>
+              <button class="pair-chip-btn" data-page="StickerGenerator.html" data-gaspage="StickerGenerator" onclick="selectPairTool(this)">🏷️ QRcode貼紙</button>
             </div>
           </div>
 
@@ -845,6 +854,7 @@
                 <button class="pair-chip-btn" data-page="correction_scanner.html" data-gaspage="correction_scanner" onclick="selectPairTool(this)">📱 訂正掃碼工具</button>
                 <button class="pair-chip-btn" data-page="correction.html" data-gaspage="correction" onclick="selectPairTool(this)">✏️ 錯題訂正主頁</button>
                 <button class="pair-chip-btn" data-page="grading.html" data-gaspage="grading" onclick="selectPairTool(this)">✍️ 批改登記主頁</button>
+                <button class="pair-chip-btn" data-page="StickerGenerator.html" data-gaspage="StickerGenerator" onclick="selectPairTool(this)">🏷️ QRcode貼紙</button>
               </div>
             </div>
 
