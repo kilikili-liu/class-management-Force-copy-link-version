@@ -360,12 +360,15 @@
       border: 1px solid #334155;
       margin-bottom: 6px;
       min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .assign-select {
-      flex: 1;
+      flex: 1 1 0%;
       min-width: 0;
       width: 0;
+      max-width: 100%;
       background: #0f172a;
       color: var(--text-main);
       border: 1px solid #475569;
@@ -377,6 +380,7 @@
       text-overflow: ellipsis;
       white-space: nowrap;
       overflow: hidden;
+      box-sizing: border-box;
     }
 
     .btn-edit-meta {
@@ -539,7 +543,7 @@
   <!-- PWA 自動更新提示條 (方案1: 背景檢查 + 浮動提示) -->
   <div id="pwa-update-banner" style="display:none; position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:999999; background:linear-gradient(135deg, #0284c7, #0369a1); color:#fff; border:1px solid #38bdf8; padding:8px 14px; border-radius:30px; box-shadow:0 8px 24px rgba(0,0,0,0.6); font-size:0.85rem; font-weight:700; align-items:center; gap:8px; white-space:nowrap;">
     <span>✨ 發現系統新版本！</span>
-    <button onclick="window.location.reload()" style="background:#22c55e; color:#0f172a; border:none; padding:4px 12px; border-radius:14px; font-weight:700; cursor:pointer; font-size:0.8rem; box-shadow:0 2px 6px rgba(0,0,0,0.3);">立即套用更新</button>
+    <button onclick="forcePwaUpdate()" style="background:#22c55e; color:#0f172a; border:none; padding:4px 12px; border-radius:14px; font-weight:700; cursor:pointer; font-size:0.8rem; box-shadow:0 2px 6px rgba(0,0,0,0.3);">立即套用更新</button>
     <button onclick="document.getElementById('pwa-update-banner').style.display='none'" style="background:transparent; color:#cbd5e1; border:none; cursor:pointer; font-size:1.2rem; line-height:1; padding:0 4px;" title="稍後更新">&times;</button>
   </div>
 
@@ -735,6 +739,22 @@
     // ── PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
     let deferredInstallPrompt = null;
     const hadPriorController = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
+
+    function forcePwaUpdate() {
+      try {
+        if ('caches' in window) {
+          caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+        }
+      } catch(e){}
+      setTimeout(() => {
+        const u = new URL(window.location.href);
+        u.searchParams.set('_t', Date.now());
+        window.location.href = u.toString();
+      }, 300);
+    }
 
     function showPwaUpdateBanner() {
       const banner = document.getElementById('pwa-update-banner');
