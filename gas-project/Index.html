@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>🎯 班級智慧作業清點與催繳系統</title>
+  <title>班級智慧作業清點與催繳系統</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
@@ -893,8 +893,8 @@
 
   <header>
     <div class="header-title">
-      <span class="title-full">🎯 班級智慧作業清點與催繳系統</span>
-      <span class="title-short">🎯 作業清點</span>
+      <span class="title-full">班級智慧作業清點與催繳系統</span>
+      <span class="title-short">作業清點</span>
     </div>
     <div class="header-nav-box">
       <button id="btn-pwa-install" class="header-nav-btn nav-btn-scan" style="display:none;" onclick="triggerPwaInstall()">安裝</button>
@@ -908,8 +908,8 @@
   </header>
 
   <div class="view-switcher">
-    <button class="tab-btn active" onclick="switchView('check')">1. 🎯 純按鈕作業點收</button>
-    <button class="tab-btn" onclick="switchView('reminder')">2. 📊 缺交催繳矩陣</button>
+    <button class="tab-btn active" onclick="switchView('check')">1. 純按鈕作業點收</button>
+    <button class="tab-btn" onclick="switchView('reminder')">2. 缺交催繳清單</button>
   </div>
 
   <div class="container">
@@ -918,7 +918,7 @@
     <div class="view-panel active" id="view-check">
       <div class="form-card">
         <div class="form-group">
-          <label for="hw-subject">📚 科目</label>
+          <label for="hw-subject">科目</label>
           <select id="hw-subject" class="form-control" onchange="onSubjectChange()">
             <option value="" disabled selected>-- 請選擇科目 --</option>
             <option value="國語">國語</option>
@@ -933,17 +933,17 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="hw-category">📖 作業種類</label>
+          <label for="hw-category">作業種類</label>
           <select id="hw-category" class="form-control" onchange="onCategoryChange()">
             <option value="" disabled selected>-- 請先選科目 --</option>
           </select>
         </div>
         <div class="form-group">
-          <label for="hw-unit">📌 單元</label>
+          <label for="hw-unit">單元</label>
           <input type="text" id="hw-unit" class="form-control" placeholder="例: L3" onchange="saveHomeworkMeta()">
         </div>
         <div class="form-group">
-          <label for="hw-note">📝 備註</label>
+          <label for="hw-note">備註</label>
           <input type="text" id="hw-note" class="form-control" placeholder="備註說明" onchange="saveHomeworkMeta()">
         </div>
       </div>
@@ -992,8 +992,8 @@
     <div class="view-panel" id="view-reminder">
       <div style="background:var(--card-bg); border-radius:10px; padding:10px; border:1px solid #334155; display:flex; flex-direction:column; gap:10px;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <span style="font-weight:700; color:var(--accent-blue);">📊 全班未繳催繳矩陣列表</span>
-          <button onclick="loadReminderData()" style="background:#334155; color:#38bdf8; border:1px solid #475569; padding:4px 10px; border-radius:6px; font-weight:700; cursor:pointer;">🔄 重新整理</button>
+          <span style="font-weight:700; color:var(--accent-blue);">全班未繳催繳清單列表</span>
+          <button onclick="loadReminderData()" style="background:#334155; color:#38bdf8; border:1px solid #475569; padding:4px 10px; border-radius:6px; font-weight:700; cursor:pointer;">重新整理</button>
         </div>
 
         <!-- Subject Filter Bar -->
@@ -2063,7 +2063,11 @@
 
       let filteredRecords = cachedReminderRes.unsubmittedRecords;
       if (currentReminderSubject !== '全部') {
-        filteredRecords = filteredRecords.filter(r => r.assignment.subject === currentReminderSubject);
+        if (currentReminderSubject === '聯絡簿' || currentReminderSubject === '聯絡') {
+          filteredRecords = filteredRecords.filter(r => r.assignment.subject === '聯絡簿' || r.assignment.subject === '聯絡');
+        } else {
+          filteredRecords = filteredRecords.filter(r => r.assignment.subject === currentReminderSubject);
+        }
       }
 
       if (filteredRecords.length === 0) {

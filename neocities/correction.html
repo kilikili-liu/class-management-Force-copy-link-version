@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>✏️ 班級作業錯題訂正與銷案系統</title>
+  <title>班級作業錯題訂正與銷案系統</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
@@ -855,8 +855,8 @@
 
   <header>
     <div class="header-title">
-      <span class="title-full">✏️ 班級作業錯題訂正與銷案系統</span>
-      <span class="title-short">✏️ 錯題訂正</span>
+      <span class="title-full">班級作業錯題訂正與銷案系統</span>
+      <span class="title-short">錯題訂正</span>
     </div>
     <div class="header-nav-box">
       <button id="btn-pwa-install" class="header-nav-btn nav-btn-scan" style="display:none;" onclick="triggerPwaInstall()">安裝</button>
@@ -889,7 +889,7 @@
       <div class="controls-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="reg-subject">📚 科目</label>
+            <label for="reg-subject">科目</label>
             <select id="reg-subject" class="form-control" onchange="onSubjectChange()">
               <option value="" disabled selected>-- 請選擇科目 --</option>
               <option value="國語">國語</option>
@@ -903,22 +903,22 @@
             </select>
           </div>
           <div class="form-group">
-            <label for="reg-category">📖 作業種類</label>
+            <label for="reg-category">作業種類</label>
             <select id="reg-category" class="form-control" onchange="onCategoryChange()">
               <option value="" disabled selected>-- 請先選科目 --</option>
             </select>
           </div>
           <div class="form-group" style="grid-column: 1 / -1; min-width: 0;">
-            <label style="font-size:0.75rem; color:var(--text-sub); font-weight:600;">📌 作業說明與單元頁碼</label>
+            <label style="font-size:0.75rem; color:var(--text-sub); font-weight:600;">作業說明與單元頁碼</label>
             <div style="display:flex; align-items:center; gap:6px; min-width:0;">
               <span id="current-meta-text" style="font-size:0.82rem; color:#e2e8f0; font-weight:600; background:#0f172a; padding:5px 8px; border-radius:6px; border:1px solid #334155; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                📌 請先選擇科目與種類
+                請先選擇科目與種類
               </span>
               <button type="button" onclick="openOtherPageModal()" style="background:linear-gradient(135deg, #f97316, #ea580c); color:#fff; border:none; padding:5px 12px; border-radius:6px; font-size:0.82rem; font-weight:700; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:4px; flex-shrink:0; box-shadow:0 2px 6px rgba(249,115,22,0.3);">
-                📑 它頁
+                它頁
               </button>
               <button type="button" onclick="openMetaModal()" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:5px 10px; border-radius:6px; font-size:0.8rem; font-weight:700; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:4px; flex-shrink:0;">
-                ✏️ 編輯
+                編輯
               </button>
             </div>
           </div>
@@ -950,7 +950,7 @@
       <div id="reg-box-button" style="display:flex; flex-direction:column;">
         <div class="seat-grid-container">
           <div class="seat-grid-header">
-            <span>🎯 點擊座號按鈕登記【需訂正 (X)】：</span>
+            <span>點擊座號按鈕登記【需訂正 (X)】：</span>
             <span id="uncorrected-summary-badge" style="color:#f87171; font-weight:700;">載入中...</span>
           </div>
           <div class="seat-grid" id="seat-grid-register">
@@ -1647,7 +1647,7 @@
       const category = categoryEl ? categoryEl.value : '';
 
       if (!subject || !category) {
-        metaTextEl.innerHTML = '📌 請先選擇科目與種類';
+        metaTextEl.innerHTML = '請先選擇科目與種類';
         return;
       }
 
@@ -1670,11 +1670,11 @@
       const pageStr = displayPage ? ` (頁數: ${displayPage})` : '';
 
       if (displayUnit || displayPage) {
-        metaTextEl.innerHTML = `📌 ${dateBadge}${unitStr}${pageStr}`;
+        metaTextEl.innerHTML = `${dateBadge}${unitStr}${pageStr}`;
       } else if (existingAssign) {
-        metaTextEl.innerHTML = `📌 ${dateBadge}未命名單元`;
+        metaTextEl.innerHTML = `${dateBadge}未命名單元`;
       } else {
-        metaTextEl.innerHTML = '📌 尚未登記單元 (可按「它頁」選擇或直接點座號)';
+        metaTextEl.innerHTML = '尚未登記單元 (可按「它頁」選擇或直接點座號)';
       }
     }
 
