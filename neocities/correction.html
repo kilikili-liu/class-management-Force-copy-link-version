@@ -2582,7 +2582,8 @@
       filtered.forEach(r => {
         const tr = document.createElement('tr');
         const isPending = r.status === 'X';
-        const displayName = r.name ? `${r.seat}${r.name}` : `${r.seat}號`;
+        const stName = r.name || (matrixData.seatNames && matrixData.seatNames[r.seat]) || '';
+        const displayName = stName ? `${r.seat}${stName}` : `${r.seat}號`;
         tr.innerHTML = `
           <td><strong>${displayName}</strong></td>
           <td>${r.subject}</td>
