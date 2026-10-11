@@ -998,13 +998,14 @@ function getCorrectionMatrixData(params = {}) {
 
 function getStudentUncorrectedMatrix(seat) {
   const seatNum = parseInt(seat, 10);
-  if (isNaN(seatNum)) return { success: false, records: [] };
+  if (isNaN(seatNum)) return { success: false, records: [], name: '' };
 
   const seatStr = String(seatNum).padStart(2, '0');
   const matrixData = getCorrectionMatrixData();
   const studentRecords = (matrixData.records || []).filter(r => r.seat === seatStr && r.status === 'X');
+  const studentName = (matrixData.seatNames && matrixData.seatNames[seatStr]) || '';
 
-  return { success: true, seat: seatStr, records: studentRecords };
+  return { success: true, seat: seatStr, name: studentName, records: studentRecords };
 }
 
 function doScanRecordCorrection(params) {
