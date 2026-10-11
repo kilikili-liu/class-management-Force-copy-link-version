@@ -563,7 +563,7 @@
   <!-- 頂部 Header -->
   <header>
     <div class="header-title-box">
-      <div class="header-title">✏️ 訂正速掃</div>
+      <div class="header-title">訂正速掃</div>
       <button id="btn-mode-reg" class="header-mode-btn mode-reg active" onclick="setScanMode('register')">登記</button>
       <button id="btn-mode-clear" class="header-mode-btn mode-clear" onclick="setScanMode('clear')">銷案</button>
     </div>
@@ -587,7 +587,7 @@
         <div id="reader"></div>
         <div class="scanner-overlay">
           <div id="viewfinder" class="viewfinder-box status-register-effect"></div>
-          <div id="viewfinder-tip-txt" class="viewfinder-tip">🎯 作業本 QR碼 置於框內 登記錯題</div>
+          <div id="viewfinder-tip-txt" class="viewfinder-tip">作業本 QR碼 置於框內 登記錯題</div>
         </div>
       </div>
     </div>
@@ -1245,13 +1245,13 @@
         if (btnReg) btnReg.className = 'header-mode-btn mode-reg active';
         if (btnClear) btnClear.className = 'header-mode-btn mode-clear';
         if (vf) vf.className = 'viewfinder-box status-register-effect';
-        if (tip) tip.textContent = '🎯 作業本 QR碼 置於框內 登記錯題';
+        if (tip) tip.textContent = '作業本 QR碼 置於框內 登記錯題';
         showToast('已切換為：🟧 登記錯題模式 (標為 X)', 'orange');
       } else {
         if (btnReg) btnReg.className = 'header-mode-btn mode-reg';
         if (btnClear) btnClear.className = 'header-mode-btn mode-clear active';
         if (vf) vf.className = 'viewfinder-box status-clear-effect';
-        if (tip) tip.textContent = '🎯 作業本 QR碼 置於框內 錯題銷案';
+        if (tip) tip.textContent = '作業本 QR碼 置於框內 錯題銷案';
         showToast('已切換為：🟦 錯題銷案模式 (標為 O)', 'success');
       }
     }
@@ -1407,8 +1407,14 @@
       document.getElementById('stat-clean').textContent = `無錯題 ${statClean}`;
 
       if (currAssign) {
-        const detailStr = [currAssign.unit, currAssign.page].filter(Boolean).join(' | ');
-        document.getElementById('assign-subnote').textContent = detailStr ? `📌 ${detailStr}` : '';
+        let noteParts = [];
+        if (currAssign.unit) {
+          noteParts.push(`第${currAssign.unit}單元`);
+        }
+        if (currAssign.page) {
+          noteParts.push(`${currAssign.page}頁`);
+        }
+        document.getElementById('assign-subnote').textContent = noteParts.join(' ');
       } else {
         document.getElementById('assign-subnote').textContent = '';
       }
