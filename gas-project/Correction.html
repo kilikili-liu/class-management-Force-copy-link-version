@@ -1057,7 +1057,7 @@
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title" id="modal-title-text">
-          座號 05 號 — 選擇銷案訂正項目
+          05 號 — 選擇銷案訂正項目
         </div>
         <button class="modal-close" onclick="closeUncorrectedModal()">&times;</button>
       </div>
@@ -2405,14 +2405,14 @@
 
       const stName = studentName || (matrixData.seatNames && matrixData.seatNames[seatStr]) || '';
       const namePart = stName ? ` ${stName}` : '';
-      title.innerHTML = `座號 ${seatStr} 號${namePart} — 請選擇要註銷銷案的錯題 (X → O)`;
+      title.innerHTML = `${seatStr} 號${namePart} — 請選擇要註銷銷案的錯題 (X → O)`;
       listContainer.innerHTML = '';
 
       if (!records || records.length === 0) {
         listContainer.innerHTML = `
           <div style="text-align:center; padding:30px 10px; color:#4ade80;">
             <div style="font-size:2.5rem; margin-bottom:8px;">🟢</div>
-            <div style="font-size:1.05rem; font-weight:700;">讚！座號 ${seatStr} 號${namePart} 目前沒有任何待訂正項目</div>
+            <div style="font-size:1.05rem; font-weight:700;">讚！${seatStr} 號${namePart} 目前沒有任何待訂正項目</div>
           </div>
         `;
       } else {
