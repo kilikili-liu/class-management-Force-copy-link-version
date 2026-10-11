@@ -1034,7 +1034,7 @@
           <table>
             <thead>
               <tr>
-                <th style="width: 50px;">座號</th>
+                <th style="width: 85px;">座號姓名</th>
                 <th style="width: 65px;">科目</th>
                 <th style="width: 75px;">種類</th>
                 <th>單元 / 頁數</th>
@@ -2582,8 +2582,9 @@
       filtered.forEach(r => {
         const tr = document.createElement('tr');
         const isPending = r.status === 'X';
+        const displayName = r.name ? `${r.seat}${r.name}` : `${r.seat}號`;
         tr.innerHTML = `
-          <td><strong>${r.seat}</strong></td>
+          <td><strong>${displayName}</strong></td>
           <td>${r.subject}</td>
           <td>${r.category}</td>
           <td>${r.unit || '-'} ${r.page ? '(P.' + r.page + ')' : ''}</td>

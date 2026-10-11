@@ -488,9 +488,9 @@ function doScanRecord(payload) {
 function updateHomeworkMetadata(colIndex, unit, note, targetSheetName) {
   let sheet;
   let minCol = 3;
-  if (targetSheetName === 'matrix' || targetSheetName === 'correction' || targetSheetName === CORRECTION_MATRIX_TAB || colIndex === 2) {
+  if (targetSheetName === 'matrix' || targetSheetName === 'correction' || targetSheetName === CORRECTION_MATRIX_TAB) {
     sheet = getCorrectionMatrixSheet();
-    minCol = 2;
+    minCol = 3;
   } else {
     sheet = getHwSheet();
     minCol = 3;
@@ -603,17 +603,26 @@ function getCorrectionMatrixSheet() {
 
   const lastRow = sheet.getLastRow();
   if (lastRow < 5) {
-    sheet.getRange(1, 1, 5, 1).setValues([
-      ["日期"], ["科目"], ["種類"], ["單元"], ["頁數"]
-    ]).setFontWeight("bold").setBackground("#e2e8f0");
+    sheet.getRange(1, 1, 5, 2).setValues([
+      ["日期", ""], ["科目", ""], ["種類", ""], ["單元", ""], ["頁數", "姓名"]
+    ]).setFontWeight("bold").setBackground("#e2e8f0").setHorizontalAlignment("center");
   }
 
   if (sheet.getLastRow() < CLASS_SIZE + 5) {
-    const seatRows = [];
-    for (let i = 1; i <= CLASS_SIZE; i++) {
-      seatRows.push([String(i).padStart(2, '0')]);
+    const hwSheet = getHwSheet();
+    let studentNames = [];
+    if (hwSheet.getLastRow() >= 6) {
+      const numRows = Math.min(CLASS_SIZE, hwSheet.getLastRow() - 5);
+      studentNames = hwSheet.getRange(6, 2, numRows, 1).getDisplayValues();
     }
-    sheet.getRange(6, 1, CLASS_SIZE, 1).setValues(seatRows).setFontWeight("bold").setHorizontalAlignment("center");
+    const studentRows = [];
+    for (let i = 1; i <= CLASS_SIZE; i++) {
+      const seatStr = String(i).padStart(2, '0');
+      const name = (studentNames[i - 1] && studentNames[i - 1][0]) ? studentNames[i - 1][0] : '';
+      studentRows.push([seatStr, name]);
+    }
+    sheet.getRange(6, 1, CLASS_SIZE, 2).setValues(studentRows).setHorizontalAlignment("center");
+    sheet.getRange(6, 1, CLASS_SIZE, 1).setFontWeight("bold");
   }
 
   return sheet;
@@ -667,16 +676,16 @@ function getCheckinAssignmentsList(targetSubject, targetCategory) {
 }
 
 function findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page) {
-  const lastCol = Math.max(sheet.getLastColumn(), 1);
+  const lastCol = sheet.getLastColumn();
   const targetSub = String(subject || '').trim();
   const targetCat = String(category || '').trim();
   const targetUnit = String(unit || '').trim();
   const targetPage = String(page || '').trim();
   let targetDate = normalizeDateString(date || '');
 
-  // 1. 若有指定單元或頁數，優先比對「科目 + 種類 + 單元 + 頁數」
-  if (lastCol > 1) {
-    const headerValues = sheet.getRange(1, 2, 5, lastCol - 1).getDisplayValues();
+  // 1. 若有指定單元或頁數，優先比對「科目 + 種類 + 單元 + 頁數」（從第 3 欄 / C 欄開始為作業）
+  if (lastCol >= 3) {
+    const headerValues = sheet.getRange(1, 3, 5, lastCol - 2).getDisplayValues();
 
     if (targetUnit || targetPage) {
       for (let c = 0; c < headerValues[0].length; c++) {
@@ -686,7 +695,7 @@ function findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page
         const hPage = String(headerValues[4][c] || '').trim();
 
         if (hSub === targetSub && hCat === targetCat && hUnit === targetUnit && hPage === targetPage) {
-          return c + 2;
+          return c + 3;
         }
       }
     }
@@ -698,7 +707,7 @@ function findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page
         const hSub = String(headerValues[1][c] || '').trim();
         const hCat = String(headerValues[2][c] || '').trim();
         if (hSub === targetSub && hCat === targetCat && hDate === targetDate) {
-          return c + 2;
+          return c + 3;
         }
       }
     }
@@ -712,12 +721,12 @@ function findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page
 
       if (hSub === targetSub && hCat === targetCat && !hUnit && !hPage) {
         if (targetUnit || targetPage) {
-          sheet.getRange(4, c + 2, 2, 1).setValues([[targetUnit], [targetPage]]);
+          sheet.getRange(4, c + 3, 2, 1).setValues([[targetUnit], [targetPage]]);
         }
         if (targetDate) {
-          sheet.getRange(1, c + 2).setValue(targetDate);
+          sheet.getRange(1, c + 3).setValue(targetDate);
         }
-        return c + 2;
+        return c + 3;
       }
     }
   }
@@ -731,9 +740,9 @@ function findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page
     }
   }
 
-  // 4. 若訂正分頁完全無匹配欄位，則新增一欄（對齊清點日期與單元頁數）
+  // 4. 若訂正分頁完全無匹配欄位，則新增一欄（C 欄起算）
   const finalDate = targetDate || getTodayString();
-  const newCol = lastCol + 1;
+  const newCol = Math.max(lastCol + 1, 3);
   sheet.getRange(1, newCol, 5, 1).setValues([
     [finalDate], [targetSub], [targetCat], [targetUnit], [targetPage]
   ]).setFontWeight("bold").setHorizontalAlignment("center").setBackground("#f1f5f9");
@@ -792,7 +801,7 @@ function addCorrectionRecordMatrix(params) {
 
   const sheet = getCorrectionMatrixSheet();
   let colIndex = parseInt(params.colIndex, 10);
-  if (isNaN(colIndex) || colIndex < 2) {
+  if (isNaN(colIndex) || colIndex < 3) {
     colIndex = findOrCreateAssignmentColumn(sheet, date, subject, category, unit, page);
   }
 
@@ -877,7 +886,7 @@ function updateCorrectionMatrixCell(params) {
   if (isNaN(seatNum) || seatNum < 1 || seatNum > 30) {
     return { success: false, message: '無效座號: ' + params.seat };
   }
-  if (isNaN(colIndex) || colIndex < 2) {
+  if (isNaN(colIndex) || colIndex < 3) {
     return { success: false, message: '無效欄位: ' + params.colIndex };
   }
 
@@ -899,14 +908,14 @@ function getCorrectionMatrixData(params = {}) {
   const lastCol = sheet.getLastColumn();
   const lastRow = Math.max(sheet.getLastRow(), 30);
 
-  if (lastCol < 2) {
-    return { success: true, assignments: [], seatSummary: {}, records: [] };
+  if (lastCol < 3) {
+    return { success: true, assignments: [], seatSummary: {}, records: [], seatNames: {} };
   }
 
   const gridValues = sheet.getRange(1, 1, lastRow, lastCol).getDisplayValues();
   const assignments = [];
 
-  for (let c = 1; c < lastCol; c++) {
+  for (let c = 2; c < lastCol; c++) {
     const sub = gridValues[1][c] || '';
     const cat = gridValues[2][c] || '';
     if (!sub && !cat) continue;
@@ -923,17 +932,27 @@ function getCorrectionMatrixData(params = {}) {
 
   const seatSummary = {};
   const records = [];
+  const seatNames = {};
 
-  // 讀取座號欄以判斷空號（訂正矩陣第 1 欄為座號，但姓名需從作業工作表取得）
-  // 使用作業工作表的姓名欄來判斷空號
+  // 讀取學生姓名與空號判斷：優先從「作業訂正矩陣」第 2 欄 (B 欄) 讀取，若無則從「工作表1」讀取
   const hwSheet = getHwSheet();
   const vacantSeatNums = [];
-  if (hwSheet.getLastRow() >= 6) {
+  let nameData = [];
+  if (sheet.getLastRow() >= 6) {
+    const numRows = Math.min(CLASS_SIZE, sheet.getLastRow() - 5);
+    nameData = sheet.getRange(6, 2, numRows, 1).getDisplayValues();
+  }
+  // 若訂正矩陣 B 欄尚未填寫姓名，備援自工作表1讀取
+  if ((!nameData.length || !nameData.some(r => r[0])) && hwSheet.getLastRow() >= 6) {
     const numRows = Math.min(CLASS_SIZE, hwSheet.getLastRow() - 5);
-    const nameData = hwSheet.getRange(6, 2, numRows, 1).getDisplayValues();
-    for (let i = 0; i < numRows; i++) {
-      if (isVacantSeat(nameData[i][0])) vacantSeatNums.push(i + 1);
-    }
+    nameData = hwSheet.getRange(6, 2, numRows, 1).getDisplayValues();
+  }
+
+  for (let i = 0; i < CLASS_SIZE; i++) {
+    const seatStr = String(i + 1).padStart(2, '0');
+    const name = (nameData[i] && nameData[i][0]) ? String(nameData[i][0]).trim() : '';
+    seatNames[seatStr] = name;
+    if (isVacantSeat(name)) vacantSeatNums.push(i + 1);
   }
 
   for (let s = 1; s <= CLASS_SIZE; s++) {
@@ -942,7 +961,7 @@ function getCorrectionMatrixData(params = {}) {
     const rIndex = 5 + (s - 1);
     let uncorrectedCount = 0;
 
-    for (let c = 1; c < lastCol; c++) {
+    for (let c = 2; c < lastCol; c++) {
       const val = String(gridValues[rIndex][c] || '').trim().toUpperCase();
       if (val === 'X') {
         uncorrectedCount++;
@@ -957,6 +976,7 @@ function getCorrectionMatrixData(params = {}) {
           unit: gridValues[3][c] || '',
           page: gridValues[4][c] || '',
           seat: seatStr,
+          name: seatNames[seatStr] || '',
           status: val
         });
       }
@@ -971,6 +991,7 @@ function getCorrectionMatrixData(params = {}) {
     seatSummary: seatSummary,
     records: records,
     vacantSeats: vacantSeatNums,
+    seatNames: seatNames,
     checkinAssignments: getCheckinAssignmentsList()
   };
 }
@@ -1372,16 +1393,16 @@ function getGradingData(params) {
   let matrixVals = [];
   if (activeAssignment) {
     const mLastCol = matrixSheet.getLastColumn();
-    if (mLastCol >= 2) {
-      const mHeaders = matrixSheet.getRange(1, 2, 5, mLastCol - 1).getDisplayValues();
+    if (mLastCol >= 3) {
+      const mHeaders = matrixSheet.getRange(1, 3, 5, mLastCol - 2).getDisplayValues();
       for (let c = 0; c < mHeaders[0].length; c++) {
         if (mHeaders[1][c] === subject && mHeaders[2][c] === category &&
             mHeaders[3][c] === activeAssignment.unit && mHeaders[4][c] === activeAssignment.page) {
-          matrixCol = c + 2;
+          matrixCol = c + 3;
           break;
         }
       }
-      if (matrixCol >= 2 && matrixSheet.getLastRow() >= 6) {
+      if (matrixCol >= 3 && matrixSheet.getLastRow() >= 6) {
         matrixVals = matrixSheet.getRange(6, matrixCol, CLASS_SIZE, 1).getDisplayValues();
       }
     }
