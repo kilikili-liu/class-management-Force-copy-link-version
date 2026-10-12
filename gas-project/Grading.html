@@ -768,7 +768,337 @@
 
     <!-- 📋 左側：30 座號矩陣區 -->
     <div class="seat-grid-container" id="seat-grid">
-      <!-- 由 JavaScript 動態生成 30 個 seat-card -->
+      <div id="seat-card-1" class="seat-card ungraded selected" onclick="onSeatCardClick(1)">
+        <div class="seat-header">
+          <span class="seat-num">01</span>
+          <span class="seat-name" id="seat-name-1">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-1">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-1" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-1" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-2" class="seat-card ungraded" onclick="onSeatCardClick(2)">
+        <div class="seat-header">
+          <span class="seat-num">02</span>
+          <span class="seat-name" id="seat-name-2">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-2">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-2" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-2" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-3" class="seat-card ungraded" onclick="onSeatCardClick(3)">
+        <div class="seat-header">
+          <span class="seat-num">03</span>
+          <span class="seat-name" id="seat-name-3">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-3">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-3" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-3" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-4" class="seat-card ungraded" onclick="onSeatCardClick(4)">
+        <div class="seat-header">
+          <span class="seat-num">04</span>
+          <span class="seat-name" id="seat-name-4">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-4">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-4" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-4" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-5" class="seat-card ungraded" onclick="onSeatCardClick(5)">
+        <div class="seat-header">
+          <span class="seat-num">05</span>
+          <span class="seat-name" id="seat-name-5">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-5">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-5" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-5" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-6" class="seat-card ungraded" onclick="onSeatCardClick(6)">
+        <div class="seat-header">
+          <span class="seat-num">06</span>
+          <span class="seat-name" id="seat-name-6">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-6">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-6" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-6" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-7" class="seat-card ungraded" onclick="onSeatCardClick(7)">
+        <div class="seat-header">
+          <span class="seat-num">07</span>
+          <span class="seat-name" id="seat-name-7">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-7">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-7" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-7" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-8" class="seat-card ungraded" onclick="onSeatCardClick(8)">
+        <div class="seat-header">
+          <span class="seat-num">08</span>
+          <span class="seat-name" id="seat-name-8">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-8">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-8" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-8" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-9" class="seat-card ungraded" onclick="onSeatCardClick(9)">
+        <div class="seat-header">
+          <span class="seat-num">09</span>
+          <span class="seat-name" id="seat-name-9">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-9">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-9" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-9" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-10" class="seat-card ungraded" onclick="onSeatCardClick(10)">
+        <div class="seat-header">
+          <span class="seat-num">10</span>
+          <span class="seat-name" id="seat-name-10">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-10">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-10" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-10" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-11" class="seat-card ungraded" onclick="onSeatCardClick(11)">
+        <div class="seat-header">
+          <span class="seat-num">11</span>
+          <span class="seat-name" id="seat-name-11">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-11">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-11" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-11" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-12" class="seat-card ungraded" onclick="onSeatCardClick(12)">
+        <div class="seat-header">
+          <span class="seat-num">12</span>
+          <span class="seat-name" id="seat-name-12">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-12">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-12" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-12" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-13" class="seat-card ungraded" onclick="onSeatCardClick(13)">
+        <div class="seat-header">
+          <span class="seat-num">13</span>
+          <span class="seat-name" id="seat-name-13">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-13">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-13" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-13" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-14" class="seat-card ungraded" onclick="onSeatCardClick(14)">
+        <div class="seat-header">
+          <span class="seat-num">14</span>
+          <span class="seat-name" id="seat-name-14">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-14">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-14" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-14" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-15" class="seat-card ungraded" onclick="onSeatCardClick(15)">
+        <div class="seat-header">
+          <span class="seat-num">15</span>
+          <span class="seat-name" id="seat-name-15">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-15">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-15" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-15" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-16" class="seat-card ungraded" onclick="onSeatCardClick(16)">
+        <div class="seat-header">
+          <span class="seat-num">16</span>
+          <span class="seat-name" id="seat-name-16">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-16">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-16" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-16" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-17" class="seat-card ungraded" onclick="onSeatCardClick(17)">
+        <div class="seat-header">
+          <span class="seat-num">17</span>
+          <span class="seat-name" id="seat-name-17">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-17">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-17" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-17" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-18" class="seat-card ungraded" onclick="onSeatCardClick(18)">
+        <div class="seat-header">
+          <span class="seat-num">18</span>
+          <span class="seat-name" id="seat-name-18">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-18">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-18" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-18" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-19" class="seat-card ungraded" onclick="onSeatCardClick(19)">
+        <div class="seat-header">
+          <span class="seat-num">19</span>
+          <span class="seat-name" id="seat-name-19">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-19">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-19" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-19" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-20" class="seat-card ungraded" onclick="onSeatCardClick(20)">
+        <div class="seat-header">
+          <span class="seat-num">20</span>
+          <span class="seat-name" id="seat-name-20">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-20">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-20" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-20" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-21" class="seat-card ungraded" onclick="onSeatCardClick(21)">
+        <div class="seat-header">
+          <span class="seat-num">21</span>
+          <span class="seat-name" id="seat-name-21">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-21">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-21" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-21" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-22" class="seat-card ungraded" onclick="onSeatCardClick(22)">
+        <div class="seat-header">
+          <span class="seat-num">22</span>
+          <span class="seat-name" id="seat-name-22">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-22">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-22" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-22" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-23" class="seat-card ungraded" onclick="onSeatCardClick(23)">
+        <div class="seat-header">
+          <span class="seat-num">23</span>
+          <span class="seat-name" id="seat-name-23">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-23">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-23" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-23" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-24" class="seat-card ungraded" onclick="onSeatCardClick(24)">
+        <div class="seat-header">
+          <span class="seat-num">24</span>
+          <span class="seat-name" id="seat-name-24">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-24">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-24" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-24" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-25" class="seat-card ungraded" onclick="onSeatCardClick(25)">
+        <div class="seat-header">
+          <span class="seat-num">25</span>
+          <span class="seat-name" id="seat-name-25">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-25">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-25" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-25" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-26" class="seat-card ungraded" onclick="onSeatCardClick(26)">
+        <div class="seat-header">
+          <span class="seat-num">26</span>
+          <span class="seat-name" id="seat-name-26">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-26">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-26" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-26" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-27" class="seat-card ungraded" onclick="onSeatCardClick(27)">
+        <div class="seat-header">
+          <span class="seat-num">27</span>
+          <span class="seat-name" id="seat-name-27">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-27">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-27" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-27" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-28" class="seat-card ungraded" onclick="onSeatCardClick(28)">
+        <div class="seat-header">
+          <span class="seat-num">28</span>
+          <span class="seat-name" id="seat-name-28">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-28">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-28" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-28" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-29" class="seat-card ungraded" onclick="onSeatCardClick(29)">
+        <div class="seat-header">
+          <span class="seat-num">29</span>
+          <span class="seat-name" id="seat-name-29">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-29">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-29" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-29" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+      <div id="seat-card-30" class="seat-card ungraded" onclick="onSeatCardClick(30)">
+        <div class="seat-header">
+          <span class="seat-num">30</span>
+          <span class="seat-name" id="seat-name-30">載入中...</span>
+        </div>
+        <div class="seat-score empty" id="seat-score-30">--</div>
+        <div class="seat-footer">
+          <div class="status-dot" id="dot-chk-30" title="清點繳交狀態"></div>
+          <div class="status-dot" id="dot-cor-30" title="錯題訂正狀態"></div>
+        </div>
+      </div>
+
     </div>
 
     <!-- ✍️ 右側：左手操作評分控制台 -->
@@ -961,6 +1291,9 @@
       if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
         return `https://script.google.com/macros/s/${clean}/exec`;
       }
+      if (typeof location !== 'undefined' && location.href && location.href.includes('/a/')) {
+        return clean.trim();
+      }
       return clean.replace(/https?:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
     }
 
@@ -984,7 +1317,7 @@
       if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
         return cleanGasUrl(location.href.split('?')[0]);
       }
-      if (document.referrer && document.referrer.includes('script.google.com/macros/s/')) {
+      if (document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
         const cleanRef = cleanGasUrl(document.referrer.split('?')[0]);
         try {
           localStorage.setItem('class_management_gas_api_url', cleanRef);
@@ -1012,9 +1345,44 @@
     async function gasApi(action, params = {}) {
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         return new Promise((resolve, reject) => {
+          let isSettled = false;
+          const timer = setTimeout(() => {
+            if (!isSettled) {
+              isSettled = true;
+              console.warn('[gasApi] google.script.run ' + action + ' 逾時，嘗試降級至 HTTP/JSONP 備援');
+              fallbackToJsonp();
+            }
+          }, 15000);
+
+          function fallbackToJsonp() {
+            const apiUrl = GAS_API_URL || getGasApiUrl();
+            if (apiUrl) {
+              const url = new URL(cleanGasUrl(apiUrl));
+              url.searchParams.set('action', action);
+              for (const [k, v] of Object.entries(params)) {
+                url.searchParams.set(k, v);
+              }
+              const retries = (action === 'getGradingData' || action === 'initAllScoreSheets') ? 1 : 0;
+              gasApiFetch(url.toString(), retries, 25000).then(resolve).catch(reject);
+            } else {
+              reject(new Error('伺服器執行異常且無備援 API 連線網址'));
+            }
+          }
+
           google.script.run
-            .withSuccessHandler(res => resolve(res))
-            .withFailureHandler(err => reject(err))
+            .withSuccessHandler(res => {
+              if (isSettled) return;
+              isSettled = true;
+              clearTimeout(timer);
+              resolve(res);
+            })
+            .withFailureHandler(err => {
+              if (isSettled) return;
+              isSettled = true;
+              clearTimeout(timer);
+              console.warn('[gasApi] google.script.run ' + action + ' 失敗，嘗試降級:', err);
+              fallbackToJsonp();
+            })
             .handleScannerApiAction(action, params);
         });
       } else {
@@ -1114,12 +1482,18 @@
     }
 
     // ── 初始化 ──
-    document.addEventListener('DOMContentLoaded', () => {
+    function startGradingApp() {
       loadSavedPresets();
       initSeatGridUI();
       fetchGradingData();
       adaptInternalLinks();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startGradingApp);
+    } else {
+      startGradingApp();
+    }
 
     function loadSavedPresets() {
       try {
@@ -1130,6 +1504,8 @@
 
     function initSeatGridUI() {
       const container = document.getElementById('seat-grid');
+      if (!container) return;
+      if (container.children.length === 30) return;
       container.innerHTML = '';
       for (let s = 1; s <= 30; s++) {
         const seatStr = String(s).padStart(2, '0');
@@ -1713,7 +2089,7 @@
       let baseGas = '';
       if (location.hostname.includes('script.google.com')) {
         baseGas = location.href.split('?')[0];
-      } else if (document.referrer && document.referrer.includes('script.google.com/macros/s/')) {
+      } else if (document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
         baseGas = document.referrer.split('?')[0];
       } else if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL.includes('script.google.com')) {
         baseGas = window._GAS_WEBAPP_URL;
