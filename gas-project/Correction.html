@@ -1305,7 +1305,7 @@
         try {
           return await singleGasApiFetch(url, timeoutMs);
         } catch (err) {
-          console.warn(`[GAS API] 第 ${attempt + 1} 次連線失敗: ${err.message}`);
+          console.warn('[GAS API] 第 ' + (attempt + 1) + ' 次連線失敗: ' + (err ? err.message : ''));
           if (attempt < retries) {
             // 重試前等待 1 秒（喚醒 GAS 冷啟動容器）
             await new Promise(r => setTimeout(r, 1000));

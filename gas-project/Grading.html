@@ -1314,7 +1314,7 @@
         if (clean.includes('%3A') || clean.includes('%2F')) clean = decodeURIComponent(clean);
       } catch(e){}
       if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
-        return `https://script.google.com/macros/s/${clean}/exec`;
+        return 'https://script.google.com/macros/s/' + clean + '/exec';
       }
       return clean.split('?')[0].trim();
     }
@@ -1410,7 +1410,7 @@
         try {
           return await singleGasApiFetch(url, timeoutMs);
         } catch (err) {
-          console.warn(`[GAS API] 第 ${attempt + 1} 次連線失敗: ${err.message}`);
+          console.warn('[GAS API] 第 ' + (attempt + 1) + ' 次連線失敗: ' + (err ? err.message : ''));
           if (attempt < retries) {
             await new Promise(r => setTimeout(r, 1200));
           } else {
@@ -1517,20 +1517,19 @@
       for (let s = 1; s <= 30; s++) {
         const seatStr = String(s).padStart(2, '0');
         const div = document.createElement('div');
-        div.id = `seat-card-${s}`;
-        div.className = `seat-card ungraded ${s === selectedSeat ? 'selected' : ''}`;
+        div.id = 'seat-card-' + s;
+        div.className = 'seat-card ungraded ' + (s === selectedSeat ? 'selected' : '');
         div.onclick = () => onSeatCardClick(s);
-        div.innerHTML = `
-          <div class="seat-header">
-            <span class="seat-num">${seatStr}</span>
-            <span class="seat-name" id="seat-name-${s}">載入中...</span>
-          </div>
-          <div class="seat-score empty" id="seat-score-${s}">--</div>
-          <div class="seat-footer">
-            <div class="status-dot" id="dot-chk-${s}" title="清點繳交狀態"></div>
-            <div class="status-dot" id="dot-cor-${s}" title="錯題訂正狀態"></div>
-          </div>
-        `;
+        div.innerHTML =
+          '<div class="seat-header">' +
+            '<span class="seat-num">' + seatStr + '</span>' +
+            '<span class="seat-name" id="seat-name-' + s + '">載入中...</span>' +
+          '</div>' +
+          '<div class="seat-score empty" id="seat-score-' + s + '">--</div>' +
+          '<div class="seat-footer">' +
+            '<div class="status-dot" id="dot-chk-' + s + '" title="清點繳交狀態"></div>' +
+            '<div class="status-dot" id="dot-cor-' + s + '" title="錯題訂正狀態"></div>' +
+          '</div>';
         container.appendChild(div);
       }
     }
@@ -1553,7 +1552,7 @@
           renderHeaderMeta();
           renderAllSeats();
           updateSelectedStudentDisplay();
-          showToast(`🟢 已載入【${currentSheetName}】批改資料`, 'success');
+          showToast('🟢 已載入【' + currentSheetName + '】批改資料', 'success');
         } else {
           if (res && res.message && res.message.includes('未知的 API 動作')) {
             showToast('⚠️ 目前綁定的試算表尚未發布最新評分程式，請至該試算表「擴充功能 > Apps Script > 管理部署」發布新版本', 'orange');
@@ -1597,11 +1596,11 @@
 
       gradingDataCache.students.forEach(st => {
         const s = parseInt(st.seat, 10);
-        const card = document.getElementById(`seat-card-${s}`);
-        const nameEl = document.getElementById(`seat-name-${s}`);
-        const scoreEl = document.getElementById(`seat-score-${s}`);
-        const dotChk = document.getElementById(`dot-chk-${s}`);
-        const dotCor = document.getElementById(`dot-cor-${s}`);
+        const card = document.getElementById('seat-card-' + s);
+        const nameEl = document.getElementById('seat-name-' + s);
+        const scoreEl = document.getElementById('seat-score-' + s);
+        const dotChk = document.getElementById('dot-chk-' + s);
+        const dotCor = document.getElementById('dot-cor-' + s);
 
         if (!card) return;
 
@@ -1619,11 +1618,11 @@
         if (st.score && st.score !== '--') {
           scoreEl.textContent = st.score;
           scoreEl.className = 'seat-score';
-          card.className = `seat-card graded ${s === selectedSeat ? 'selected' : ''}`;
+          card.className = 'seat-card graded ' + (s === selectedSeat ? 'selected' : '');
         } else {
           scoreEl.textContent = '--';
           scoreEl.className = 'seat-score empty';
-          card.className = `seat-card ungraded ${s === selectedSeat ? 'selected' : ''}`;
+          card.className = 'seat-card ungraded ' + (s === selectedSeat ? 'selected' : '');
         }
 
         // 左燈：繳交狀態 (綠燈 1 / 灰燈)
@@ -1642,7 +1641,7 @@
 
     // ── 座號點選與自動儲存 ──
     async function onSeatCardClick(seatNum) {
-      const st = gradingDataCache?.students?.find(x => parseInt(x.seat, 10) === seatNum);
+      const st = (gradingDataCache && gradingDataCache.students) ? gradingDataCache.students.find(x => parseInt(x.seat, 10) === seatNum) : null;
       if (st && isStudentVacant(st)) return;
       if (seatNum === selectedSeat) return;
       triggerFeedback('light');
@@ -1661,7 +1660,7 @@
 
       // 更新卡片選中外框並自動滾動至可見區域
       for (let s = 1; s <= 30; s++) {
-        const card = document.getElementById(`seat-card-${s}`);
+        const card = document.getElementById('seat-card-' + s);
         if (!card) continue;
         if (s === selectedSeat) {
           card.classList.add('selected');
@@ -1702,7 +1701,7 @@
       }
 
       const seatStr = String(selectedSeat).padStart(2, '0');
-      infoEl.textContent = `${seatStr} 號  ${name}`;
+      infoEl.textContent = seatStr + ' 號  ' + name;
 
       const displayScore = currentInputScore !== "" ? currentInputScore : score;
 
@@ -1721,7 +1720,7 @@
       const num = parseFloat(val);
       if (isNaN(num)) return val;
       for (const [grade, target] of Object.entries(gradePresets)) {
-        if (num === target) return `【${grade}】`;
+        if (num === target) return '【' + grade + '】';
       }
       if (num >= 98) return '【甲上上】';
       if (num >= 95) return '【甲上】';
@@ -1730,7 +1729,7 @@
       if (num >= 79) return '【乙上】';
       if (num >= 75) return '【乙】';
       if (num >= 70) return '【乙下】';
-      return `【${val}分】`;
+      return '【' + val + '分】';
     }
 
     // ── 等第與數字鍵盤操作 ──
@@ -1764,7 +1763,7 @@
       updateCorrectionBtnUI();
 
       // 若目前已有分數，切換需訂正直接同步儲存
-      const score = currentInputScore || (gradingDataCache?.students?.find(x => parseInt(x.seat,10) === selectedSeat)?.score);
+      const score = currentInputScore || ((gradingDataCache && gradingDataCache.students) ? (gradingDataCache.students.find(x => parseInt(x.seat,10) === selectedSeat) || {}).score : null);
       if (score) {
         submitCurrentScore(false);
       }
@@ -1831,7 +1830,7 @@
           renderAllSeats();
           updateSelectedStudentDisplay();
 
-          let msg = res.message || `已登記 ${seatStr}號 【${scoreToSave}分】`;
+          let msg = res.message || ('已登記 ' + seatStr + '號 【' + scoreToSave + '分】');
           showToast(msg, 'success');
 
           // 自動跳號判斷
@@ -1859,7 +1858,7 @@
       let count = 0;
       while (count < 30) {
         if (next > 30) next = 1;
-        const st = gradingDataCache?.students?.find(x => parseInt(x.seat, 10) === next);
+        const st = (gradingDataCache && gradingDataCache.students) ? gradingDataCache.students.find(x => parseInt(x.seat, 10) === next) : null;
         if (st && !isStudentVacant(st)) {
           selectSeat(next);
           return;
@@ -1887,7 +1886,7 @@
       const listEl = document.getElementById('other-page-list');
       const titleEl = document.getElementById('other-page-title');
 
-      titleEl.textContent = `選擇【${currentSheetName}】單元與頁數`;
+      titleEl.textContent = '選擇【' + currentSheetName + '】單元與頁數';
       listEl.innerHTML = '';
 
       const checkinList = gradingDataCache ? (gradingDataCache.checkinAssignments || []) : [];
@@ -1899,17 +1898,15 @@
         // 優先顯示清點表的收繳紀錄（依日期排列）
         checkinList.forEach(item => {
           const card = document.createElement('div');
-          const isCurr = gradingDataCache?.currentAssignment?.unit === item.unit &&
-                         gradingDataCache?.currentAssignment?.page === item.page;
-          card.className = `opt-card ${isCurr ? 'active' : ''}`;
+          const isCurr = (gradingDataCache && gradingDataCache.currentAssignment && gradingDataCache.currentAssignment.unit === item.unit && gradingDataCache.currentAssignment.page === item.page);
+          card.className = 'opt-card ' + (isCurr ? 'active' : '');
           card.onclick = () => selectCheckinAssignment(item);
-          card.innerHTML = `
-            <div>
-              <span style="font-weight:800; color:#38bdf8; font-size:0.95rem;">單元: ${item.unit || '(未填)'}</span>
-              <span style="color:#cbd5e1; font-size:0.85rem; margin-left:8px;">頁數: ${item.page || '(未填)'}</span>
-            </div>
-            <div style="font-size:0.8rem; color:#facc15; font-weight:700;">${item.date || ''}</div>
-          `;
+          card.innerHTML =
+            '<div>' +
+              '<span style="font-weight:800; color:#38bdf8; font-size:0.95rem;">單元: ' + (item.unit || '(未填)') + '</span>' +
+              '<span style="color:#cbd5e1; font-size:0.85rem; margin-left:8px;">頁數: ' + (item.page || '(未填)') + '</span>' +
+            '</div>' +
+            '<div style="font-size:0.8rem; color:#facc15; font-weight:700;">' + (item.date || '') + '</div>';
           listEl.appendChild(card);
         });
       }
@@ -1923,7 +1920,7 @@
 
     async function selectCheckinAssignment(item) {
       closeOtherPageModal();
-      showToast(`⏳ 正在切換至【單元: ${item.unit} 頁數: ${item.page}】...`, 'info');
+      showToast('⏳ 正在切換至【單元: ' + item.unit + ' 頁數: ' + item.page + '】...', 'info');
       await fetchGradingData(null);
       // 比對並選中該作業
       const matched = gradingDataCache.assignments.find(a => a.unit === item.unit && a.page === item.page);
@@ -1975,7 +1972,7 @@
           page: page
         });
         if (res && res.success) {
-          showToast(`🟢 ${res.message}`, 'success');
+          showToast('🟢 ' + (res ? res.message : ''), 'success');
           await fetchGradingData(res.colIndex);
         } else {
           showToast('❌ 建立失敗: ' + (res ? res.message : ''), 'error');
@@ -1992,10 +1989,9 @@
       for (const [grade, score] of Object.entries(gradePresets)) {
         const row = document.createElement('div');
         row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:4px 0;';
-        row.innerHTML = `
-          <span style="font-weight:700; color:#38bdf8; font-size:0.95rem;">${grade}</span>
-          <input type="number" id="preset-${grade}" value="${score}" style="background:#1e293b; border:1px solid #475569; color:#fff; width:80px; padding:4px 8px; border-radius:6px; font-weight:800; text-align:center;">
-        `;
+        row.innerHTML =
+          '<span style="font-weight:700; color:#38bdf8; font-size:0.95rem;">' + grade + '</span>' +
+          '<input type="number" id="preset-' + grade + '" value="' + score + '" style="background:#1e293b; border:1px solid #475569; color:#fff; width:80px; padding:4px 8px; border-radius:6px; font-weight:800; text-align:center;">';
         container.appendChild(row);
       }
       document.getElementById('settings-modal').classList.remove('hidden');
@@ -2014,7 +2010,7 @@
     async function savePresetsSettings() {
       const updated = {};
       for (const grade of Object.keys(DEFAULT_PRESETS)) {
-        const input = document.getElementById(`preset-${grade}`);
+        const input = document.getElementById('preset-' + grade);
         if (input) {
           const val = parseFloat(input.value);
           updated[grade] = isNaN(val) ? DEFAULT_PRESETS[grade] : val;
@@ -2072,7 +2068,7 @@
     // ── 工具函式 ──
     function showToast(msg, type = 'success') {
       const banner = document.getElementById('toast-banner');
-      banner.className = `toast-banner ${type}`;
+      banner.className = 'toast-banner ' + type;
       banner.textContent = msg;
       banner.style.display = 'block';
       setTimeout(() => { banner.style.display = 'none'; }, 3000);
@@ -2103,16 +2099,16 @@
 
       if (base && base.includes('script.google.com')) {
         const clean = cleanGasUrl(base);
-        const targetUrl = (pageName === 'index' || !pageName) ? clean : `${clean}?page=${pageName}`;
+        const targetUrl = (pageName === 'index' || !pageName) ? clean : (clean + '?page=' + pageName);
         try {
           window.top.location.href = targetUrl;
         } catch(e) {
           window.location.href = targetUrl;
         }
       } else {
-        const targetFile = (pageName === 'index' || !pageName) ? 'index.html' : `${pageName}.html`;
-        const apiParam = base ? `?api_url=${encodeURIComponent(cleanGasUrl(base))}` : '';
-        window.location.href = `${targetFile}${apiParam}`;
+        const targetFile = (pageName === 'index' || !pageName) ? 'index.html' : (pageName + '.html');
+        const apiParam = base ? ('?api_url=' + encodeURIComponent(cleanGasUrl(base))) : '';
+        window.location.href = targetFile + apiParam;
       }
     }
 
@@ -2140,14 +2136,14 @@
       const linkCor = document.getElementById('link-correction');
       const linkIdx = document.getElementById('link-index');
       if (linkCor) {
-        linkCor.href = `${baseGas}?page=correction`;
+        linkCor.href = baseGas + '?page=correction';
         linkCor.target = '_top';
-        linkCor.onclick = (e) => { e.preventDefault(); try { window.top.location.href = `${baseGas}?page=correction`; } catch(err) { window.location.href = `${baseGas}?page=correction`; } };
+        linkCor.onclick = (e) => { e.preventDefault(); try { window.top.location.href = baseGas + '?page=correction'; } catch(err) { window.location.href = baseGas + '?page=correction'; } };
       }
       if (linkIdx) {
-        linkIdx.href = `${baseGas}`;
+        linkIdx.href = baseGas;
         linkIdx.target = '_top';
-        linkIdx.onclick = (e) => { e.preventDefault(); try { window.top.location.href = `${baseGas}`; } catch(err) { window.location.href = `${baseGas}`; } };
+        linkIdx.onclick = (e) => { e.preventDefault(); try { window.top.location.href = baseGas; } catch(err) { window.location.href = baseGas; } };
       }
     }
 
