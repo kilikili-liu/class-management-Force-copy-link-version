@@ -861,9 +861,9 @@
     <div class="header-nav-box">
       <button id="btn-pwa-install" class="header-nav-btn nav-btn-scan" style="display:none;" onclick="triggerPwaInstall()">安裝</button>
       <a href="correction_scanner.html" id="link-cor-scanner" class="header-nav-btn nav-btn-scan" title="訂正速掃">掃碼</a>
-      <a href="index.html" id="link-index" class="header-nav-btn nav-btn-check" title="作業清點">清點</a>
+      <a href="index.html" id="link-index" class="header-nav-btn nav-btn-check" onclick="navToPage('index', event)" target="_top" title="作業清點">清點</a>
       <span class="header-nav-btn nav-btn-cor active" title="目前在錯題訂正">訂正</span>
-      <a href="grading.html" id="link-grading" class="header-nav-btn nav-btn-grade" title="作業批改">批改</a>
+      <a href="grading.html" id="link-grading" class="header-nav-btn nav-btn-grade" onclick="navToPage('grading', event)" target="_top" title="作業批改">批改</a>
       <button id="nav-btn-pair" class="header-nav-btn nav-btn-pair" onclick="openPairModal()" title="連線設定">連線</button>
     </div>
   </header>
@@ -1428,6 +1428,36 @@
       GAS_API_URL = '';
       closePairModal();
       showToast('⚠️ 已解除試算表綁定', 'orange');
+    }
+
+    function navToPage(pageName, evt) {
+      if (evt && typeof evt.preventDefault === 'function') {
+        evt.preventDefault();
+      }
+      let base = (typeof window !== 'undefined' && window._GAS_WEBAPP_URL) ? window._GAS_WEBAPP_URL : (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
+      if (!base && location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+        base = location.href.split('?')[0];
+      }
+      if (!base && document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
+        base = document.referrer.split('?')[0];
+      }
+      if (!base) {
+        base = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url') || '';
+      }
+
+      if (base && base.includes('script.google.com')) {
+        const clean = cleanGasUrl(base);
+        const targetUrl = (pageName === 'index' || !pageName) ? clean : `${clean}?page=${pageName}`;
+        try {
+          window.top.location.href = targetUrl;
+        } catch(e) {
+          window.location.href = targetUrl;
+        }
+      } else {
+        const targetFile = (pageName === 'index' || !pageName) ? 'index.html' : `${pageName}.html`;
+        const apiParam = base ? `?api_url=${encodeURIComponent(cleanGasUrl(base))}` : '';
+        window.location.href = `${targetFile}${apiParam}`;
+      }
     }
 
     // ── 雙環境路由自動適配 (Google Apps Script vs Neocities 靜態網頁) ──

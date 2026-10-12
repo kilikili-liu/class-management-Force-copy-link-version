@@ -756,8 +756,8 @@
 
     <div class="header-right">
       <button class="header-nav-btn nav-btn-pair" id="btn-init-sheets" onclick="initAllSheetsFromUI()" style="display:none; color:#38bdf8; border-color:#0284c7;" title="一鍵初始化目前試算表的 8 大作業成績分頁">初始化</button>
-      <a href="index.html" class="header-nav-btn nav-btn-check" id="link-index" title="作業清點">清點</a>
-      <a href="correction.html" class="header-nav-btn nav-btn-cor" id="link-correction" title="錯題訂正">訂正</a>
+      <a href="index.html" class="header-nav-btn nav-btn-check" id="link-index" onclick="navToPage('index', event)" target="_top" title="作業清點">清點</a>
+      <a href="correction.html" class="header-nav-btn nav-btn-cor" id="link-correction" onclick="navToPage('correction', event)" target="_top" title="錯題訂正">訂正</a>
       <span class="header-nav-btn nav-btn-grade active" title="目前在作業批改">批改</span>
       <button class="header-nav-btn nav-btn-pair" onclick="openPairModal()" title="連線設定">連線</button>
     </div>
@@ -2079,6 +2079,36 @@
       }
     }
 
+    function navToPage(pageName, evt) {
+      if (evt && typeof evt.preventDefault === 'function') {
+        evt.preventDefault();
+      }
+      let base = (typeof window !== 'undefined' && window._GAS_WEBAPP_URL) ? window._GAS_WEBAPP_URL : (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
+      if (!base && location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+        base = location.href.split('?')[0];
+      }
+      if (!base && document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
+        base = document.referrer.split('?')[0];
+      }
+      if (!base) {
+        base = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url') || '';
+      }
+
+      if (base && base.includes('script.google.com')) {
+        const clean = cleanGasUrl(base);
+        const targetUrl = (pageName === 'index' || !pageName) ? clean : `${clean}?page=${pageName}`;
+        try {
+          window.top.location.href = targetUrl;
+        } catch(e) {
+          window.location.href = targetUrl;
+        }
+      } else {
+        const targetFile = (pageName === 'index' || !pageName) ? 'index.html' : `${pageName}.html`;
+        const apiParam = base ? `?api_url=${encodeURIComponent(cleanGasUrl(base))}` : '';
+        window.location.href = `${targetFile}${apiParam}`;
+      }
+    }
+
     function adaptInternalLinks() {
       const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
                     location.hostname.includes('script.google.com') ||
@@ -2087,7 +2117,7 @@
 
       // 優先偵測目前網頁自身所在的 GAS Web App URL（精準對齊當前副本）
       let baseGas = '';
-      if (location.hostname.includes('script.google.com')) {
+      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
         baseGas = location.href.split('?')[0];
       } else if (document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
         baseGas = document.referrer.split('?')[0];
@@ -2102,8 +2132,16 @@
 
       const linkCor = document.getElementById('link-correction');
       const linkIdx = document.getElementById('link-index');
-      if (linkCor) { linkCor.href = `${baseGas}?page=correction`; linkCor.target = '_top'; }
-      if (linkIdx) { linkIdx.href = `${baseGas}`; linkIdx.target = '_top'; }
+      if (linkCor) {
+        linkCor.href = `${baseGas}?page=correction`;
+        linkCor.target = '_top';
+        linkCor.onclick = (e) => { e.preventDefault(); try { window.top.location.href = `${baseGas}?page=correction`; } catch(err) { window.location.href = `${baseGas}?page=correction`; } };
+      }
+      if (linkIdx) {
+        linkIdx.href = `${baseGas}`;
+        linkIdx.target = '_top';
+        linkIdx.onclick = (e) => { e.preventDefault(); try { window.top.location.href = `${baseGas}`; } catch(err) { window.location.href = `${baseGas}`; } };
+      }
     }
 
     function forceHardReload() {
