@@ -2086,6 +2086,10 @@
       if (evt && typeof evt.preventDefault === 'function') {
         evt.preventDefault();
       }
+      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
+                    location.hostname.includes('script.google.com') ||
+                    location.hostname.includes('googleusercontent.com');
+
       let base = (typeof window !== 'undefined' && window._GAS_WEBAPP_URL) ? window._GAS_WEBAPP_URL : (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
       if (!base && location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
         base = location.href.split('?')[0];
@@ -2097,7 +2101,7 @@
         base = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url') || '';
       }
 
-      if (base && base.includes('script.google.com')) {
+      if (isGas && base && base.includes('script.google.com')) {
         const clean = cleanGasUrl(base);
         const targetUrl = (pageName === 'index' || !pageName) ? clean : (clean + '?page=' + pageName);
         try {
@@ -2116,34 +2120,39 @@
       const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
                     location.hostname.includes('script.google.com') ||
                     location.hostname.includes('googleusercontent.com');
-      if (!isGas) return;
 
-      // 優先偵測目前網頁自身所在的 GAS Web App URL（精準對齊當前副本）
-      let baseGas = '';
-      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+      let baseGas = (typeof window !== 'undefined' && window._GAS_WEBAPP_URL) ? window._GAS_WEBAPP_URL : (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
+      if (!baseGas && location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
         baseGas = location.href.split('?')[0];
-      } else if (document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
+      } else if (!baseGas && document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
         baseGas = document.referrer.split('?')[0];
-      } else if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL.includes('script.google.com')) {
-        baseGas = window._GAS_WEBAPP_URL;
-      } else if (typeof GAS_API_URL === 'string' && GAS_API_URL.includes('script.google.com')) {
-        baseGas = GAS_API_URL;
+      } else if (!baseGas) {
+        baseGas = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url') || '';
       }
-
-      if (!baseGas) return;
       baseGas = cleanGasUrl(baseGas);
 
       const linkCor = document.getElementById('link-correction');
       const linkIdx = document.getElementById('link-index');
-      if (linkCor) {
-        linkCor.href = baseGas + '?page=correction';
-        linkCor.target = '_top';
-        linkCor.onclick = (e) => { e.preventDefault(); try { window.top.location.href = baseGas + '?page=correction'; } catch(err) { window.location.href = baseGas + '?page=correction'; } };
-      }
-      if (linkIdx) {
-        linkIdx.href = baseGas;
-        linkIdx.target = '_top';
-        linkIdx.onclick = (e) => { e.preventDefault(); try { window.top.location.href = baseGas; } catch(err) { window.location.href = baseGas; } };
+
+      if (isGas) {
+        if (linkCor) {
+          linkCor.href = baseGas ? (baseGas + '?page=correction') : 'javascript:void(0)';
+          linkCor.target = '_top';
+        }
+        if (linkIdx) {
+          linkIdx.href = baseGas ? baseGas : 'javascript:void(0)';
+          linkIdx.target = '_top';
+        }
+      } else {
+        const apiParam = baseGas ? ('?api_url=' + encodeURIComponent(baseGas)) : '';
+        if (linkCor) {
+          linkCor.href = 'correction.html' + apiParam;
+          linkCor.target = '_self';
+        }
+        if (linkIdx) {
+          linkIdx.href = 'index.html' + apiParam;
+          linkIdx.target = '_self';
+        }
       }
     }
 

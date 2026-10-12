@@ -1448,6 +1448,10 @@ function navToPage(pageName, evt) {
   if (evt && typeof evt.preventDefault === 'function') {
     evt.preventDefault();
   }
+  const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
+                location.hostname.includes('script.google.com') ||
+                location.hostname.includes('googleusercontent.com');
+
   let base = typeof window !== 'undefined' && window._GAS_WEBAPP_URL ? window._GAS_WEBAPP_URL : typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '';
   if (!base && location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
     base = location.href.split('?')[0];
@@ -1459,18 +1463,18 @@ function navToPage(pageName, evt) {
     base = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url') || '';
   }
 
-  if (base && base.includes('script.google.com')) {
+  if (isGas && base && base.includes('script.google.com')) {
     const clean = cleanGasUrl(base);
-    const targetUrl = pageName === 'index' || !pageName ? clean : "".concat(clean, "?page=").concat(pageName);
+    const targetUrl = pageName === 'index' || !pageName ? clean : clean + '?page=' + pageName;
     try {
       window.top.location.href = targetUrl;
     } catch (e) {
       window.location.href = targetUrl;
     }
   } else {
-    const targetFile = pageName === 'index' || !pageName ? 'index.html' : "".concat(pageName, ".html");
-    const apiParam = base ? "?api_url=".concat(encodeURIComponent(cleanGasUrl(base))) : '';
-    window.location.href = "".concat(targetFile).concat(apiParam);
+    const targetFile = pageName === 'index' || !pageName ? 'index.html' : pageName + '.html';
+    const apiParam = base ? '?api_url=' + encodeURIComponent(cleanGasUrl(base)) : '';
+    window.location.href = targetFile + apiParam;
   }
 }
 
