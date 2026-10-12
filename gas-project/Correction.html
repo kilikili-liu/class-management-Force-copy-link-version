@@ -13,6 +13,15 @@
   <link rel="apple-touch-icon" href="icon-192.png">
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script>
+    // 🛡️ 安全 Storage 存取器（防止 Google Apps Script / Brave / Safari 沙箱丟出 DOMException 阻斷程式執行）
+    window.safeStorage = {
+      getItem: function(k) { try { return safeStorage.getItem(k); } catch(e) { return null; } },
+      setItem: function(k, v) { try { safeStorage.setItem(k, v); } catch(e) {} },
+      removeItem: function(k) { try { safeStorage.removeItem(k); } catch(e) {} }
+    };
+    var safeStorage = window.safeStorage;
+  </script>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -1232,7 +1241,10 @@
           clean = decodeURIComponent(clean);
         }
       } catch(e){}
-      return clean.replace(/https?:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
+      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
+        return `https://script.google.com/macros/s/${clean}/exec`;
+      }
+      return clean.split('?')[0].trim();
     }
 
     function getGasApiUrl() {
@@ -1240,7 +1252,7 @@
       const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
       if (paramGasUrl) {
         const clean = cleanGasUrl(paramGasUrl);
-        try { localStorage.setItem('class_management_gas_api_url', clean); } catch(e){}
+        try { safeStorage.setItem('class_management_gas_api_url', clean); } catch(e){}
         return clean;
       }
 
@@ -1251,7 +1263,7 @@
         return cleanGasUrl(window.GAS_API_URL);
       }
 
-      const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
+      const stored = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
         return cleanGasUrl(stored);
       }
@@ -1393,7 +1405,7 @@
     // ── 連線設定彈窗 ──
     function openPairModal() {
       const input = document.getElementById('gas-url-input');
-      if (input) input.value = GAS_API_URL || localStorage.getItem('class_mgmt_gas_api_url') || '';
+      if (input) input.value = GAS_API_URL || safeStorage.getItem('class_mgmt_gas_api_url') || '';
       const modal = document.getElementById('pair-modal');
       if (modal) modal.classList.add('show');
     }
@@ -1411,8 +1423,8 @@
       const clean = cleanGasUrl(val);
       GAS_API_URL = clean;
       try {
-        localStorage.setItem('class_management_gas_api_url', clean);
-        localStorage.setItem('class_mgmt_gas_api_url', clean);
+        safeStorage.setItem('class_management_gas_api_url', clean);
+        safeStorage.setItem('class_mgmt_gas_api_url', clean);
       } catch(e){}
       closePairModal();
       showToast('🟢 連線設定已儲存！', 'green');
@@ -1422,8 +1434,8 @@
       const input = document.getElementById('gas-url-input');
       if (input) input.value = '';
       try {
-        localStorage.removeItem('class_management_gas_api_url');
-        localStorage.removeItem('class_mgmt_gas_api_url');
+        safeStorage.removeItem('class_management_gas_api_url');
+        safeStorage.removeItem('class_mgmt_gas_api_url');
       } catch(e){}
       GAS_API_URL = '';
       closePairModal();
@@ -1442,7 +1454,7 @@
         base = document.referrer.split('?')[0];
       }
       if (!base) {
-        base = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url') || '';
+        base = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url') || '';
       }
 
       if (base && base.includes('script.google.com')) {
@@ -1471,7 +1483,7 @@
         document.querySelectorAll('a[href]').forEach(a => {
           const href = a.getAttribute('href');
           if (!href) return;
-          const currentApi = (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) ? GAS_API_URL : (localStorage.getItem('class_mgmt_gas_api_url') || '');
+          const currentApi = (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) ? GAS_API_URL : (safeStorage.getItem('class_mgmt_gas_api_url') || '');
           const apiParam = currentApi ? `?api_url=${encodeURIComponent(currentApi)}` : '';
           if (href.includes('page=correction_scanner') || href === 'correction_scanner.html') {
             a.href = `correction_scanner.html${apiParam}`;
@@ -1515,7 +1527,7 @@
 
       let baseGasUrl = window._GAS_WEBAPP_URL;
       if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
+        baseGasUrl = safeStorage.getItem('class_mgmt_gas_api_url');
       }
       if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
         baseGasUrl = location.href.split('?')[0];
@@ -1529,7 +1541,7 @@
         google.script.run.withSuccessHandler(serverUrl => {
           if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
             window._GAS_WEBAPP_URL = serverUrl;
-            localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+            safeStorage.setItem('class_mgmt_gas_api_url', serverUrl);
             applyGasUrls(serverUrl);
           }
         }).getGasWebAppUrl();

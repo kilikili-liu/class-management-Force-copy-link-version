@@ -1319,11 +1319,10 @@
           clean = decodeURIComponent(clean);
         }
       } catch(e){}
-      try {
-        const domainReg = new RegExp('https?:\\/\\/script\\.google\\.com\\/a\\/[^\\/]+\\/', 'i');
-        clean = clean.replace(domainReg, 'https://script.google.com/');
-      } catch(e){}
-      return clean.trim();
+      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
+        return `https://script.google.com/macros/s/${clean}/exec`;
+      }
+      return clean.split('?')[0].trim();
     }
 
     // ── 🌐 統一 API 呼叫器 (支援 GAS 原生 google.script.run 與 Neocities 外部 HTTP/JSONP) ──

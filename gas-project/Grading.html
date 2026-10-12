@@ -4,6 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>班級作業批改與成績登記</title>
+  <script>
+    // 🛡️ 安全 Storage 存取器（防止 Google Apps Script / Brave / Safari 沙箱丟出 DOMException 阻斷程式執行）
+    window.safeStorage = {
+      getItem: function(k) { try { return safeStorage.getItem(k); } catch(e) { return null; } },
+      setItem: function(k, v) { try { safeStorage.setItem(k, v); } catch(e) {} },
+      removeItem: function(k) { try { safeStorage.removeItem(k); } catch(e) {} }
+    };
+    var safeStorage = window.safeStorage;
+
+    window.addEventListener('error', function(e) {
+      console.error('Grading Error:', e);
+      var b = document.getElementById('debug-err-bar');
+      if (!b) {
+        b = document.createElement('div');
+        b.id = 'debug-err-bar';
+        b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:rgba(220,38,38,0.95);color:#fff;font-size:12px;padding:6px 12px;z-index:999999;word-break:break-all;display:flex;justify-content:space-between;align-items:center;';
+        document.body && document.body.appendChild(b);
+      }
+      if (b) {
+        b.innerHTML = '<span>⚠️ 批改頁錯誤: ' + (e.message || e) + '</span><button onclick="this.parentNode.remove()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;">✕</button>';
+      }
+    });
+  </script>
   <style>
     :root {
       --bg-dark: #090d16;
@@ -756,8 +779,8 @@
 
     <div class="header-right">
       <button class="header-nav-btn nav-btn-pair" id="btn-init-sheets" onclick="initAllSheetsFromUI()" style="display:none; color:#38bdf8; border-color:#0284c7;" title="一鍵初始化目前試算表的 8 大作業成績分頁">初始化</button>
-      <a href="index.html" class="header-nav-btn nav-btn-check" id="link-index" onclick="navToPage('index', event)" target="_top" title="作業清點">清點</a>
-      <a href="correction.html" class="header-nav-btn nav-btn-cor" id="link-correction" onclick="navToPage('correction', event)" target="_top" title="錯題訂正">訂正</a>
+      <a href="javascript:void(0)" class="header-nav-btn nav-btn-check" id="link-index" onclick="navToPage('index', event)" target="_top" title="作業清點">清點</a>
+      <a href="javascript:void(0)" class="header-nav-btn nav-btn-cor" id="link-correction" onclick="navToPage('correction', event)" target="_top" title="錯題訂正">訂正</a>
       <span class="header-nav-btn nav-btn-grade active" title="目前在作業批改">批改</span>
       <button class="header-nav-btn nav-btn-pair" onclick="openPairModal()" title="連線設定">連線</button>
     </div>
@@ -1291,10 +1314,7 @@
       if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
         return `https://script.google.com/macros/s/${clean}/exec`;
       }
-      if (typeof location !== 'undefined' && location.href && location.href.includes('/a/')) {
-        return clean.trim();
-      }
-      return clean.replace(/https?:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
+      return clean.split('?')[0].trim();
     }
 
     function getGasApiUrl() {
@@ -1304,8 +1324,8 @@
       if (paramGas) {
         const clean = cleanGasUrl(paramGas);
         try {
-          localStorage.setItem('class_management_gas_api_url', clean);
-          localStorage.setItem('class_mgmt_gas_api_url', clean);
+          safeStorage.setItem('class_management_gas_api_url', clean);
+          safeStorage.setItem('class_mgmt_gas_api_url', clean);
         } catch(e){}
         return clean;
       }
@@ -1320,15 +1340,15 @@
       if (document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
         const cleanRef = cleanGasUrl(document.referrer.split('?')[0]);
         try {
-          localStorage.setItem('class_management_gas_api_url', cleanRef);
-          localStorage.setItem('class_mgmt_gas_api_url', cleanRef);
+          safeStorage.setItem('class_management_gas_api_url', cleanRef);
+          safeStorage.setItem('class_mgmt_gas_api_url', cleanRef);
         } catch(e){}
         return cleanRef;
       }
 
       // 3. 【核心連線依據】：使用者掃碼或手動設定儲存在 localStorage 的試算表網址！
       // 跨清點、訂正、批改三大功能完全一致，使用者建立副本後以其自己掃碼綁定的網址為唯一標準
-      const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
+      const stored = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url');
       if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
         return cleanGasUrl(stored);
       }
@@ -1483,10 +1503,10 @@
 
     // ── 初始化 ──
     function startGradingApp() {
+      adaptInternalLinks();
       loadSavedPresets();
       initSeatGridUI();
       fetchGradingData();
-      adaptInternalLinks();
     }
 
     if (document.readyState === 'loading') {
@@ -1497,7 +1517,7 @@
 
     function loadSavedPresets() {
       try {
-        const saved = localStorage.getItem('class_mgmt_grade_presets');
+        const saved = safeStorage.getItem('class_mgmt_grade_presets');
         if (saved) gradePresets = { ...DEFAULT_PRESETS, ...JSON.parse(saved) };
       } catch(e){}
     }
@@ -1541,7 +1561,7 @@
           updateInitButtonsVisibility(res.allScoreSheetsReady === false);
           if (res.presets) {
             gradePresets = { ...DEFAULT_PRESETS, ...res.presets };
-            try { localStorage.setItem('class_mgmt_grade_presets', JSON.stringify(gradePresets)); } catch(e){}
+            try { safeStorage.setItem('class_mgmt_grade_presets', JSON.stringify(gradePresets)); } catch(e){}
           }
           renderHeaderMeta();
           renderAllSeats();
@@ -2014,7 +2034,7 @@
         }
       }
       gradePresets = updated;
-      try { localStorage.setItem('class_mgmt_grade_presets', JSON.stringify(gradePresets)); } catch(e){}
+      try { safeStorage.setItem('class_mgmt_grade_presets', JSON.stringify(gradePresets)); } catch(e){}
       closeSettingsModal();
       showToast('🟢 等第分數設定已儲存', 'success');
 
@@ -2043,8 +2063,8 @@
       const clean = cleanGasUrl(input);
       GAS_API_URL = clean;
       try {
-        localStorage.setItem('class_management_gas_api_url', clean);
-        localStorage.setItem('class_mgmt_gas_api_url', clean);
+        safeStorage.setItem('class_management_gas_api_url', clean);
+        safeStorage.setItem('class_mgmt_gas_api_url', clean);
       } catch(e){}
       closePairModal();
       showToast('🟢 連線設定已儲存，正在重新連線...', 'success');
@@ -2054,8 +2074,8 @@
     function clearPairGasUrl() {
       document.getElementById('gas-url-input').value = '';
       try {
-        localStorage.removeItem('class_management_gas_api_url');
-        localStorage.removeItem('class_mgmt_gas_api_url');
+        safeStorage.removeItem('class_management_gas_api_url');
+        safeStorage.removeItem('class_mgmt_gas_api_url');
       } catch(e){}
       GAS_API_URL = '';
       closePairModal();
@@ -2091,7 +2111,7 @@
         base = document.referrer.split('?')[0];
       }
       if (!base) {
-        base = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url') || '';
+        base = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url') || '';
       }
 
       if (base && base.includes('script.google.com')) {
