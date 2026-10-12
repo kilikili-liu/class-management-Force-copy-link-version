@@ -16,9 +16,9 @@
   <script>
     // 🛡️ 安全 Storage 存取器（防止 Google Apps Script / Brave / Safari 沙箱丟出 DOMException 阻斷程式執行）
     window.safeStorage = {
-      getItem: function(k) { try { return safeStorage.getItem(k); } catch(e) { return null; } },
-      setItem: function(k, v) { try { safeStorage.setItem(k, v); } catch(e) {} },
-      removeItem: function(k) { try { safeStorage.removeItem(k); } catch(e) {} }
+      getItem: function(k) { try { return window.localStorage ? localStorage.getItem(k) : null; } catch(e) { return null; } },
+      setItem: function(k, v) { try { if (window.localStorage) localStorage.setItem(k, v); } catch(e) {} },
+      removeItem: function(k) { try { if (window.localStorage) localStorage.removeItem(k); } catch(e) {} }
     };
     var safeStorage = window.safeStorage;
   </script>

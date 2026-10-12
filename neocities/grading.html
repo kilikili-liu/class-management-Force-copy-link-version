@@ -7,9 +7,9 @@
   <script>
     // 🛡️ 安全 Storage 存取器（防止 Google Apps Script / Brave / Safari 沙箱丟出 DOMException 阻斷程式執行）
     window.safeStorage = {
-      getItem: function(k) { try { return safeStorage.getItem(k); } catch(e) { return null; } },
-      setItem: function(k, v) { try { safeStorage.setItem(k, v); } catch(e) {} },
-      removeItem: function(k) { try { safeStorage.removeItem(k); } catch(e) {} }
+      getItem: function(k) { try { return window.localStorage ? window.localStorage.getItem(k) : null; } catch(e) { return null; } },
+      setItem: function(k, v) { try { if (window.localStorage) window.localStorage.setItem(k, v); } catch(e) {} },
+      removeItem: function(k) { try { if (window.localStorage) window.localStorage.removeItem(k); } catch(e) {} }
     };
     var safeStorage = window.safeStorage;
 
@@ -23,7 +23,9 @@
         document.body && document.body.appendChild(b);
       }
       if (b) {
-        b.innerHTML = '<span>⚠️ 批改頁錯誤: ' + (e.message || e) + '</span><button onclick="this.parentNode.remove()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;">✕</button>';
+        var msg = (e.message || e);
+        if (e.lineno) msg += ' (行 ' + e.lineno + ':' + e.colno + ')';
+        b.innerHTML = '<span>⚠️ 批改頁錯誤: ' + msg + '</span><button onclick="this.parentNode.remove()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;">✕</button>';
       }
     });
   </script>
@@ -1369,25 +1371,9 @@
           const timer = setTimeout(() => {
             if (!isSettled) {
               isSettled = true;
-              console.warn('[gasApi] google.script.run ' + action + ' 逾時，嘗試降級至 HTTP/JSONP 備援');
-              fallbackToJsonp();
+              reject(new Error('伺服器回應較慢 (逾時)，可能是首次冷啟動中，請重新整理網頁'));
             }
-          }, 15000);
-
-          function fallbackToJsonp() {
-            const apiUrl = GAS_API_URL || getGasApiUrl();
-            if (apiUrl) {
-              const url = new URL(cleanGasUrl(apiUrl));
-              url.searchParams.set('action', action);
-              for (const [k, v] of Object.entries(params)) {
-                url.searchParams.set(k, v);
-              }
-              const retries = (action === 'getGradingData' || action === 'initAllScoreSheets') ? 1 : 0;
-              gasApiFetch(url.toString(), retries, 25000).then(resolve).catch(reject);
-            } else {
-              reject(new Error('伺服器執行異常且無備援 API 連線網址'));
-            }
-          }
+          }, 40000);
 
           google.script.run
             .withSuccessHandler(res => {
@@ -1400,8 +1386,9 @@
               if (isSettled) return;
               isSettled = true;
               clearTimeout(timer);
-              console.warn('[gasApi] google.script.run ' + action + ' 失敗，嘗試降級:', err);
-              fallbackToJsonp();
+              console.error('[gasApi] google.script.run ' + action + ' 失敗:', err);
+              const msg = (err && err.message) ? err.message : String(err || '後端執行失敗');
+              reject(new Error(msg));
             })
             .handleScannerApiAction(action, params);
         });
