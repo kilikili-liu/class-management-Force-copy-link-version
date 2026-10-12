@@ -718,1782 +718,1783 @@
   </div>
 
   <script>
-    // ── 關鍵底層補丁：在任何 video 標籤建立時，強制注入 iOS Safari WebKit 必備屬性 ──
-    (function patchVideoElementCreation() {
-      const _orig = document.createElement;
-      document.createElement = function(tagName, options) {
-        const el = _orig.call(document, tagName, options);
-        if (tagName && typeof tagName === 'string' && tagName.toLowerCase() === 'video') {
-          el.setAttribute('playsinline', 'true');
-          el.setAttribute('webkit-playsinline', 'true');
-          el.setAttribute('autoplay', 'true');
-          el.setAttribute('muted', 'true');
-          el.playsInline = true;
-          el.muted = true;
-          el.autoplay = true;
-        }
-        return el;
-      };
-    })();
 
-    // ── PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
-    let deferredInstallPrompt = null;
-    const hadPriorController = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
-
-    function forcePwaUpdate() {
-      try {
-        if ('caches' in window) {
-          caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
-        }
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
-        }
-      } catch(e){}
-      setTimeout(() => {
-        const u = new URL(window.location.href);
-        u.searchParams.set('_t', Date.now());
-        window.location.href = u.toString();
-      }, 300);
+// ── 關鍵底層補丁：在任何 video 標籤建立時，強制注入 iOS Safari WebKit 必備屬性 ──
+(function patchVideoElementCreation() {
+  const _orig = document.createElement;
+  document.createElement = function (tagName, options) {
+    const el = _orig.call(document, tagName, options);
+    if (tagName && typeof tagName === 'string' && tagName.toLowerCase() === 'video') {
+      el.setAttribute('playsinline', 'true');
+      el.setAttribute('webkit-playsinline', 'true');
+      el.setAttribute('autoplay', 'true');
+      el.setAttribute('muted', 'true');
+      el.playsInline = true;
+      el.muted = true;
+      el.autoplay = true;
     }
+    return el;
+  };
+})();
 
-    function showPwaUpdateBanner() {
-      const banner = document.getElementById('pwa-update-banner');
-      if (banner) {
-        banner.style.display = 'flex';
-      }
+// ── PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
+let deferredInstallPrompt = null;
+const hadPriorController = 'serviceWorker' in navigator && !!navigator.serviceWorker.controller;
+
+function forcePwaUpdate() {
+  try {
+    if ('caches' in window) {
+      caches.keys().then((keys) => keys.forEach((k) => caches.delete(k)));
     }
-
     if ('serviceWorker' in navigator) {
-      // 監聽 Controller 變化：當有舊的 SW 且新 SW 接管時，觸發新版本提示
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (hadPriorController) {
-          showPwaUpdateBanner();
+      navigator.serviceWorker.getRegistrations().then((regs) => regs.forEach((r) => r.unregister()));
+    }
+  } catch (e) {}
+  setTimeout(() => {
+    const u = new URL(window.location.href);
+    u.searchParams.set('_t', Date.now());
+    window.location.href = u.toString();
+  }, 300);
+}
+
+function showPwaUpdateBanner() {
+  const banner = document.getElementById('pwa-update-banner');
+  if (banner) {
+    banner.style.display = 'flex';
+  }
+}
+
+if ('serviceWorker' in navigator) {
+  // 監聽 Controller 變化：當有舊的 SW 且新 SW 接管時，觸發新版本提示
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadPriorController) {
+      showPwaUpdateBanner();
+    }
+  });
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).
+    then((reg) => {
+      // 1. 定期與切換前台時主動向伺服器檢查新版本
+      reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          reg.update().catch(() => {});
         }
       });
+      setInterval(() => {
+        reg.update().catch(() => {});
+      }, 10 * 60 * 1000); // 每 10 分鐘背景檢查一次
 
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
-          .then(reg => {
-            // 1. 定期與切換前台時主動向伺服器檢查新版本
-            reg.update().catch(() => {});
-            document.addEventListener('visibilitychange', () => {
-              if (document.visibilityState === 'visible') {
-                reg.update().catch(() => {});
-              }
-            });
-            setInterval(() => {
-              reg.update().catch(() => {});
-            }, 10 * 60 * 1000); // 每 10 分鐘背景檢查一次
-
-            // 2. 監聽更新事件
-            reg.addEventListener('updatefound', () => {
-              const newWorker = reg.installing;
-              if (!newWorker) return;
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  showPwaUpdateBanner();
-                }
-              });
-            });
-          })
-          .catch(err => console.log('SW note:', err));
+      // 2. 監聽更新事件
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            showPwaUpdateBanner();
+          }
+        });
       });
-    }
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault();
-      deferredInstallPrompt = e;
-      const btn = document.getElementById('btn-pwa-install');
-      if (btn) btn.style.display = 'inline-flex';
-    });
-    window.addEventListener('appinstalled', () => {
+    }).
+    catch((err) => console.log('SW note:', err));
+  });
+}
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('btn-pwa-install');
+  if (btn) btn.style.display = 'inline-flex';
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const btn = document.getElementById('btn-pwa-install');
+  if (btn) btn.style.display = 'none';
+  console.log('PWA 已成功安裝至主畫面');
+});
+function showIosInstallModal() {
+  let modal = document.getElementById('ios-pwa-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'ios-pwa-modal';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(4px); padding:16px;';
+    modal.innerHTML = "\n          <div style=\"background:#1e293b; border:1px solid #38bdf8; border-radius:16px; max-width:400px; width:100%; padding:22px; box-shadow:0 12px 36px rgba(0,0,0,0.6); text-align:center;\">\n            <div style=\"font-size:2.6rem; margin-bottom:10px;\">📲🍎</div>\n            <h3 style=\"color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;\">iPhone / iPad 加入主畫面教學</h3>\n            <div style=\"color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;\">\n              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>\n              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>\n              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>\n              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>\n            </div>\n            <button onclick=\"document.getElementById('ios-pwa-modal').style.display='none'\" style=\"background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;\">我知道了</button>\n          </div>\n        ";
+
+
+
+
+
+
+
+
+
+
+
+
+    document.body.appendChild(modal);
+  } else {
+    modal.style.display = 'flex';
+  }
+}
+
+function checkIosPwaButton() {
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (isIos && !isStandalone) {
+    const btn = document.getElementById('btn-pwa-install');
+    if (btn) btn.style.display = 'inline-flex';
+  }
+}
+
+function triggerPwaInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(() => {
       deferredInstallPrompt = null;
       const btn = document.getElementById('btn-pwa-install');
       if (btn) btn.style.display = 'none';
-      console.log('PWA 已成功安裝至主畫面');
     });
-    function showIosInstallModal() {
-      let modal = document.getElementById('ios-pwa-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'ios-pwa-modal';
-        modal.className = 'modal-overlay';
-        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(4px); padding:16px;';
-        modal.innerHTML = `
-          <div style="background:#1e293b; border:1px solid #38bdf8; border-radius:16px; max-width:400px; width:100%; padding:22px; box-shadow:0 12px 36px rgba(0,0,0,0.6); text-align:center;">
-            <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
-            <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
-            <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
-              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
-              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
-              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
-              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
-            </div>
-            <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
-          </div>
-        `;
-        document.body.appendChild(modal);
-      } else {
-        modal.style.display = 'flex';
-      }
+  } else {
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIos) {
+      showIosInstallModal();
     }
+  }
+}
 
-    function checkIosPwaButton() {
-      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-      if (isIos && !isStandalone) {
-        const btn = document.getElementById('btn-pwa-install');
-        if (btn) btn.style.display = 'inline-flex';
-      }
+// 橫向鎖定
+if (screen.orientation && screen.orientation.lock) {
+  screen.orientation.lock('landscape').catch(() => {});
+}
+
+function cleanGasUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  let clean = url.trim();
+  try {
+    if (clean.includes('%3A') || clean.includes('%2F')) {
+      clean = decodeURIComponent(clean);
     }
+  } catch (e) {}
+  // 若為純 Deployment ID (如 AKfycby...)
+  if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
+    return "https://script.google.com/macros/s/".concat(clean, "/exec");
+  }
+  return clean.replace(/https?:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
+}
 
-    function triggerPwaInstall() {
-      if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        deferredInstallPrompt.userChoice.then(() => {
-          deferredInstallPrompt = null;
-          const btn = document.getElementById('btn-pwa-install');
-          if (btn) btn.style.display = 'none';
-        });
-      } else {
-        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        if (isIos) {
-          showIosInstallModal();
-        }
-      }
+function getGasApiUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url') || urlParams.get('gas_id');
+  if (paramGasUrl) {
+    const clean = cleanGasUrl(paramGasUrl);
+    try {localStorage.setItem('class_management_gas_api_url', clean);} catch (e) {}
+    return clean;
+  }
+
+  if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.includes('script.google.com')) {
+    return cleanGasUrl(window._GAS_WEBAPP_URL);
+  }
+  if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL && window.GAS_API_URL.includes('script.google.com')) {
+    return cleanGasUrl(window.GAS_API_URL);
+  }
+
+  const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
+  if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
+    return cleanGasUrl(stored);
+  }
+
+  if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+    return cleanGasUrl(location.href.split('?')[0]);
+  }
+
+  // 首次使用：若無網址參數且無 localStorage，不跳出阻擋性 prompt，返回空字串並由鏡頭待命掃碼綁定
+  return '';
+}
+
+let GAS_API_URL = getGasApiUrl();
+
+// 手動檢視或設定 GAS 網址
+function promptManualGasUrl() {
+  const current = GAS_API_URL || '尚未設定';
+  const entered = prompt("⚙️ 班級試算表連線設定\n目前綁定網址：\n".concat(current, "\n\n若需更改，請貼上 GAS Web App 網址或純部署 ID (AKfy...)：\n(清空並按確定可解除綁定)"), GAS_API_URL || '');
+  if (entered === null) return;
+  if (entered.trim() === '') {
+    localStorage.removeItem('class_management_gas_api_url');
+    localStorage.removeItem('class_mgmt_gas_api_url');
+    GAS_API_URL = '';
+    showToast('⚠️ 已清除綁定，請重新掃碼綁定', 'error');
+    const banner = document.getElementById('unbound-banner');
+    if (banner) banner.style.display = 'flex';
+    return;
+  }
+  const clean = cleanGasUrl(entered.trim());
+  if (clean.includes('script.google.com')) {
+    localStorage.setItem('class_management_gas_api_url', clean);
+    localStorage.setItem('class_mgmt_gas_api_url', clean);
+    GAS_API_URL = clean;
+    showToast('🟢 試算表連線設定成功！', 'success');
+    const banner = document.getElementById('unbound-banner');
+    if (banner) banner.style.display = 'none';
+    fetchMatrixData();
+  } else {
+    alert('❌ 格式不正確，請輸入完整 GAS 網址或純部署 ID (AKfy...)');
+  }
+}
+
+// 智能配對偵測：掃描到試算表配對 QR Code 自動綁定
+function checkAndHandlePairCode(decodedText) {
+  if (!decodedText || typeof decodedText !== 'string') return false;
+  const raw = decodedText.trim();
+  let matchedUrl = '';
+
+  // 1. 純 Deployment ID (例如 AKfycby...)
+  if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(raw)) {
+    matchedUrl = "https://script.google.com/macros/s/".concat(raw, "/exec");
+  } else if (raw.startsWith('gas:') || raw.startsWith('gas_id:')) {
+    const id = raw.replace(/^gas(_id)?:/, '').trim();
+    if (/^AKfy[A-Za-z0-9_-]+$/.test(id)) {
+      matchedUrl = "https://script.google.com/macros/s/".concat(id, "/exec");
     }
-
-    // 橫向鎖定
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').catch(() => {});
+  } else if (raw.includes('api_url=')) {
+    try {
+      const u = new URL(raw);
+      matchedUrl = u.searchParams.get('api_url') || '';
+    } catch (e) {
+      const m = raw.match(/api_url=([^&]+)/);
+      if (m) matchedUrl = decodeURIComponent(m[1]);
     }
+  } else if (raw.includes('script.google.com') && raw.includes('/exec')) {
+    matchedUrl = raw;
+  } else if (raw.includes('gas=') || raw.includes('gas_url=') || raw.includes('gas_id=')) {
+    try {
+      const u = new URL(raw);
+      matchedUrl = u.searchParams.get('gas') || u.searchParams.get('gas_url') || u.searchParams.get('gas_id') || '';
+    } catch (e) {}
+  }
 
-    function cleanGasUrl(url) {
-      if (!url || typeof url !== 'string') return '';
-      let clean = url.trim();
-      try {
-        if (clean.includes('%3A') || clean.includes('%2F')) {
-          clean = decodeURIComponent(clean);
-        }
-      } catch(e){}
-      // 若為純 Deployment ID (如 AKfycby...)
-      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
-        return `https://script.google.com/macros/s/${clean}/exec`;
-      }
-      return clean.replace(/https?:\/\/script\.google\.com\/a\/[^\/]+\//i, 'https://script.google.com/').trim();
-    }
-
-    function getGasApiUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url') || urlParams.get('gas_id');
-      if (paramGasUrl) {
-        const clean = cleanGasUrl(paramGasUrl);
-        try { localStorage.setItem('class_management_gas_api_url', clean); } catch(e){}
-        return clean;
-      }
-
-      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.includes('script.google.com')) {
-        return cleanGasUrl(window._GAS_WEBAPP_URL);
-      }
-      if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL && window.GAS_API_URL.includes('script.google.com')) {
-        return cleanGasUrl(window.GAS_API_URL);
-      }
-
-      const stored = localStorage.getItem('class_management_gas_api_url') || localStorage.getItem('class_mgmt_gas_api_url');
-      if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
-        return cleanGasUrl(stored);
-      }
-
-      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
-        return cleanGasUrl(location.href.split('?')[0]);
-      }
-
-      // 首次使用：若無網址參數且無 localStorage，不跳出阻擋性 prompt，返回空字串並由鏡頭待命掃碼綁定
-      return '';
-    }
-
-    let GAS_API_URL = getGasApiUrl();
-
-    // 手動檢視或設定 GAS 網址
-    function promptManualGasUrl() {
-      const current = GAS_API_URL || '尚未設定';
-      const entered = prompt(`⚙️ 班級試算表連線設定\n目前綁定網址：\n${current}\n\n若需更改，請貼上 GAS Web App 網址或純部署 ID (AKfy...)：\n(清空並按確定可解除綁定)`, GAS_API_URL || '');
-      if (entered === null) return;
-      if (entered.trim() === '') {
-        localStorage.removeItem('class_management_gas_api_url');
-        localStorage.removeItem('class_mgmt_gas_api_url');
-        GAS_API_URL = '';
-        showToast('⚠️ 已清除綁定，請重新掃碼綁定', 'error');
-        const banner = document.getElementById('unbound-banner');
-        if (banner) banner.style.display = 'flex';
-        return;
-      }
-      const clean = cleanGasUrl(entered.trim());
-      if (clean.includes('script.google.com')) {
-        localStorage.setItem('class_management_gas_api_url', clean);
-        localStorage.setItem('class_mgmt_gas_api_url', clean);
-        GAS_API_URL = clean;
-        showToast('🟢 試算表連線設定成功！', 'success');
-        const banner = document.getElementById('unbound-banner');
-        if (banner) banner.style.display = 'none';
-        fetchMatrixData();
-      } else {
-        alert('❌ 格式不正確，請輸入完整 GAS 網址或純部署 ID (AKfy...)');
-      }
-    }
-
-    // 智能配對偵測：掃描到試算表配對 QR Code 自動綁定
-    function checkAndHandlePairCode(decodedText) {
-      if (!decodedText || typeof decodedText !== 'string') return false;
-      const raw = decodedText.trim();
-      let matchedUrl = '';
-
-      // 1. 純 Deployment ID (例如 AKfycby...)
-      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(raw)) {
-        matchedUrl = `https://script.google.com/macros/s/${raw}/exec`;
-      } else if (raw.startsWith('gas:') || raw.startsWith('gas_id:')) {
-        const id = raw.replace(/^gas(_id)?:/, '').trim();
-        if (/^AKfy[A-Za-z0-9_-]+$/.test(id)) {
-          matchedUrl = `https://script.google.com/macros/s/${id}/exec`;
-        }
-      } else if (raw.includes('api_url=')) {
-        try {
-          const u = new URL(raw);
-          matchedUrl = u.searchParams.get('api_url') || '';
-        } catch(e) {
-          const m = raw.match(/api_url=([^&]+)/);
-          if (m) matchedUrl = decodeURIComponent(m[1]);
-        }
-      } else if (raw.includes('script.google.com') && raw.includes('/exec')) {
-        matchedUrl = raw;
-      } else if (raw.includes('gas=') || raw.includes('gas_url=') || raw.includes('gas_id=')) {
-        try {
-          const u = new URL(raw);
-          matchedUrl = u.searchParams.get('gas') || u.searchParams.get('gas_url') || u.searchParams.get('gas_id') || '';
-        } catch(e) {}
-      }
-
-      if (matchedUrl && matchedUrl.includes('script.google.com') && matchedUrl.includes('/exec')) {
-        matchedUrl = cleanGasUrl(matchedUrl);
-        if (GAS_API_URL && cleanGasUrl(GAS_API_URL) === matchedUrl) {
-          showToast('ℹ️ 已重新連線至此試算表，正在同步資料...', 'info');
-          fetchMatrixData();
-          return true;
-        }
-        localStorage.setItem('class_management_gas_api_url', matchedUrl);
-        localStorage.setItem('class_mgmt_gas_api_url', matchedUrl);
-        GAS_API_URL = matchedUrl;
-        triggerFeedback('success');
-        showToast('🎉 試算表綁定成功！正在連線載入錯題資料...', 'success');
-        const banner = document.getElementById('unbound-banner');
-        if (banner) banner.style.display = 'none';
-        setTimeout(() => {
-          fetchMatrixData();
-        }, 500);
-        return true;
-      }
-      return false;
-    }
-
-    // 增強版超穩定 GAS API 呼叫器（支援 fetch 優先、JSONP 備援、自動重試、與 18 秒冷啟動逾時）
-    async function gasApiFetch(url, retries = 2, timeoutMs = 18000) {
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-          return await singleGasApiFetch(url, timeoutMs);
-        } catch (err) {
-          console.warn('[GAS API] 第 ' + (attempt + 1) + ' 次連線失敗: ' + (err ? err.message : ''));
-          if (attempt < retries) {
-            await new Promise(r => setTimeout(r, 1000));
-          } else {
-            throw err;
-          }
-        }
-      }
-    }
-
-    function singleGasApiFetch(url, timeoutMs = 18000) {
-      return new Promise((resolve, reject) => {
-        const cleanUrl = cleanGasUrl(String(url));
-        const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-        const sep = cleanUrl.includes('?') ? '&' : '?';
-        const finalUrl = cleanUrl + sep + 'callback=' + callbackName + '&_t=' + Date.now();
-
-        let isSettled = false;
-        let scriptTag = null;
-
-        const timeoutTimer = setTimeout(() => {
-          if (isSettled) return;
-          isSettled = true;
-          cleanup();
-          reject(new Error('伺服器回應較慢 (逾時)'));
-        }, timeoutMs);
-
-        function cleanup() {
-          try { delete window[callbackName]; } catch(e){}
-          if (scriptTag && scriptTag.parentNode) {
-            scriptTag.parentNode.removeChild(scriptTag);
-          }
-        }
-
-        window[callbackName] = function(data) {
-          if (isSettled) return;
-          isSettled = true;
-          clearTimeout(timeoutTimer);
-          cleanup();
-          resolve(data);
-        };
-
-        // 1. 優先嘗試 fetch（加入 credentials: 'omit' 避免 Google 多帳號 Cookie 衝突）
-        fetch(finalUrl, { method: 'GET', redirect: 'follow', credentials: 'omit' })
-          .then(res => {
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            return res.text();
-          })
-          .then(text => {
-            if (isSettled) return;
-            const trimmed = (text || '').trim();
-            let parsedData = null;
-            if (trimmed.startsWith(callbackName + '(')) {
-              // 支援結尾有分號、換行等情況
-              const inner = trimmed.substring(callbackName.length + 1).replace(/\);?$/, '');
-              try { parsedData = JSON.parse(inner); } catch(e){}
-            } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-              try { parsedData = JSON.parse(trimmed); } catch(e){}
-            }
-            if (parsedData) {
-              isSettled = true;
-              clearTimeout(timeoutTimer);
-              cleanup();
-              resolve(parsedData);
-            } else {
-              throw new Error('無法解析伺服器回應格式');
-            }
-          })
-          .catch(fetchErr => {
-            if (isSettled) return;
-            console.warn('[GAS API] fetch 失敗或無法解析，改用 JSONP script 標籤備援:', fetchErr);
-            scriptTag = document.createElement('script');
-            scriptTag.crossOrigin = 'anonymous';
-            scriptTag.src = finalUrl;
-            scriptTag.onerror = function() {
-              if (isSettled) return;
-              isSettled = true;
-              clearTimeout(timeoutTimer);
-              cleanup();
-              reject(new Error('跨域連線失敗 (可能被瀏覽器防追蹤或擴充功能阻擋)'));
-            };
-            document.head.appendChild(scriptTag);
-          });
-      });
-    }
-
-    async function gasApi(action, params = {}) {
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        return new Promise((resolve, reject) => {
-          google.script.run
-            .withSuccessHandler(res => resolve(res))
-            .withFailureHandler(err => reject(err))
-            .handleScannerApiAction(action, params);
-        });
-      } else {
-        const cleanBase = cleanGasUrl(GAS_API_URL);
-        const url = new URL(cleanBase);
-        url.searchParams.set('action', action);
-        for (const [k, v] of Object.entries(params)) {
-          url.searchParams.set(k, v);
-        }
-        return await gasApiFetch(url.toString());
-      }
-    }
-
-    let isSilent = true;
-    let scanMode = 'register'; // 'register' (🟧 登記) vs 'clear' (🟦 銷案)
-    let matrixDataCache = { assignments: [], seatSummary: {}, records: [], vacantSeats: [] };
-    let currentAssignKey = "";
-    let html5QrCode = null;
-    let isProcessingScan = false;
-    let lastScannedPayload = "";
-    let lastScanTime = 0;
-    let currentFacingMode = 'environment'; // 'environment' (後置/螢幕背面) vs 'user' (前置/螢幕同側)
-
-    // ── 雙環境路由自動適配 (Google Apps Script vs Neocities 靜態網頁) ──
-    function adaptInternalLinks() {
-      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
-                    location.hostname.includes('script.google.com') ||
-                    location.hostname.includes('googleusercontent.com');
-
-      if (!isGas) {
-        checkIosPwaButton();
-        document.querySelectorAll('a[href]').forEach(a => {
-          const href = a.getAttribute('href');
-          if (!href) return;
-          const currentApi = (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) ? GAS_API_URL : (localStorage.getItem('class_mgmt_gas_api_url') || '');
-          const apiParam = currentApi ? `?api_url=${encodeURIComponent(currentApi)}` : '';
-          if (href.includes('page=correction') || href === 'correction.html') {
-            a.href = `correction.html${apiParam}`;
-          } else if (href.includes('page=index') || href === 'index.html') {
-            a.href = `index.html${apiParam}`;
-          } else if (href.includes('page=grading') || href === 'grading.html') {
-            a.href = `grading.html${apiParam}`;
-          }
-        });
-        return;
-      }
-
-      function applyGasUrls(baseGasUrl) {
-        if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
-        document.querySelectorAll('a[href]').forEach(a => {
-          const href = a.getAttribute('href');
-          if (!href) return;
-          if (href === 'scanner.html' || href.includes('page=scanner')) {
-            a.href = `${baseGasUrl}?page=scanner`;
-            a.target = '_top';
-          } else if (href === 'index.html' || href === baseGasUrl || href.endsWith('/exec')) {
-            a.href = `${baseGasUrl}`;
-            a.target = '_top';
-          } else if (href === 'correction.html' || href.includes('page=correction')) {
-            a.href = `${baseGasUrl}?page=correction`;
-            a.target = '_top';
-          } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
-            a.href = `${baseGasUrl}?page=correction_scanner`;
-            a.target = '_top';
-          } else if (href === 'grading.html' || href.includes('page=grading')) {
-            a.href = `${baseGasUrl}?page=grading`;
-            a.target = '_top';
-          } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
-            a.href = `${baseGasUrl}?page=sticker`;
-            a.target = '_top';
-          }
-        });
-      }
-
-      let baseGasUrl = window._GAS_WEBAPP_URL;
-      if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
-      }
-      if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
-        baseGasUrl = location.href.split('?')[0];
-      }
-
-      if (baseGasUrl && baseGasUrl.startsWith('https://script.google.com')) {
-        applyGasUrls(baseGasUrl);
-      }
-
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(serverUrl => {
-          if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
-            window._GAS_WEBAPP_URL = serverUrl;
-            localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
-            applyGasUrls(serverUrl);
-          }
-        }).getGasWebAppUrl();
-      }
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      adaptInternalLinks();
-      checkIosPwaButton();
-      initSeatGrid();
+  if (matchedUrl && matchedUrl.includes('script.google.com') && matchedUrl.includes('/exec')) {
+    matchedUrl = cleanGasUrl(matchedUrl);
+    if (GAS_API_URL && cleanGasUrl(GAS_API_URL) === matchedUrl) {
+      showToast('ℹ️ 已重新連線至此試算表，正在同步資料...', 'info');
       fetchMatrixData();
-      // 給予 iOS Safari 釋放底層 AVCaptureSession 充裕的緩衝時間 (150ms)
-      setTimeout(() => {
-        startCameraWithFacingMode(currentFacingMode);
-      }, 150);
+      return true;
+    }
+    localStorage.setItem('class_management_gas_api_url', matchedUrl);
+    localStorage.setItem('class_mgmt_gas_api_url', matchedUrl);
+    GAS_API_URL = matchedUrl;
+    triggerFeedback('success');
+    showToast('🎉 試算表綁定成功！正在連線載入錯題資料...', 'success');
+    const banner = document.getElementById('unbound-banner');
+    if (banner) banner.style.display = 'none';
+    setTimeout(() => {
+      fetchMatrixData();
+    }, 500);
+    return true;
+  }
+  return false;
+}
+
+// 增強版超穩定 GAS API 呼叫器（支援 fetch 優先、JSONP 備援、自動重試、與 18 秒冷啟動逾時）
+async function gasApiFetch(url, retries = 2, timeoutMs = 18000) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await singleGasApiFetch(url, timeoutMs);
+    } catch (err) {
+      console.warn('[GAS API] 第 ' + (attempt + 1) + ' 次連線失敗: ' + (err ? err.message : ''));
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000));
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
+function singleGasApiFetch(url, timeoutMs = 18000) {
+  return new Promise((resolve, reject) => {
+    const cleanUrl = cleanGasUrl(String(url));
+    const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+    const sep = cleanUrl.includes('?') ? '&' : '?';
+    const finalUrl = cleanUrl + sep + 'callback=' + callbackName + '&_t=' + Date.now();
+
+    let isSettled = false;
+    let scriptTag = null;
+
+    const timeoutTimer = setTimeout(() => {
+      if (isSettled) return;
+      isSettled = true;
+      cleanup();
+      reject(new Error('伺服器回應較慢 (逾時)'));
+    }, timeoutMs);
+
+    function cleanup() {
+      try {delete window[callbackName];} catch (e) {}
+      if (scriptTag && scriptTag.parentNode) {
+        scriptTag.parentNode.removeChild(scriptTag);
+      }
+    }
+
+    window[callbackName] = function (data) {
+      if (isSettled) return;
+      isSettled = true;
+      clearTimeout(timeoutTimer);
+      cleanup();
+      resolve(data);
+    };
+
+    // 1. 優先嘗試 fetch（加入 credentials: 'omit' 避免 Google 多帳號 Cookie 衝突）
+    fetch(finalUrl, { method: 'GET', redirect: 'follow', credentials: 'omit' }).
+    then((res) => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    }).
+    then((text) => {
+      if (isSettled) return;
+      const trimmed = (text || '').trim();
+      let parsedData = null;
+      if (trimmed.startsWith(callbackName + '(')) {
+        // 支援結尾有分號、換行等情況
+        const inner = trimmed.substring(callbackName.length + 1).replace(/\);?$/, '');
+        try {parsedData = JSON.parse(inner);} catch (e) {}
+      } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {parsedData = JSON.parse(trimmed);} catch (e) {}
+      }
+      if (parsedData) {
+        isSettled = true;
+        clearTimeout(timeoutTimer);
+        cleanup();
+        resolve(parsedData);
+      } else {
+        throw new Error('無法解析伺服器回應格式');
+      }
+    }).
+    catch((fetchErr) => {
+      if (isSettled) return;
+      console.warn('[GAS API] fetch 失敗或無法解析，改用 JSONP script 標籤備援:', fetchErr);
+      scriptTag = document.createElement('script');
+      scriptTag.crossOrigin = 'anonymous';
+      scriptTag.src = finalUrl;
+      scriptTag.onerror = function () {
+        if (isSettled) return;
+        isSettled = true;
+        clearTimeout(timeoutTimer);
+        cleanup();
+        reject(new Error('跨域連線失敗 (可能被瀏覽器防追蹤或擴充功能阻擋)'));
+      };
+      document.head.appendChild(scriptTag);
     });
+  });
+}
 
-    function getCurrAssign() {
-      const assignments = matrixDataCache.assignments || [];
-      if (!assignments.length) return null;
-
-      if (currentAssignKey) {
-        // 1. 精準比對 Key 或 colIndex
-        const found = assignments.find(a => {
-          const aKey = a.key || `${a.subject}_${a.category}_${a.colIndex}`;
-          return aKey === currentAssignKey || String(a.colIndex) === String(currentAssignKey);
-        });
-        if (found) return found;
-
-        // 2. 彈性比對：若 Key 包含科目與種類，優先比對同科目與種類的最新欄位
-        const keyParts = String(currentAssignKey).split('_');
-        if (keyParts.length >= 2) {
-          const sub = keyParts[0];
-          const cat = keyParts[1];
-          const matchedSubCat = assignments.filter(a => a.subject === sub && a.category === cat);
-          if (matchedSubCat.length > 0) {
-            const bestMatch = matchedSubCat[matchedSubCat.length - 1];
-            currentAssignKey = bestMatch.key || `${bestMatch.subject}_${bestMatch.category}_${bestMatch.colIndex}`;
-            return bestMatch;
-          }
-        }
-      }
-
-      // 3. 若完全未指定或無匹配，預設取最新（最後）一筆作業
-      const newest = assignments[assignments.length - 1];
-      if (newest) {
-        currentAssignKey = newest.key || `${newest.subject}_${newest.category}_${newest.colIndex}`;
-      }
-      return newest;
+async function gasApi(action, params = {}) {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    return new Promise((resolve, reject) => {
+      google.script.run.
+      withSuccessHandler((res) => resolve(res)).
+      withFailureHandler((err) => reject(err)).
+      handleScannerApiAction(action, params);
+    });
+  } else {
+    const cleanBase = cleanGasUrl(GAS_API_URL);
+    const url = new URL(cleanBase);
+    url.searchParams.set('action', action);
+    for (const [k, v] of Object.entries(params)) {
+      url.searchParams.set(k, v);
     }
+    return await gasApiFetch(url.toString());
+  }
+}
 
-    function setScanMode(mode) {
-      scanMode = mode;
-      const btnReg = document.getElementById('btn-mode-reg');
-      const btnClear = document.getElementById('btn-mode-clear');
-      const vf = document.getElementById('viewfinder');
-      const tip = document.getElementById('viewfinder-tip-txt');
+let isSilent = true;
+let scanMode = 'register'; // 'register' (🟧 登記) vs 'clear' (🟦 銷案)
+let matrixDataCache = { assignments: [], seatSummary: {}, records: [], vacantSeats: [] };
+let currentAssignKey = "";
+let html5QrCode = null;
+let isProcessingScan = false;
+let lastScannedPayload = "";
+let lastScanTime = 0;
+let currentFacingMode = 'environment'; // 'environment' (後置/螢幕背面) vs 'user' (前置/螢幕同側)
 
-      if (mode === 'register') {
-        if (btnReg) btnReg.className = 'header-mode-btn mode-reg active';
-        if (btnClear) btnClear.className = 'header-mode-btn mode-clear';
-        if (vf) vf.className = 'viewfinder-box status-register-effect';
-        if (tip) tip.textContent = '作業本 QR碼 置於框內 登記錯題';
-        showToast('已切換為：🟧 登記錯題模式 (標為 X)', 'orange');
-      } else {
-        if (btnReg) btnReg.className = 'header-mode-btn mode-reg';
-        if (btnClear) btnClear.className = 'header-mode-btn mode-clear active';
-        if (vf) vf.className = 'viewfinder-box status-clear-effect';
-        if (tip) tip.textContent = '作業本 QR碼 置於框內 錯題銷案';
-        showToast('已切換為：🟦 錯題銷案模式 (標為 O)', 'success');
+// ── 雙環境路由自動適配 (Google Apps Script vs Neocities 靜態網頁) ──
+function adaptInternalLinks() {
+  const isGas = typeof google !== 'undefined' && google.script && google.script.run ||
+  location.hostname.includes('script.google.com') ||
+  location.hostname.includes('googleusercontent.com');
+
+  if (!isGas) {
+    checkIosPwaButton();
+    document.querySelectorAll('a[href]').forEach((a) => {
+      const href = a.getAttribute('href');
+      if (!href) return;
+      const currentApi = typeof GAS_API_URL !== 'undefined' && GAS_API_URL ? GAS_API_URL : localStorage.getItem('class_mgmt_gas_api_url') || '';
+      const apiParam = currentApi ? "?api_url=".concat(encodeURIComponent(currentApi)) : '';
+      if (href.includes('page=correction') || href === 'correction.html') {
+        a.href = "correction.html".concat(apiParam);
+      } else if (href.includes('page=index') || href === 'index.html') {
+        a.href = "index.html".concat(apiParam);
+      } else if (href.includes('page=grading') || href === 'grading.html') {
+        a.href = "grading.html".concat(apiParam);
       }
-    }
+    });
+    return;
+  }
 
-    function initSeatGrid() {
-      const grid = document.getElementById('seat-grid');
-      grid.innerHTML = '';
-      for (let i = 1; i <= 30; i++) {
-        const div = document.createElement('div');
-        div.id = `seat-pill-${i}`;
-        div.className = 'seat-pill';
-        div.innerHTML = `<span class="pill-seat">${String(i).padStart(2, '0')}</span><span class="pill-icon">⚪</span>`;
-        grid.appendChild(div);
+  function applyGasUrls(baseGasUrl) {
+    if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
+    document.querySelectorAll('a[href]').forEach((a) => {
+      const href = a.getAttribute('href');
+      if (!href) return;
+      if (href === 'scanner.html' || href.includes('page=scanner')) {
+        a.href = "".concat(baseGasUrl, "?page=scanner");
+        a.target = '_top';
+      } else if (href === 'index.html' || href === baseGasUrl || href.endsWith('/exec')) {
+        a.href = "".concat(baseGasUrl);
+        a.target = '_top';
+      } else if (href === 'correction.html' || href.includes('page=correction')) {
+        a.href = "".concat(baseGasUrl, "?page=correction");
+        a.target = '_top';
+      } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
+        a.href = "".concat(baseGasUrl, "?page=correction_scanner");
+        a.target = '_top';
+      } else if (href === 'grading.html' || href.includes('page=grading')) {
+        a.href = "".concat(baseGasUrl, "?page=grading");
+        a.target = '_top';
+      } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
+        a.href = "".concat(baseGasUrl, "?page=sticker");
+        a.target = '_top';
       }
-    }
+    });
+  }
 
-    async function fetchMatrixData(isSilentSync = false, isRetry = false) {
-      if (!GAS_API_URL) {
-        const banner = document.getElementById('unbound-banner');
-        if (banner) banner.style.display = 'flex';
-        if (!isSilentSync) {
-          showToast('📱 尚未綁定試算表，請對準電腦螢幕上的 QR Code 掃碼綁定', 'info');
-        }
-        return;
+  let baseGasUrl = window._GAS_WEBAPP_URL;
+  if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
+    baseGasUrl = localStorage.getItem('class_mgmt_gas_api_url');
+  }
+  if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
+    baseGasUrl = location.href.split('?')[0];
+  }
+
+  if (baseGasUrl && baseGasUrl.startsWith('https://script.google.com')) {
+    applyGasUrls(baseGasUrl);
+  }
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run.withSuccessHandler((serverUrl) => {
+      if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
+        window._GAS_WEBAPP_URL = serverUrl;
+        localStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+        applyGasUrls(serverUrl);
       }
-      try {
-        if (!isSilentSync) {
-          showToast('⏳ 正在同步訂正矩陣...', 'success');
-        }
-        const res = await gasApi('getCorrectionMatrixData');
-        if (res && res.success) {
-          matrixDataCache = res;
+    }).getGasWebAppUrl();
+  }
+}
 
-          if (!currentAssignKey) {
-            try {
-              const savedKey = localStorage.getItem('class_management_last_assign_key');
-              if (savedKey) currentAssignKey = savedKey;
-            } catch(e){}
-          }
+window.addEventListener('DOMContentLoaded', () => {
+  adaptInternalLinks();
+  checkIosPwaButton();
+  initSeatGrid();
+  fetchMatrixData();
+  // 給予 iOS Safari 釋放底層 AVCaptureSession 充裕的緩衝時間 (150ms)
+  setTimeout(() => {
+    startCameraWithFacingMode(currentFacingMode);
+  }, 150);
+});
 
-          renderAssignDropdown();
-          renderSeatGrid();
+function getCurrAssign() {
+  const assignments = matrixDataCache.assignments || [];
+  if (!assignments.length) return null;
 
-          if (!isSilentSync) {
-            showToast(`🟢 同步成功 (${res.assignments ? res.assignments.length : 0} 項作業)`, 'success');
-          }
-        } else {
-          showToast('❌ 無法取得訂正矩陣資料', 'error');
-        }
-      } catch (err) {
-        if (!isRetry) {
-          console.warn("第一次同步失敗，自動發起第二次重試...", err);
-          setTimeout(() => { fetchMatrixData(isSilentSync, true); }, 1200);
-        } else {
-          showToast('❌ 連線異常: ' + (err.message || '請稍後重試'), 'error');
-        }
-      }
-    }
+  if (currentAssignKey) {
+    // 1. 精準比對 Key 或 colIndex
+    const found = assignments.find((a) => {
+      const aKey = a.key || "".concat(a.subject, "_").concat(a.category, "_").concat(a.colIndex);
+      return aKey === currentAssignKey || String(a.colIndex) === String(currentAssignKey);
+    });
+    if (found) return found;
 
-    function renderAssignDropdown() {
-      const select = document.getElementById('assign-select');
-      select.innerHTML = '';
-
-      const assignments = matrixDataCache.assignments || [];
-      if (assignments.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = "";
-        opt.textContent = "(尚無錯題作業，掃碼將自動新增)";
-        select.appendChild(opt);
-        currentAssignKey = "";
-        return;
-      }
-
-      assignments.forEach(a => {
-        const key = a.key || `${a.subject}_${a.category}_${a.colIndex}`;
-        const opt = document.createElement('option');
-        opt.value = key;
-        const detailStr = [a.unit, a.page].filter(Boolean).join(' ');
-        opt.textContent = `${a.date ? '[' + a.date + '] ' : ''}${a.subject} - ${a.category} ${detailStr ? '(' + detailStr + ')' : ''}`;
-        select.appendChild(opt);
-      });
-
-      const curr = getCurrAssign();
-      if (curr) {
-        currentAssignKey = curr.key || `${curr.subject}_${curr.category}_${curr.colIndex}`;
-        select.value = currentAssignKey;
-
-        if (select.value !== currentAssignKey && select.options.length > 0) {
-          select.selectedIndex = select.options.length - 1;
-          currentAssignKey = select.value;
-        }
+    // 2. 彈性比對：若 Key 包含科目與種類，優先比對同科目與種類的最新欄位
+    const keyParts = String(currentAssignKey).split('_');
+    if (keyParts.length >= 2) {
+      const sub = keyParts[0];
+      const cat = keyParts[1];
+      const matchedSubCat = assignments.filter((a) => a.subject === sub && a.category === cat);
+      if (matchedSubCat.length > 0) {
+        const bestMatch = matchedSubCat[matchedSubCat.length - 1];
+        currentAssignKey = bestMatch.key || "".concat(bestMatch.subject, "_").concat(bestMatch.category, "_").concat(bestMatch.colIndex);
+        return bestMatch;
       }
     }
+  }
 
-    function onAssignmentChanged() {
-      const select = document.getElementById('assign-select');
-      currentAssignKey = select.value;
-      if (currentAssignKey) {
-        try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+  // 3. 若完全未指定或無匹配，預設取最新（最後）一筆作業
+  const newest = assignments[assignments.length - 1];
+  if (newest) {
+    currentAssignKey = newest.key || "".concat(newest.subject, "_").concat(newest.category, "_").concat(newest.colIndex);
+  }
+  return newest;
+}
+
+function setScanMode(mode) {
+  scanMode = mode;
+  const btnReg = document.getElementById('btn-mode-reg');
+  const btnClear = document.getElementById('btn-mode-clear');
+  const vf = document.getElementById('viewfinder');
+  const tip = document.getElementById('viewfinder-tip-txt');
+
+  if (mode === 'register') {
+    if (btnReg) btnReg.className = 'header-mode-btn mode-reg active';
+    if (btnClear) btnClear.className = 'header-mode-btn mode-clear';
+    if (vf) vf.className = 'viewfinder-box status-register-effect';
+    if (tip) tip.textContent = '作業本 QR碼 置於框內 登記錯題';
+    showToast('已切換為：🟧 登記錯題模式 (標為 X)', 'orange');
+  } else {
+    if (btnReg) btnReg.className = 'header-mode-btn mode-reg';
+    if (btnClear) btnClear.className = 'header-mode-btn mode-clear active';
+    if (vf) vf.className = 'viewfinder-box status-clear-effect';
+    if (tip) tip.textContent = '作業本 QR碼 置於框內 錯題銷案';
+    showToast('已切換為：🟦 錯題銷案模式 (標為 O)', 'success');
+  }
+}
+
+function initSeatGrid() {
+  const grid = document.getElementById('seat-grid');
+  grid.innerHTML = '';
+  for (let i = 1; i <= 30; i++) {
+    const div = document.createElement('div');
+    div.id = "seat-pill-".concat(i);
+    div.className = 'seat-pill';
+    div.innerHTML = "<span class=\"pill-seat\">".concat(String(i).padStart(2, '0'), "</span><span class=\"pill-icon\">⚪</span>");
+    grid.appendChild(div);
+  }
+}
+
+async function fetchMatrixData(isSilentSync = false, isRetry = false) {
+  if (!GAS_API_URL) {
+    const banner = document.getElementById('unbound-banner');
+    if (banner) banner.style.display = 'flex';
+    if (!isSilentSync) {
+      showToast('📱 尚未綁定試算表，請對準電腦螢幕上的 QR Code 掃碼綁定', 'info');
+    }
+    return;
+  }
+  try {
+    if (!isSilentSync) {
+      showToast('⏳ 正在同步訂正矩陣...', 'success');
+    }
+    const res = await gasApi('getCorrectionMatrixData');
+    if (res && res.success) {
+      matrixDataCache = res;
+
+      if (!currentAssignKey) {
+        try {
+          const savedKey = localStorage.getItem('class_management_last_assign_key');
+          if (savedKey) currentAssignKey = savedKey;
+        } catch (e) {}
       }
+
+      renderAssignDropdown();
       renderSeatGrid();
+
+      if (!isSilentSync) {
+        showToast("🟢 同步成功 (".concat(res.assignments ? res.assignments.length : 0, " 項作業)"), 'success');
+      }
+    } else {
+      showToast('❌ 無法取得訂正矩陣資料', 'error');
     }
-
-    function renderSeatGrid() {
-      const vacantSeats = matrixDataCache.vacantSeats || [];
-      const records = matrixDataCache.records || [];
-      const currAssign = getCurrAssign();
-
-      let statError = 0;
-      let statCorrected = 0;
-      let statClean = 0;
-
-      for (let i = 1; i <= 30; i++) {
-        const pill = document.getElementById(`seat-pill-${i}`);
-        if (!pill) continue;
-
-        if (vacantSeats.includes(i)) {
-          pill.style.display = 'none';
-          continue;
-        }
-        pill.style.display = '';
-
-        const seatStr = String(i).padStart(2, '0');
-        let status = 'clean'; // 'clean', 'error', 'corrected'
-
-        if (currAssign) {
-          const rec = records.find(r => Number(r.colIndex) === Number(currAssign.colIndex) && r.seat === seatStr);
-          if (rec) {
-            if (rec.status === 'X') status = 'error';
-            else if (rec.status === 'O') status = 'corrected';
-          }
-        }
-
-        if (status === 'error') {
-          statError++;
-          pill.className = 'seat-pill status-error';
-          pill.innerHTML = `<span class="pill-seat">${seatStr}</span><span class="pill-icon">🟧</span>`;
-        } else if (status === 'corrected') {
-          statCorrected++;
-          pill.className = 'seat-pill status-corrected';
-          pill.innerHTML = `<span class="pill-seat">${seatStr}</span><span class="pill-icon">🟦</span>`;
-        } else {
-          statClean++;
-          pill.className = 'seat-pill'; // 預設暗灰
-          pill.innerHTML = `<span class="pill-seat">${seatStr}</span><span class="pill-icon">⚪</span>`;
-        }
-
-        pill.onclick = () => toggleSeatCorrectionStatus(i);
-      }
-
-      document.getElementById('stat-error').textContent = `待訂正 🟧 ${statError}`;
-      document.getElementById('stat-corrected').textContent = `已訂正 🟦 ${statCorrected}`;
-      document.getElementById('stat-clean').textContent = `無錯題 ${statClean}`;
-
-      if (currAssign) {
-        let noteParts = [];
-        if (currAssign.unit) {
-          noteParts.push(`第${currAssign.unit}單元`);
-        }
-        if (currAssign.page) {
-          noteParts.push(`${currAssign.page}頁`);
-        }
-        document.getElementById('assign-subnote').textContent = noteParts.join(' ');
-      } else {
-        document.getElementById('assign-subnote').textContent = '';
-      }
+  } catch (err) {
+    if (!isRetry) {
+      console.warn("第一次同步失敗，自動發起第二次重試...", err);
+      setTimeout(() => {fetchMatrixData(isSilentSync, true);}, 1200);
+    } else {
+      showToast('❌ 連線異常: ' + (err.message || '請稍後重試'), 'error');
     }
+  }
+}
 
-    async function toggleSeatCorrectionStatus(seatNo) {
-      const seatStr = String(seatNo).padStart(2, '0');
-      const currAssign = getCurrAssign();
+function renderAssignDropdown() {
+  const select = document.getElementById('assign-select');
+  select.innerHTML = '';
 
-      if (!currAssign) {
-        showToast('⚠️ 請先選擇作業項目或新增作業', 'error');
-        return;
-      }
+  const assignments = matrixDataCache.assignments || [];
+  if (assignments.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = "";
+    opt.textContent = "(尚無錯題作業，掃碼將自動新增)";
+    select.appendChild(opt);
+    currentAssignKey = "";
+    return;
+  }
 
-      const rec = (matrixDataCache.records || []).find(r => Number(r.colIndex) === Number(currAssign.colIndex) && r.seat === seatStr);
-      let nextStatus = 'X';
+  assignments.forEach((a) => {
+    const key = a.key || "".concat(a.subject, "_").concat(a.category, "_").concat(a.colIndex);
+    const opt = document.createElement('option');
+    opt.value = key;
+    const detailStr = [a.unit, a.page].filter(Boolean).join(' ');
+    opt.textContent = "".concat(a.date ? '[' + a.date + '] ' : '').concat(a.subject, " - ").concat(a.category, " ").concat(detailStr ? '(' + detailStr + ')' : '');
+    select.appendChild(opt);
+  });
+
+  const curr = getCurrAssign();
+  if (curr) {
+    currentAssignKey = curr.key || "".concat(curr.subject, "_").concat(curr.category, "_").concat(curr.colIndex);
+    select.value = currentAssignKey;
+
+    if (select.value !== currentAssignKey && select.options.length > 0) {
+      select.selectedIndex = select.options.length - 1;
+      currentAssignKey = select.value;
+    }
+  }
+}
+
+function onAssignmentChanged() {
+  const select = document.getElementById('assign-select');
+  currentAssignKey = select.value;
+  if (currentAssignKey) {
+    try {localStorage.setItem('class_management_last_assign_key', currentAssignKey);} catch (e) {}
+  }
+  renderSeatGrid();
+}
+
+function renderSeatGrid() {
+  const vacantSeats = matrixDataCache.vacantSeats || [];
+  const records = matrixDataCache.records || [];
+  const currAssign = getCurrAssign();
+
+  let statError = 0;
+  let statCorrected = 0;
+  let statClean = 0;
+
+  for (let i = 1; i <= 30; i++) {
+    const pill = document.getElementById("seat-pill-".concat(i));
+    if (!pill) continue;
+
+    if (vacantSeats.includes(i)) {
+      pill.style.display = 'none';
+      continue;
+    }
+    pill.style.display = '';
+
+    const seatStr = String(i).padStart(2, '0');
+    let status = 'clean'; // 'clean', 'error', 'corrected'
+
+    if (currAssign) {
+      const rec = records.find((r) => Number(r.colIndex) === Number(currAssign.colIndex) && r.seat === seatStr);
       if (rec) {
-        if (rec.status === 'X') nextStatus = 'O';
-        else if (rec.status === 'O') nextStatus = '';
-        else nextStatus = 'X';
-      }
-
-      showToast(`⏳ 正在切換 ${seatStr}號 的訂正狀態...`, 'success');
-      try {
-        const res = await gasApi('updateCorrectionMatrixCell', {
-          colIndex: currAssign.colIndex,
-          seat: seatStr,
-          status: nextStatus
-        });
-        if (res && res.success) {
-          triggerFeedback('success');
-          showToast(`🟢 已更新 ${seatStr}號 狀態為【${nextStatus || '無錯題'}】`, 'success');
-          await fetchMatrixData();
-        } else {
-          showToast(`❌ 更新失敗: ${res ? res.message : ''}`, 'error');
-        }
-      } catch (err) {
-        showToast('❌ 網路連線異常', 'error');
+        if (rec.status === 'X') status = 'error';else
+        if (rec.status === 'O') status = 'corrected';
       }
     }
 
-    let tempSelectedOtherPageScanner = null;
-    let pendingScanData = null;
+    if (status === 'error') {
+      statError++;
+      pill.className = 'seat-pill status-error';
+      pill.innerHTML = "<span class=\"pill-seat\">".concat(seatStr, "</span><span class=\"pill-icon\">🟧</span>");
+    } else if (status === 'corrected') {
+      statCorrected++;
+      pill.className = 'seat-pill status-corrected';
+      pill.innerHTML = "<span class=\"pill-seat\">".concat(seatStr, "</span><span class=\"pill-icon\">🟦</span>");
+    } else {
+      statClean++;
+      pill.className = 'seat-pill'; // 預設暗灰
+      pill.innerHTML = "<span class=\"pill-seat\">".concat(seatStr, "</span><span class=\"pill-icon\">⚪</span>");
+    }
 
-    async function openOtherPageModal(isAutoPrompt = false, targetSub = null, targetCat = null, seatStr = null) {
-      let subject = targetSub;
-      let category = targetCat;
-      if (!subject || !category) {
-        const curr = getCurrAssign();
-        subject = curr ? curr.subject : '國語';
-        category = curr ? curr.category : '甲本';
-      }
+    pill.onclick = () => toggleSeatCorrectionStatus(i);
+  }
 
-      const modalTitle = document.getElementById('other-page-modal-title');
-      const modalHint = document.getElementById('other-page-modal-hint');
-      const confirmBtn = document.getElementById('btn-confirm-other-page');
+  document.getElementById('stat-error').textContent = "待訂正 🟧 ".concat(statError);
+  document.getElementById('stat-corrected').textContent = "已訂正 🟦 ".concat(statCorrected);
+  document.getElementById('stat-clean').textContent = "無錯題 ".concat(statClean);
 
-      if (isAutoPrompt && seatStr) {
-        if (modalTitle) modalTitle.textContent = `📑 請選擇作業單元 — 【${subject} ${category}】`;
-        if (modalHint) modalHint.innerHTML = `🎯 已掃描 <strong>${seatStr}</strong> 號！請選擇欲登錄的作業單元：`;
-        if (confirmBtn) confirmBtn.textContent = `✔️ 確定切換並登錄 ${seatStr}號`;
-      } else {
-        if (modalTitle) modalTitle.textContent = `📑 選擇作業單元 (它頁) — 【${subject} ${category}】`;
-        if (modalHint) modalHint.innerHTML = `💡 從「作業清點表」讀取，由最新收繳依序排列：`;
-        if (confirmBtn) confirmBtn.textContent = `✔️ 確定切換`;
-      }
+  if (currAssign) {
+    let noteParts = [];
+    if (currAssign.unit) {
+      noteParts.push("第".concat(currAssign.unit, "單元"));
+    }
+    if (currAssign.page) {
+      noteParts.push("".concat(currAssign.page, "頁"));
+    }
+    document.getElementById('assign-subnote').textContent = noteParts.join(' ');
+  } else {
+    document.getElementById('assign-subnote').textContent = '';
+  }
+}
 
-      const listEl = document.getElementById('other-page-list');
-      listEl.innerHTML = '';
+async function toggleSeatCorrectionStatus(seatNo) {
+  const seatStr = String(seatNo).padStart(2, '0');
+  const currAssign = getCurrAssign();
 
-      // 永遠即時向後端查詢「作業清點表」最新欄位，確保試算表改動 (例如 15 改成 16) 能 100% 即時呈現
-      let checkinList = [];
-      try {
-        const chkRes = await gasApi('getCheckinAssignments', { subject, category });
-        if (chkRes && chkRes.success && Array.isArray(chkRes.list)) {
-          checkinList = chkRes.list;
-          if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
-          matrixDataCache.checkinAssignments = matrixDataCache.checkinAssignments.filter(c =>
-            !(c.subject === subject && c.category === category)
-          ).concat(chkRes.list);
+  if (!currAssign) {
+    showToast('⚠️ 請先選擇作業項目或新增作業', 'error');
+    return;
+  }
+
+  const rec = (matrixDataCache.records || []).find((r) => Number(r.colIndex) === Number(currAssign.colIndex) && r.seat === seatStr);
+  let nextStatus = 'X';
+  if (rec) {
+    if (rec.status === 'X') nextStatus = 'O';else
+    if (rec.status === 'O') nextStatus = '';else
+    nextStatus = 'X';
+  }
+
+  showToast("⏳ 正在切換 ".concat(seatStr, "號 的訂正狀態..."), 'success');
+  try {
+    const res = await gasApi('updateCorrectionMatrixCell', {
+      colIndex: currAssign.colIndex,
+      seat: seatStr,
+      status: nextStatus
+    });
+    if (res && res.success) {
+      triggerFeedback('success');
+      showToast("🟢 已更新 ".concat(seatStr, "號 狀態為【").concat(nextStatus || '無錯題', "】"), 'success');
+      await fetchMatrixData();
+    } else {
+      showToast("❌ 更新失敗: ".concat(res ? res.message : ''), 'error');
+    }
+  } catch (err) {
+    showToast('❌ 網路連線異常', 'error');
+  }
+}
+
+let tempSelectedOtherPageScanner = null;
+let pendingScanData = null;
+
+async function openOtherPageModal(isAutoPrompt = false, targetSub = null, targetCat = null, seatStr = null) {
+  let subject = targetSub;
+  let category = targetCat;
+  if (!subject || !category) {
+    const curr = getCurrAssign();
+    subject = curr ? curr.subject : '國語';
+    category = curr ? curr.category : '甲本';
+  }
+
+  const modalTitle = document.getElementById('other-page-modal-title');
+  const modalHint = document.getElementById('other-page-modal-hint');
+  const confirmBtn = document.getElementById('btn-confirm-other-page');
+
+  if (isAutoPrompt && seatStr) {
+    if (modalTitle) modalTitle.textContent = "📑 請選擇作業單元 — 【".concat(subject, " ").concat(category, "】");
+    if (modalHint) modalHint.innerHTML = "🎯 已掃描 <strong>".concat(seatStr, "</strong> 號！請選擇欲登錄的作業單元：");
+    if (confirmBtn) confirmBtn.textContent = "✔️ 確定切換並登錄 ".concat(seatStr, "號");
+  } else {
+    if (modalTitle) modalTitle.textContent = "📑 選擇作業單元 (它頁) — 【".concat(subject, " ").concat(category, "】");
+    if (modalHint) modalHint.innerHTML = "💡 從「作業清點表」讀取，由最新收繳依序排列：";
+    if (confirmBtn) confirmBtn.textContent = "✔️ 確定切換";
+  }
+
+  const listEl = document.getElementById('other-page-list');
+  listEl.innerHTML = '';
+
+  // 永遠即時向後端查詢「作業清點表」最新欄位，確保試算表改動 (例如 15 改成 16) 能 100% 即時呈現
+  let checkinList = [];
+  try {
+    const chkRes = await gasApi('getCheckinAssignments', { subject, category });
+    if (chkRes && chkRes.success && Array.isArray(chkRes.list)) {
+      checkinList = chkRes.list;
+      if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
+      matrixDataCache.checkinAssignments = matrixDataCache.checkinAssignments.filter((c) =>
+      !(c.subject === subject && c.category === category)
+      ).concat(chkRes.list);
+    }
+  } catch (e) {
+    console.warn('即時查詢清點紀錄失敗:', e);
+    // fallback to cache
+    checkinList = (matrixDataCache.checkinAssignments || []).filter((item) =>
+    String(item.subject || '').trim() === String(subject || '').trim() &&
+    String(item.category || '').trim() === String(category || '').trim()
+    );
+  }
+
+  const assignments = matrixDataCache.assignments || [];
+  tempSelectedOtherPageScanner = null;
+
+  if (checkinList.length === 0) {
+    listEl.innerHTML = "\n          <div style=\"font-size:0.82rem; color:#94a3b8; text-align:center; padding:12px; background:#0f172a; border-radius:8px;\">\n            清點分頁尚未有【".concat(
+
+      subject, " ").concat(category, "】的收繳紀錄。<br>\n            您可以直接在下方輸入單元與頁數進行登記！\n          </div>\n        ");
+
+
+
+    const customBox = document.getElementById('custom-unit-box');
+    if (customBox) customBox.style.display = 'flex';
+    tempSelectedOtherPageScanner = 'custom';
+  } else {
+    const curr = getCurrAssign();
+    const customBox = document.getElementById('custom-unit-box');
+    if (customBox) customBox.style.display = 'none';
+
+    checkinList.forEach((item, idx) => {
+      const matchedAssign = assignments.find((a) =>
+      a.subject === item.subject && a.category === item.category &&
+      String(a.unit || '').trim() === String(item.unit || '').trim() &&
+      String(a.page || '').trim() === String(item.page || '').trim()
+      );
+
+      let statusBadge = '<span style="font-size:0.7rem; color:#64748b; background:#1e293b; padding:2px 6px; border-radius:4px;">未建欄</span>';
+      if (matchedAssign) {
+        const errorCount = (matrixDataCache.records || []).filter((r) => r.colIndex === matchedAssign.colIndex && r.status === 'X').length;
+        if (errorCount > 0) {
+          statusBadge = "<span style=\"font-size:0.7rem; color:#fb923c; background:rgba(249,115,22,0.2); border:1px solid #f97316; padding:2px 6px; border-radius:4px; font-weight:700;\">待訂正: ".concat(errorCount, "人</span>");
+        } else {
+          statusBadge = '<span style="font-size:0.7rem; color:#38bdf8; background:rgba(56,189,248,0.2); border:1px solid #0284c7; padding:2px 6px; border-radius:4px; font-weight:700;">已建欄</span>';
         }
-      } catch (e) {
-        console.warn('即時查詢清點紀錄失敗:', e);
-        // fallback to cache
-        checkinList = (matrixDataCache.checkinAssignments || []).filter(item =>
-          String(item.subject || '').trim() === String(subject || '').trim() &&
-          String(item.category || '').trim() === String(category || '').trim()
-        );
       }
 
-      const assignments = matrixDataCache.assignments || [];
-      tempSelectedOtherPageScanner = null;
+      const isCurrent = curr && curr.subject === subject && curr.category === category &&
+      String(curr.unit || '').trim() === String(item.unit || '').trim() &&
+      String(curr.page || '').trim() === String(item.page || '').trim() || !curr && idx === 0 || idx === 0 && !tempSelectedOtherPageScanner;
 
-      if (checkinList.length === 0) {
-        listEl.innerHTML = `
-          <div style="font-size:0.82rem; color:#94a3b8; text-align:center; padding:12px; background:#0f172a; border-radius:8px;">
-            清點分頁尚未有【${subject} ${category}】的收繳紀錄。<br>
-            您可以直接在下方輸入單元與頁數進行登記！
-          </div>
-        `;
-        const customBox = document.getElementById('custom-unit-box');
-        if (customBox) customBox.style.display = 'flex';
-        tempSelectedOtherPageScanner = 'custom';
-      } else {
-        const curr = getCurrAssign();
-        const customBox = document.getElementById('custom-unit-box');
-        if (customBox) customBox.style.display = 'none';
+      const card = document.createElement('label');
+      card.style.cssText = "display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:".concat(isCurrent ? '#172554' : '#0f172a', "; border:1px solid ").concat(isCurrent ? '#38bdf8' : '#334155', "; border-radius:8px; cursor:pointer; gap:8px; margin-bottom:4px;");
+      card.innerHTML = "\n            <div style=\"display:flex; align-items:center; gap:8px; min-width:0;\">\n              <input type=\"radio\" name=\"other_page_opt_scanner\" value=\"".concat(
 
-        checkinList.forEach((item, idx) => {
-          const matchedAssign = assignments.find(a =>
-            a.subject === item.subject && a.category === item.category &&
-            String(a.unit || '').trim() === String(item.unit || '').trim() &&
-            String(a.page || '').trim() === String(item.page || '').trim()
-          );
+        idx, "\" ").concat(isCurrent ? 'checked' : '', " style=\"accent-color:#38bdf8;\">\n              <div style=\"display:flex; flex-direction:column; gap:1px; min-width:0;\">\n                <div style=\"font-size:0.82rem; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:6px;\">\n                  <span style=\"color:#38bdf8; font-size:0.72rem;\">[").concat(
 
-          let statusBadge = '<span style="font-size:0.7rem; color:#64748b; background:#1e293b; padding:2px 6px; border-radius:4px;">未建欄</span>';
-          if (matchedAssign) {
-            const errorCount = (matrixDataCache.records || []).filter(r => r.colIndex === matchedAssign.colIndex && r.status === 'X').length;
-            if (errorCount > 0) {
-              statusBadge = `<span style="font-size:0.7rem; color:#fb923c; background:rgba(249,115,22,0.2); border:1px solid #f97316; padding:2px 6px; border-radius:4px; font-weight:700;">待訂正: ${errorCount}人</span>`;
-            } else {
-              statusBadge = '<span style="font-size:0.7rem; color:#38bdf8; background:rgba(56,189,248,0.2); border:1px solid #0284c7; padding:2px 6px; border-radius:4px; font-weight:700;">已建欄</span>';
-            }
-          }
 
-          const isCurrent = (curr && curr.subject === subject && curr.category === category &&
-            String(curr.unit || '').trim() === String(item.unit || '').trim() &&
-            String(curr.page || '').trim() === String(item.page || '').trim()) || (!curr && idx === 0) || (idx === 0 && !tempSelectedOtherPageScanner);
+        item.date, "]</span>\n                  <span>").concat(
+        item.unit || '無單元', "</span>\n                  <span style=\"color:#94a3b8; font-size:0.75rem;\">").concat(
+        item.page ? '(' + item.page + ')' : '', "</span>\n                </div>\n              </div>\n            </div>\n            <div>").concat(
 
-          const card = document.createElement('label');
-          card.style.cssText = `display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:${isCurrent ? '#172554' : '#0f172a'}; border:1px solid ${isCurrent ? '#38bdf8' : '#334155'}; border-radius:8px; cursor:pointer; gap:8px; margin-bottom:4px;`;
-          card.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px; min-width:0;">
-              <input type="radio" name="other_page_opt_scanner" value="${idx}" ${isCurrent ? 'checked' : ''} style="accent-color:#38bdf8;">
-              <div style="display:flex; flex-direction:column; gap:1px; min-width:0;">
-                <div style="font-size:0.82rem; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:6px;">
-                  <span style="color:#38bdf8; font-size:0.72rem;">[${item.date}]</span>
-                  <span>${item.unit || '無單元'}</span>
-                  <span style="color:#94a3b8; font-size:0.75rem;">${item.page ? '(' + item.page + ')' : ''}</span>
-                </div>
-              </div>
-            </div>
-            <div>${statusBadge}</div>
-          `;
-          card.onclick = () => {
-            document.querySelectorAll('#other-page-list label').forEach(l => {
-              l.style.background = '#0f172a';
-              l.style.borderColor = '#334155';
-            });
-            card.style.background = '#172554';
-            card.style.borderColor = '#38bdf8';
-            const cBox = document.getElementById('custom-unit-box');
-            if (cBox) cBox.style.display = 'none';
-            tempSelectedOtherPageScanner = item;
-          };
-          listEl.appendChild(card);
 
-          if (isCurrent) {
-            tempSelectedOtherPageScanner = item;
-          }
-        });
-      }
 
-      // ➕ 自訂新單元選項
-      const customCard = document.createElement('label');
-      customCard.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 10px; background:#0f172a; border:1px dashed #475569; border-radius:8px; cursor:pointer; margin-top:2px;';
-      customCard.innerHTML = `
-        <input type="radio" name="other_page_opt_scanner" value="custom" style="accent-color:#38bdf8;">
-        <span style="font-size:0.8rem; font-weight:700; color:#94a3b8;">➕ 自訂其它新單元/頁數...</span>
-      `;
-      customCard.onclick = () => {
-        document.querySelectorAll('#other-page-list label').forEach(l => {
+        statusBadge, "</div>\n          ");
+
+      card.onclick = () => {
+        document.querySelectorAll('#other-page-list label').forEach((l) => {
           l.style.background = '#0f172a';
           l.style.borderColor = '#334155';
         });
-        customCard.style.background = '#1e293b';
-        customCard.style.borderColor = '#38bdf8';
-        const customBox = document.getElementById('custom-unit-box');
-        if (customBox) customBox.style.display = 'flex';
-        tempSelectedOtherPageScanner = 'custom';
+        card.style.background = '#172554';
+        card.style.borderColor = '#38bdf8';
+        const cBox = document.getElementById('custom-unit-box');
+        if (cBox) cBox.style.display = 'none';
+        tempSelectedOtherPageScanner = item;
       };
-      listEl.appendChild(customCard);
+      listEl.appendChild(card);
 
-      document.getElementById('other-page-modal').classList.remove('hidden');
+      if (isCurrent) {
+        tempSelectedOtherPageScanner = item;
+      }
+    });
+  }
+
+  // ➕ 自訂新單元選項
+  const customCard = document.createElement('label');
+  customCard.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px 10px; background:#0f172a; border:1px dashed #475569; border-radius:8px; cursor:pointer; margin-top:2px;';
+  customCard.innerHTML = "\n        <input type=\"radio\" name=\"other_page_opt_scanner\" value=\"custom\" style=\"accent-color:#38bdf8;\">\n        <span style=\"font-size:0.8rem; font-weight:700; color:#94a3b8;\">➕ 自訂其它新單元/頁數...</span>\n      ";
+
+
+
+  customCard.onclick = () => {
+    document.querySelectorAll('#other-page-list label').forEach((l) => {
+      l.style.background = '#0f172a';
+      l.style.borderColor = '#334155';
+    });
+    customCard.style.background = '#1e293b';
+    customCard.style.borderColor = '#38bdf8';
+    const customBox = document.getElementById('custom-unit-box');
+    if (customBox) customBox.style.display = 'flex';
+    tempSelectedOtherPageScanner = 'custom';
+  };
+  listEl.appendChild(customCard);
+
+  document.getElementById('other-page-modal').classList.remove('hidden');
+}
+
+function closeOtherPageModal() {
+  document.getElementById('other-page-modal').classList.add('hidden');
+  if (pendingScanData) {
+    pendingScanData = null;
+    isProcessingScan = false;
+  }
+}
+
+async function confirmOtherPageSelection() {
+  if (!tempSelectedOtherPageScanner) {
+    closeOtherPageModal();
+    return;
+  }
+
+  const pData = pendingScanData;
+  pendingScanData = null;
+
+  let subject = pData ? pData.subject : null;
+  let category = pData ? pData.category : null;
+
+  if (!subject || !category) {
+    const curr = getCurrAssign();
+    subject = curr ? curr.subject : '國語';
+    category = curr ? curr.category : '甲本';
+  }
+
+  let targetUnit = '';
+  let targetPage = '';
+  let targetDate = '';
+
+  if (tempSelectedOtherPageScanner === 'custom') {
+    targetUnit = document.getElementById('custom-unit-input').value.trim();
+    targetPage = document.getElementById('custom-page-input').value.trim();
+    if (!targetUnit && !targetPage) {
+      alert('請輸入自訂的單元或頁數！');
+      return;
     }
+    targetDate = '';
+  } else {
+    targetUnit = String(tempSelectedOtherPageScanner.unit || '').trim();
+    targetPage = String(tempSelectedOtherPageScanner.page || '').trim();
+    targetDate = String(tempSelectedOtherPageScanner.date || '').trim();
+  }
 
-    function closeOtherPageModal() {
-      document.getElementById('other-page-modal').classList.add('hidden');
-      if (pendingScanData) {
-        pendingScanData = null;
-        isProcessingScan = false;
-      }
-    }
+  closeOtherPageModal();
 
-    async function confirmOtherPageSelection() {
-      if (!tempSelectedOtherPageScanner) {
-        closeOtherPageModal();
-        return;
-      }
+  if (pData && pData.seatStr) {
+    const seatStr = pData.seatStr;
+    const mode = pData.mode || 'register';
 
-      const pData = pendingScanData;
-      pendingScanData = null;
-
-      let subject = pData ? pData.subject : null;
-      let category = pData ? pData.category : null;
-
-      if (!subject || !category) {
-        const curr = getCurrAssign();
-        subject = curr ? curr.subject : '國語';
-        category = curr ? curr.category : '甲本';
-      }
-
-      let targetUnit = '';
-      let targetPage = '';
-      let targetDate = '';
-
-      if (tempSelectedOtherPageScanner === 'custom') {
-        targetUnit = document.getElementById('custom-unit-input').value.trim();
-        targetPage = document.getElementById('custom-page-input').value.trim();
-        if (!targetUnit && !targetPage) {
-          alert('請輸入自訂的單元或頁數！');
-          return;
-        }
-        targetDate = '';
-      } else {
-        targetUnit = String(tempSelectedOtherPageScanner.unit || '').trim();
-        targetPage = String(tempSelectedOtherPageScanner.page || '').trim();
-        targetDate = String(tempSelectedOtherPageScanner.date || '').trim();
-      }
-
-      closeOtherPageModal();
-
-      if (pData && pData.seatStr) {
-        const seatStr = pData.seatStr;
-        const mode = pData.mode || 'register';
-
-        if (mode === 'register') {
-          showToast(`⏳ 正在為 ${seatStr}號 登錄【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正...`, 'orange');
-          try {
-            const apiParams = {
-              seat: seatStr,
-              subject: subject,
-              category: category,
-              unit: targetUnit,
-              page: targetPage,
-              date: targetDate
-            };
-            const res = await gasApi('addCorrectionRecordMatrix', apiParams);
-
-            if (res && res.success) {
-              triggerFeedback('success');
-              let msg = `🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`;
-              if (res.madeUpCheckin) {
-                msg += `（📢 該生原未在清點表登記，已自動補登為已繳交 1）`;
-              }
-              showToast(msg, 'orange');
-              currentAssignKey = res.key || `${subject}_${category}_${res.colIndex || ''}`;
-              try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
-              await fetchMatrixData(true);
-            } else {
-              triggerFeedback('error');
-              showToast(`❌ 登記失敗: ${res ? res.message : ''}`, 'error');
-            }
-          } catch (err) {
-            showToast('❌ 網路連線異常', 'error');
-          } finally {
-            setTimeout(() => { isProcessingScan = false; }, 1000);
-          }
-        } else {
-          // 銷案模式
-          showToast(`⏳ 正在為 ${seatStr}號 辦理銷案...`, 'success');
-          try {
-            const resCol = await gasApi('addCorrectionRecordMatrix', {
-              createOnly: true,
-              subject: subject,
-              category: category,
-              unit: targetUnit,
-              page: targetPage,
-              date: targetDate
-            });
-            if (resCol && resCol.success) {
-              currentAssignKey = resCol.key || `${subject}_${category}_${resCol.colIndex || ''}`;
-              try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
-              const resClear = await gasApi('updateCorrectionMatrixCell', {
-                colIndex: resCol.colIndex,
-                seat: seatStr,
-                status: 'O'
-              });
-              if (resClear && resClear.success) {
-                triggerFeedback('success');
-                showToast(`🟦 已完成 ${seatStr}號【${subject} ${category}】錯題銷案 (O)`, 'success');
-                await fetchMatrixData(true);
-              } else {
-                showToast(`❌ 銷案失敗: ${resClear ? resClear.message : ''}`, 'error');
-              }
-            } else {
-              showToast(`❌ 欄位處理失敗`, 'error');
-            }
-          } catch (err) {
-            showToast('❌ 網路連線異常', 'error');
-          } finally {
-            setTimeout(() => { isProcessingScan = false; }, 1000);
-          }
-        }
-      } else {
-        // 使用者主動點擊 [ 📑 它頁 ] 按鈕切換
-        showToast(`⏳ 正在切換至【${targetUnit || '新單元'}】...`, 'success');
-        try {
-          const res = await gasApi('addCorrectionRecordMatrix', {
-            createOnly: true,
-            subject: subject,
-            category: category,
-            unit: targetUnit,
-            page: targetPage,
-            date: targetDate
-          });
-
-          if (res && res.success) {
-            currentAssignKey = res.key || `${subject}_${category}_${res.colIndex}`;
-            try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
-            await fetchMatrixData();
-            triggerFeedback('success');
-            showToast(`🟢 已切換至：${targetUnit || '無單元'} ${targetPage ? '(' + targetPage + ')' : ''}`, 'success');
-          } else {
-            showToast(`❌ 切換失敗: ${res ? res.message : ''}`, 'error');
-          }
-        } catch (err) {
-          showToast('❌ 網路連線異常', 'error');
-        } finally {
-          isProcessingScan = false;
-        }
-      }
-    }
-
-    let pendingMakeUpParams = null;
-
-    function showMakeUpConfirmModal(params, serverRes) {
-      pendingMakeUpParams = { ...params };
-      const descEl = document.getElementById('makeup-modal-desc');
-      if (descEl) {
-        const seatStr = serverRes.seat || params.seat;
-        const sub = serverRes.subject || params.subject;
-        const cat = serverRes.category || params.category;
-        const u = serverRes.unit || params.unit || '';
-        const p = serverRes.page || params.page || '';
-        const d = serverRes.date || params.date || '';
-        descEl.innerHTML = `
-          座號 <b style="color:#38bdf8; font-size:1.05rem;">${seatStr}</b> 號 在「作業清點表」中尚未登記繳交：<br>
-          <div style="margin-top:6px; padding:6px 10px; background:#1e293b; border-radius:6px; color:#f59e0b; font-weight:700;">
-            ${d ? '[' + d + '] ' : ''}${sub} ${cat}${u ? ' 單元 ' + u : ''}${p ? ' (' + p + ')' : ''}
-          </div>
-        `;
-      }
-      document.getElementById('makeup-confirm-modal').classList.remove('hidden');
-    }
-
-    function closeMakeUpModal() {
-      document.getElementById('makeup-confirm-modal').classList.add('hidden');
-      pendingMakeUpParams = null;
-      pendingScanData = null;
-      isProcessingScan = false;
-    }
-
-    async function confirmMakeUpChoice(shouldMakeUp) {
-      if (!pendingMakeUpParams) {
-        closeMakeUpModal();
-        return;
-      }
-      const params = { ...pendingMakeUpParams, makeUpCheckin: shouldMakeUp };
-      closeMakeUpModal();
-
-      const seatStr = params.seat;
-      const sub = params.subject;
-      const cat = params.category;
-      const u = params.unit || '';
-
-      showToast(`⏳ 正在為 ${seatStr}號 登錄錯題${shouldMakeUp ? '並補登繳交' : ''}...`, 'orange');
+    if (mode === 'register') {
+      showToast("⏳ 正在為 ".concat(seatStr, "號 登錄【").concat(subject, " ").concat(category).concat(targetUnit ? ' ' + targetUnit : '', "】需訂正..."), 'orange');
       try {
-        const res = await gasApi('addCorrectionRecordMatrix', params);
+        const apiParams = {
+          seat: seatStr,
+          subject: subject,
+          category: category,
+          unit: targetUnit,
+          page: targetPage,
+          date: targetDate
+        };
+        const res = await gasApi('addCorrectionRecordMatrix', apiParams);
+
         if (res && res.success) {
           triggerFeedback('success');
-          let msg = `🟧 已登錄 ${seatStr}號【${sub} ${cat}${u ? ' ' + u : ''}】需訂正 (X)`;
+          let msg = "🟧 已登錄 ".concat(seatStr, "號【").concat(subject, " ").concat(category).concat(targetUnit ? ' ' + targetUnit : '', "】需訂正 (X)");
           if (res.madeUpCheckin) {
-            msg += `，並已同步補登清點表為已繳交 (1)`;
+            msg += "（📢 該生原未在清點表登記，已自動補登為已繳交 1）";
           }
           showToast(msg, 'orange');
-          currentAssignKey = res.key || `${sub}_${cat}_${res.colIndex || ''}`;
-          try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+          currentAssignKey = res.key || "".concat(subject, "_").concat(category, "_").concat(res.colIndex || '');
+          try {localStorage.setItem('class_management_last_assign_key', currentAssignKey);} catch (e) {}
           await fetchMatrixData(true);
         } else {
           triggerFeedback('error');
-          showToast(`❌ 登記失敗: ${res ? res.message : ''}`, 'error');
+          showToast("❌ 登記失敗: ".concat(res ? res.message : ''), 'error');
         }
       } catch (err) {
         showToast('❌ 網路連線異常', 'error');
       } finally {
-        setTimeout(() => { isProcessingScan = false; }, 1000);
+        setTimeout(() => {isProcessingScan = false;}, 1000);
+      }
+    } else {
+      // 銷案模式
+      showToast("⏳ 正在為 ".concat(seatStr, "號 辦理銷案..."), 'success');
+      try {
+        const resCol = await gasApi('addCorrectionRecordMatrix', {
+          createOnly: true,
+          subject: subject,
+          category: category,
+          unit: targetUnit,
+          page: targetPage,
+          date: targetDate
+        });
+        if (resCol && resCol.success) {
+          currentAssignKey = resCol.key || "".concat(subject, "_").concat(category, "_").concat(resCol.colIndex || '');
+          try {localStorage.setItem('class_management_last_assign_key', currentAssignKey);} catch (e) {}
+          const resClear = await gasApi('updateCorrectionMatrixCell', {
+            colIndex: resCol.colIndex,
+            seat: seatStr,
+            status: 'O'
+          });
+          if (resClear && resClear.success) {
+            triggerFeedback('success');
+            showToast("🟦 已完成 ".concat(seatStr, "號【").concat(subject, " ").concat(category, "】錯題銷案 (O)"), 'success');
+            await fetchMatrixData(true);
+          } else {
+            showToast("❌ 銷案失敗: ".concat(resClear ? resClear.message : ''), 'error');
+          }
+        } else {
+          showToast("❌ 欄位處理失敗", 'error');
+        }
+      } catch (err) {
+        showToast('❌ 網路連線異常', 'error');
+      } finally {
+        setTimeout(() => {isProcessingScan = false;}, 1000);
       }
     }
+  } else {
+    // 使用者主動點擊 [ 📑 它頁 ] 按鈕切換
+    showToast("⏳ 正在切換至【".concat(targetUnit || '新單元', "】..."), 'success');
+    try {
+      const res = await gasApi('addCorrectionRecordMatrix', {
+        createOnly: true,
+        subject: subject,
+        category: category,
+        unit: targetUnit,
+        page: targetPage,
+        date: targetDate
+      });
 
-    async function onScanSuccess(decodedText) {
-      const now = Date.now();
-      if (decodedText === lastScannedPayload && (now - lastScanTime) < 3000) return;
-      if (isProcessingScan) return;
-
-      // 優先檢查是否為試算表連線/綁定 QR Code
-      if (checkAndHandlePairCode(decodedText)) {
-        lastScannedPayload = decodedText;
-        lastScanTime = now;
-        return;
+      if (res && res.success) {
+        currentAssignKey = res.key || "".concat(subject, "_").concat(category, "_").concat(res.colIndex);
+        try {localStorage.setItem('class_management_last_assign_key', currentAssignKey);} catch (e) {}
+        await fetchMatrixData();
+        triggerFeedback('success');
+        showToast("🟢 已切換至：".concat(targetUnit || '無單元', " ").concat(targetPage ? '(' + targetPage + ')' : ''), 'success');
+      } else {
+        showToast("❌ 切換失敗: ".concat(res ? res.message : ''), 'error');
       }
+    } catch (err) {
+      showToast('❌ 網路連線異常', 'error');
+    } finally {
+      isProcessingScan = false;
+    }
+  }
+}
 
-      if (!GAS_API_URL) {
-        showToast('⚠️ 尚未綁定試算表！請先將鏡頭對準電腦上的 QR Code 自動綁定', 'error');
-        triggerFeedback('error');
-        return;
+let pendingMakeUpParams = null;
+
+function showMakeUpConfirmModal(params, serverRes) {
+  pendingMakeUpParams = { ...params };
+  const descEl = document.getElementById('makeup-modal-desc');
+  if (descEl) {
+    const seatStr = serverRes.seat || params.seat;
+    const sub = serverRes.subject || params.subject;
+    const cat = serverRes.category || params.category;
+    const u = serverRes.unit || params.unit || '';
+    const p = serverRes.page || params.page || '';
+    const d = serverRes.date || params.date || '';
+    descEl.innerHTML = "\n          座號 <b style=\"color:#38bdf8; font-size:1.05rem;\">".concat(
+      seatStr, "</b> 號 在「作業清點表」中尚未登記繳交：<br>\n          <div style=\"margin-top:6px; padding:6px 10px; background:#1e293b; border-radius:6px; color:#f59e0b; font-weight:700;\">\n            ").concat(
+
+      d ? '[' + d + '] ' : '').concat(sub, " ").concat(cat).concat(u ? ' 單元 ' + u : '').concat(p ? ' (' + p + ')' : '', "\n          </div>\n        ");
+
+
+  }
+  document.getElementById('makeup-confirm-modal').classList.remove('hidden');
+}
+
+function closeMakeUpModal() {
+  document.getElementById('makeup-confirm-modal').classList.add('hidden');
+  pendingMakeUpParams = null;
+  pendingScanData = null;
+  isProcessingScan = false;
+}
+
+async function confirmMakeUpChoice(shouldMakeUp) {
+  if (!pendingMakeUpParams) {
+    closeMakeUpModal();
+    return;
+  }
+  const params = { ...pendingMakeUpParams, makeUpCheckin: shouldMakeUp };
+  closeMakeUpModal();
+
+  const seatStr = params.seat;
+  const sub = params.subject;
+  const cat = params.category;
+  const u = params.unit || '';
+
+  showToast("⏳ 正在為 ".concat(seatStr, "號 登錄錯題").concat(shouldMakeUp ? '並補登繳交' : '', "..."), 'orange');
+  try {
+    const res = await gasApi('addCorrectionRecordMatrix', params);
+    if (res && res.success) {
+      triggerFeedback('success');
+      let msg = "🟧 已登錄 ".concat(seatStr, "號【").concat(sub, " ").concat(cat).concat(u ? ' ' + u : '', "】需訂正 (X)");
+      if (res.madeUpCheckin) {
+        msg += "，並已同步補登清點表為已繳交 (1)";
       }
+      showToast(msg, 'orange');
+      currentAssignKey = res.key || "".concat(sub, "_").concat(cat, "_").concat(res.colIndex || '');
+      try {localStorage.setItem('class_management_last_assign_key', currentAssignKey);} catch (e) {}
+      await fetchMatrixData(true);
+    } else {
+      triggerFeedback('error');
+      showToast("❌ 登記失敗: ".concat(res ? res.message : ''), 'error');
+    }
+  } catch (err) {
+    showToast('❌ 網路連線異常', 'error');
+  } finally {
+    setTimeout(() => {isProcessingScan = false;}, 1000);
+  }
+}
 
-      isProcessingScan = true;
-      lastScannedPayload = decodedText;
-      lastScanTime = now;
+async function onScanSuccess(decodedText) {
+  const now = Date.now();
+  if (decodedText === lastScannedPayload && now - lastScanTime < 3000) return;
+  if (isProcessingScan) return;
 
-      // 解析條碼
-      let seatNo = -1;
-      let rawSubject = '';
-      let rawCategory = '';
+  // 優先檢查是否為試算表連線/綁定 QR Code
+  if (checkAndHandlePairCode(decodedText)) {
+    lastScannedPayload = decodedText;
+    lastScanTime = now;
+    return;
+  }
 
-      const parts = String(decodedText).trim().split('|');
-      if (parts[0] === 'CMS' && parts.length >= 2) {
-        seatNo = parseInt(parts[1], 10);
-        if (parts[2]) rawSubject = parts[2].trim();
-        if (parts[3]) rawCategory = parts[3].trim();
-      } else if (!isNaN(parseInt(parts[0], 10))) {
-        seatNo = parseInt(parts[0], 10);
-        if (parts[1]) rawSubject = parts[1].trim();
-        if (parts[2]) rawCategory = parts[2].trim();
-      }
+  if (!GAS_API_URL) {
+    showToast('⚠️ 尚未綁定試算表！請先將鏡頭對準電腦上的 QR Code 自動綁定', 'error');
+    triggerFeedback('error');
+    return;
+  }
 
-      if (isNaN(seatNo) || seatNo < 1 || seatNo > 30) {
-        triggerFeedback('error');
-        showToast('❌ 無法辨識的條碼格式: ' + decodedText, 'error');
-        isProcessingScan = false;
-        return;
-      }
+  isProcessingScan = true;
+  lastScannedPayload = decodedText;
+  lastScanTime = now;
 
-      const seatStr = String(seatNo).padStart(2, '0');
-      const currAssign = getCurrAssign();
+  // 解析條碼
+  let seatNo = -1;
+  let rawSubject = '';
+  let rawCategory = '';
 
-      const hasQrSubject = !!rawSubject;
-      const hasQrCategory = !!rawCategory;
+  const parts = String(decodedText).trim().split('|');
+  if (parts[0] === 'CMS' && parts.length >= 2) {
+    seatNo = parseInt(parts[1], 10);
+    if (parts[2]) rawSubject = parts[2].trim();
+    if (parts[3]) rawCategory = parts[3].trim();
+  } else if (!isNaN(parseInt(parts[0], 10))) {
+    seatNo = parseInt(parts[0], 10);
+    if (parts[1]) rawSubject = parts[1].trim();
+    if (parts[2]) rawCategory = parts[2].trim();
+  }
 
-      const subject = hasQrSubject ? rawSubject : (currAssign ? currAssign.subject : '國語');
-      const category = hasQrCategory ? rawCategory : (currAssign ? currAssign.category : '甲本');
+  if (isNaN(seatNo) || seatNo < 1 || seatNo > 30) {
+    triggerFeedback('error');
+    showToast('❌ 無法辨識的條碼格式: ' + decodedText, 'error');
+    isProcessingScan = false;
+    return;
+  }
 
-      // 檢查是否與當前鎖定之作業一致 (同科目同種類)
-      const isMatchingCurrent = currAssign && (currAssign.subject === subject && currAssign.category === category);
+  const seatStr = String(seatNo).padStart(2, '0');
+  const currAssign = getCurrAssign();
 
-      try {
-        if (scanMode === 'register') {
-          // 🟧 登記模式
-          let targetUnit = '';
-          let targetPage = '';
-          let targetDate = '';
-          let targetColIndex = null;
+  const hasQrSubject = !!rawSubject;
+  const hasQrCategory = !!rawCategory;
 
-          if (isMatchingCurrent && currAssign.colIndex) {
-            // 已鎖定該項目，無需彈窗，直接繼續在這個項目裡登錄座號
-            targetColIndex = currAssign.colIndex;
-            targetUnit = currAssign.unit || '';
-            targetPage = currAssign.page || '';
-            targetDate = currAssign.date || '';
-          } else {
-            // 條碼科目/種類與當前不同，或首次掃碼：即時向後端查詢作業清點表最新列表
-            let checkinList = [];
-            try {
-              showToast(`🔍 正在查詢清點紀錄【${subject} ${category}】...`, 'info');
-              const chkRes = await gasApi('getCheckinAssignments', { subject, category });
-              if (chkRes && chkRes.success && Array.isArray(chkRes.list)) {
-                checkinList = chkRes.list;
-                if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
-                matrixDataCache.checkinAssignments = matrixDataCache.checkinAssignments.filter(c =>
-                  !(c.subject === subject && c.category === category)
-                ).concat(chkRes.list);
-              }
-            } catch (err) {
-              console.warn('即時查詢清點紀錄失敗:', err);
-              // fallback to cache
-              checkinList = (matrixDataCache.checkinAssignments || []).filter(item =>
-                String(item.subject || '').trim() === String(subject || '').trim() &&
-                String(item.category || '').trim() === String(category || '').trim()
-              );
-            }
+  const subject = hasQrSubject ? rawSubject : currAssign ? currAssign.subject : '國語';
+  const category = hasQrCategory ? rawCategory : currAssign ? currAssign.category : '甲本';
 
-            if (checkinList.length > 1) {
-              // 超過一筆符合項目：暫停並彈窗讓使用者選擇要哪一個單元/頁數
-              pendingScanData = { seatStr, subject, category, mode: scanMode };
-              triggerFeedback('duplicate');
-              await openOtherPageModal(true, subject, category, seatStr);
-              return;
-            } else if (checkinList.length === 1) {
-              // 剛好只有一筆：自動選定該筆直接登記，絕不彈窗！
-              targetUnit = String(checkinList[0].unit || '').trim();
-              targetPage = String(checkinList[0].page || '').trim();
-              targetDate = String(checkinList[0].date || '').trim();
-            } else {
-              // 清點頁查無紀錄：彈窗讓使用者自訂新單元
-              pendingScanData = { seatStr, subject, category, mode: scanMode };
-              triggerFeedback('duplicate');
-              await openOtherPageModal(true, subject, category, seatStr);
-              return;
-            }
+  // 檢查是否與當前鎖定之作業一致 (同科目同種類)
+  const isMatchingCurrent = currAssign && currAssign.subject === subject && currAssign.category === category;
+
+  try {
+    if (scanMode === 'register') {
+      // 🟧 登記模式
+      let targetUnit = '';
+      let targetPage = '';
+      let targetDate = '';
+      let targetColIndex = null;
+
+      if (isMatchingCurrent && currAssign.colIndex) {
+        // 已鎖定該項目，無需彈窗，直接繼續在這個項目裡登錄座號
+        targetColIndex = currAssign.colIndex;
+        targetUnit = currAssign.unit || '';
+        targetPage = currAssign.page || '';
+        targetDate = currAssign.date || '';
+      } else {
+        // 條碼科目/種類與當前不同，或首次掃碼：即時向後端查詢作業清點表最新列表
+        let checkinList = [];
+        try {
+          showToast("🔍 正在查詢清點紀錄【".concat(subject, " ").concat(category, "】..."), 'info');
+          const chkRes = await gasApi('getCheckinAssignments', { subject, category });
+          if (chkRes && chkRes.success && Array.isArray(chkRes.list)) {
+            checkinList = chkRes.list;
+            if (!matrixDataCache.checkinAssignments) matrixDataCache.checkinAssignments = [];
+            matrixDataCache.checkinAssignments = matrixDataCache.checkinAssignments.filter((c) =>
+            !(c.subject === subject && c.category === category)
+            ).concat(chkRes.list);
           }
+        } catch (err) {
+          console.warn('即時查詢清點紀錄失敗:', err);
+          // fallback to cache
+          checkinList = (matrixDataCache.checkinAssignments || []).filter((item) =>
+          String(item.subject || '').trim() === String(subject || '').trim() &&
+          String(item.category || '').trim() === String(category || '').trim()
+          );
+        }
 
-          showToast(`⏳ 正在為 ${seatStr}號 登錄【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正...`, 'orange');
+        if (checkinList.length > 1) {
+          // 超過一筆符合項目：暫停並彈窗讓使用者選擇要哪一個單元/頁數
+          pendingScanData = { seatStr, subject, category, mode: scanMode };
+          triggerFeedback('duplicate');
+          await openOtherPageModal(true, subject, category, seatStr);
+          return;
+        } else if (checkinList.length === 1) {
+          // 剛好只有一筆：自動選定該筆直接登記，絕不彈窗！
+          targetUnit = String(checkinList[0].unit || '').trim();
+          targetPage = String(checkinList[0].page || '').trim();
+          targetDate = String(checkinList[0].date || '').trim();
+        } else {
+          // 清點頁查無紀錄：彈窗讓使用者自訂新單元
+          pendingScanData = { seatStr, subject, category, mode: scanMode };
+          triggerFeedback('duplicate');
+          await openOtherPageModal(true, subject, category, seatStr);
+          return;
+        }
+      }
 
-          const apiParams = {
-            seat: seatStr,
-            subject: subject,
-            category: category,
-            unit: targetUnit,
-            page: targetPage,
-            date: targetDate
-          };
+      showToast("⏳ 正在為 ".concat(seatStr, "號 登錄【").concat(subject, " ").concat(category).concat(targetUnit ? ' ' + targetUnit : '', "】需訂正..."), 'orange');
 
-          if (targetColIndex) {
-            apiParams.colIndex = targetColIndex;
-          }
+      const apiParams = {
+        seat: seatStr,
+        subject: subject,
+        category: category,
+        unit: targetUnit,
+        page: targetPage,
+        date: targetDate
+      };
 
-          const res = await gasApi('addCorrectionRecordMatrix', apiParams);
+      if (targetColIndex) {
+        apiParams.colIndex = targetColIndex;
+      }
 
+      const res = await gasApi('addCorrectionRecordMatrix', apiParams);
+
+      if (res && res.success) {
+        triggerFeedback('success');
+        let msg = res.message || "🟧 已登錄 ".concat(seatStr, "號【").concat(subject, " ").concat(category).concat(targetUnit ? ' ' + targetUnit : '', "】需訂正 (X)");
+        if (!res.message && res.madeUpCheckin) {
+          msg += "（📢 該生原未在清點表登記，已自動補登為已繳交 1）";
+        }
+        showToast(msg, 'orange');
+        // 即時將焦點鎖定並切換至所掃描/產生的作業欄位 Key
+        currentAssignKey = res.key || "".concat(subject, "_").concat(category, "_").concat(res.colIndex || '');
+        try {localStorage.setItem('class_management_last_assign_key', currentAssignKey);} catch (e) {}
+        await fetchMatrixData(true);
+      } else {
+        triggerFeedback('error');
+        showToast("❌ 登記失敗: ".concat(res ? res.message : ''), 'error');
+      }
+    } else {
+      // 🟦 銷案模式
+      showToast("⏳ 正在為 ".concat(seatStr, "號 尋找待訂正項目..."), 'success');
+
+      const records = matrixDataCache.records || [];
+      const matchRecords = records.filter((r) =>
+      r.seat === seatStr && r.status === 'X' && (
+      !hasQrSubject || r.subject === subject) && (
+      !hasQrCategory || r.category === category)
+      );
+
+      if (matchRecords.length === 1) {
+        const rec = matchRecords[0];
+        const res = await gasApi('updateCorrectionMatrixCell', { colIndex: rec.colIndex, seat: seatStr, status: 'O' });
+        if (res && res.success) {
+          triggerFeedback('success');
+          showToast("🟦 已完成 ".concat(seatStr, "號【").concat(rec.subject, " ").concat(rec.category, "】錯題銷案 (O)"), 'success');
+          currentAssignKey = rec.key || "".concat(rec.subject, "_").concat(rec.category, "_").concat(rec.colIndex);
+          try {localStorage.setItem('class_management_last_assign_key', currentAssignKey);} catch (e) {}
+          await fetchMatrixData(true);
+        } else {
+          triggerFeedback('error');
+          showToast("❌ 銷案失敗: ".concat(res ? res.message : ''), 'error');
+        }
+      } else if (matchRecords.length > 1) {
+        triggerFeedback('duplicate');
+        showUncorrectedSelectModal(seatStr, matchRecords);
+      } else {
+        const allUncorrected = records.filter((r) => r.seat === seatStr && r.status === 'X');
+        if (allUncorrected.length === 0) {
+          triggerFeedback('error');
+          showToast("ℹ️ 座號 ".concat(seatStr, " 號目前無待訂正項目"), 'error');
+        } else if (allUncorrected.length === 1) {
+          const rec = allUncorrected[0];
+          const res = await gasApi('updateCorrectionMatrixCell', { colIndex: rec.colIndex, seat: seatStr, status: 'O' });
           if (res && res.success) {
             triggerFeedback('success');
-            let msg = res.message || `🟧 已登錄 ${seatStr}號【${subject} ${category}${targetUnit ? ' ' + targetUnit : ''}】需訂正 (X)`;
-            if (!res.message && res.madeUpCheckin) {
-              msg += `（📢 該生原未在清點表登記，已自動補登為已繳交 1）`;
-            }
-            showToast(msg, 'orange');
-            // 即時將焦點鎖定並切換至所掃描/產生的作業欄位 Key
-            currentAssignKey = res.key || `${subject}_${category}_${res.colIndex || ''}`;
-            try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
+            showToast("🟦 已完成 ".concat(seatStr, "號【").concat(rec.subject, " ").concat(rec.category, "】錯題銷案 (O)"), 'success');
+            currentAssignKey = rec.key || "".concat(rec.subject, "_").concat(rec.category, "_").concat(rec.colIndex);
+            try {localStorage.setItem('class_management_last_assign_key', currentAssignKey);} catch (e) {}
             await fetchMatrixData(true);
           } else {
             triggerFeedback('error');
-            showToast(`❌ 登記失敗: ${res ? res.message : ''}`, 'error');
+            showToast("❌ 銷案失敗: ".concat(res ? res.message : ''), 'error');
           }
         } else {
-          // 🟦 銷案模式
-          showToast(`⏳ 正在為 ${seatStr}號 尋找待訂正項目...`, 'success');
-
-          const records = matrixDataCache.records || [];
-          const matchRecords = records.filter(r =>
-            r.seat === seatStr && r.status === 'X' &&
-            (!hasQrSubject || r.subject === subject) &&
-            (!hasQrCategory || r.category === category)
-          );
-
-          if (matchRecords.length === 1) {
-            const rec = matchRecords[0];
-            const res = await gasApi('updateCorrectionMatrixCell', { colIndex: rec.colIndex, seat: seatStr, status: 'O' });
-            if (res && res.success) {
-              triggerFeedback('success');
-              showToast(`🟦 已完成 ${seatStr}號【${rec.subject} ${rec.category}】錯題銷案 (O)`, 'success');
-              currentAssignKey = rec.key || `${rec.subject}_${rec.category}_${rec.colIndex}`;
-              try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
-              await fetchMatrixData(true);
-            } else {
-              triggerFeedback('error');
-              showToast(`❌ 銷案失敗: ${res ? res.message : ''}`, 'error');
-            }
-          } else if (matchRecords.length > 1) {
-            triggerFeedback('duplicate');
-            showUncorrectedSelectModal(seatStr, matchRecords);
-          } else {
-            const allUncorrected = records.filter(r => r.seat === seatStr && r.status === 'X');
-            if (allUncorrected.length === 0) {
-              triggerFeedback('error');
-              showToast(`ℹ️ 座號 ${seatStr} 號目前無待訂正項目`, 'error');
-            } else if (allUncorrected.length === 1) {
-              const rec = allUncorrected[0];
-              const res = await gasApi('updateCorrectionMatrixCell', { colIndex: rec.colIndex, seat: seatStr, status: 'O' });
-              if (res && res.success) {
-                triggerFeedback('success');
-                showToast(`🟦 已完成 ${seatStr}號【${rec.subject} ${rec.category}】錯題銷案 (O)`, 'success');
-                currentAssignKey = rec.key || `${rec.subject}_${rec.category}_${rec.colIndex}`;
-                try { localStorage.setItem('class_management_last_assign_key', currentAssignKey); } catch(e){}
-                await fetchMatrixData(true);
-              } else {
-                triggerFeedback('error');
-                showToast(`❌ 銷案失敗: ${res ? res.message : ''}`, 'error');
-              }
-            } else {
-              triggerFeedback('duplicate');
-              showUncorrectedSelectModal(seatStr, allUncorrected);
-            }
-          }
+          triggerFeedback('duplicate');
+          showUncorrectedSelectModal(seatStr, allUncorrected);
         }
-      } catch (err) {
-        triggerFeedback('error');
-        showToast('⚠️ 回應解析失敗，正在重新同步確認...', 'error');
-        await fetchMatrixData();
-      } finally {
-        setTimeout(() => { isProcessingScan = false; }, 1200);
       }
     }
+  } catch (err) {
+    triggerFeedback('error');
+    showToast('⚠️ 回應解析失敗，正在重新同步確認...', 'error');
+    await fetchMatrixData();
+  } finally {
+    setTimeout(() => {isProcessingScan = false;}, 1200);
+  }
+}
 
-    function showUncorrectedSelectModal(seatStr, records) {
-      const modal = document.getElementById('duplicate-modal');
-      const title = document.getElementById('dup-modal-title');
-      const listContainer = document.getElementById('dup-modal-list');
+function showUncorrectedSelectModal(seatStr, records) {
+  const modal = document.getElementById('duplicate-modal');
+  const title = document.getElementById('dup-modal-title');
+  const listContainer = document.getElementById('dup-modal-list');
 
-      title.textContent = `🎯 ${seatStr}號 有多筆待訂正項目，請選擇銷案章節：`;
-      listContainer.innerHTML = '';
+  title.textContent = "🎯 ".concat(seatStr, "號 有多筆待訂正項目，請選擇銷案章節：");
+  listContainer.innerHTML = '';
 
-      records.forEach(rec => {
-        const itemCard = document.createElement('div');
-        itemCard.className = 'modal-item-card';
-        const detailStr = [rec.unit, rec.page].filter(Boolean).join(' ');
-        itemCard.innerHTML = `
-          <div>
-            <div style="font-weight:700; color:#fff;">📚 ${rec.subject} ${rec.category}</div>
-            <div style="font-size:0.8rem; color:#38bdf8; margin-top:2px;">📌 ${detailStr || '一般登記'} (📅 ${rec.date || ''})</div>
-          </div>
-          <button class="btn-modal-clear" onclick="executeModalClear('${rec.colIndex}', '${seatStr}')">
-            ✅ 銷案 (標為O)
-          </button>
-        `;
-        listContainer.appendChild(itemCard);
-      });
+  records.forEach((rec) => {
+    const itemCard = document.createElement('div');
+    itemCard.className = 'modal-item-card';
+    const detailStr = [rec.unit, rec.page].filter(Boolean).join(' ');
+    itemCard.innerHTML = "\n          <div>\n            <div style=\"font-weight:700; color:#fff;\">📚 ".concat(
 
-      modal.classList.remove('hidden');
-    }
+      rec.subject, " ").concat(rec.category, "</div>\n            <div style=\"font-size:0.8rem; color:#38bdf8; margin-top:2px;\">📌 ").concat(
+      detailStr || '一般登記', " (📅 ").concat(rec.date || '', ")</div>\n          </div>\n          <button class=\"btn-modal-clear\" onclick=\"executeModalClear('").concat(
 
-    function closeDuplicateModal() {
-      document.getElementById('duplicate-modal').classList.add('hidden');
-    }
+      rec.colIndex, "', '").concat(seatStr, "')\">\n            ✅ 銷案 (標為O)\n          </button>\n        ");
 
-    async function executeModalClear(colIndex, seatStr) {
-      closeDuplicateModal();
-      showToast(`⏳ 正在辦理 ${seatStr}號 銷案...`, 'success');
-      try {
-        const res = await gasApi('updateCorrectionMatrixCell', {
-          colIndex: colIndex,
-          seat: seatStr,
-          status: 'O'
-        });
-        if (res && res.success) {
-          triggerFeedback('success');
-          showToast(`🟦 已完成 ${seatStr}號 錯題銷案 (O)`, 'success');
-          const curr = (matrixDataCache.assignments || []).find(a => Number(a.colIndex) === Number(colIndex));
-          if (curr) {
-            currentAssignKey = curr.key || `${curr.subject}_${curr.category}_${colIndex}`;
-          }
-          await fetchMatrixData();
-        } else {
-          showToast(`❌ 銷案失敗: ${res ? res.message : ''}`, 'error');
-        }
-      } catch (err) {
-        showToast('❌ 網路請求失敗', 'error');
+
+
+    listContainer.appendChild(itemCard);
+  });
+
+  modal.classList.remove('hidden');
+}
+
+function closeDuplicateModal() {
+  document.getElementById('duplicate-modal').classList.add('hidden');
+}
+
+async function executeModalClear(colIndex, seatStr) {
+  closeDuplicateModal();
+  showToast("⏳ 正在辦理 ".concat(seatStr, "號 銷案..."), 'success');
+  try {
+    const res = await gasApi('updateCorrectionMatrixCell', {
+      colIndex: colIndex,
+      seat: seatStr,
+      status: 'O'
+    });
+    if (res && res.success) {
+      triggerFeedback('success');
+      showToast("🟦 已完成 ".concat(seatStr, "號 錯題銷案 (O)"), 'success');
+      const curr = (matrixDataCache.assignments || []).find((a) => Number(a.colIndex) === Number(colIndex));
+      if (curr) {
+        currentAssignKey = curr.key || "".concat(curr.subject, "_").concat(curr.category, "_").concat(colIndex);
       }
+      await fetchMatrixData();
+    } else {
+      showToast("❌ 銷案失敗: ".concat(res ? res.message : ''), 'error');
     }
+  } catch (err) {
+    showToast('❌ 網路請求失敗', 'error');
+  }
+}
 
-    function openMetaModal() {
-      const curr = getCurrAssign();
-      if (!curr) {
-        showToast('⚠️ 目前尚無選取的作業可編輯細節', 'error');
-        return;
+function openMetaModal() {
+  const curr = getCurrAssign();
+  if (!curr) {
+    showToast('⚠️ 目前尚無選取的作業可編輯細節', 'error');
+    return;
+  }
+  // 讀取當前作業原有的單元與頁數作為預設值
+  document.getElementById('modal-unit').value = curr.unit || '';
+  document.getElementById('modal-note').value = curr.page || '';
+  document.getElementById('meta-modal').classList.remove('hidden');
+}
+
+function closeMetaModal() {
+  // 關閉 Modal 時即刻清空暫存輸入框
+  document.getElementById('modal-unit').value = '';
+  document.getElementById('modal-note').value = '';
+  document.getElementById('meta-modal').classList.add('hidden');
+}
+
+async function saveMetaModal() {
+  const curr = getCurrAssign();
+  if (!curr) return;
+
+  const unitVal = document.getElementById('modal-unit').value.trim();
+  const pageVal = document.getElementById('modal-note').value.trim();
+
+  showToast('⏳ 正在儲存作業說明...', 'success');
+  try {
+    const res = await gasApi('updateHomeworkMetadata', {
+      colIndex: curr.colIndex,
+      unit: unitVal,
+      note: pageVal,
+      targetSheet: 'matrix'
+    });
+    if (res && res.success) {
+      showToast('🟢 作業說明更新成功！', 'success');
+      closeMetaModal();
+      await fetchMatrixData();
+    } else {
+      showToast('❌ 更新失敗: ' + (res ? res.message : ''), 'error');
+    }
+  } catch (err) {
+    showToast('❌ 系統連線異常', 'error');
+  }
+}
+
+let availableCameras = [];
+let currentCameraIndex = -1;
+
+async function stopActiveCamera() {
+  if (html5QrCode) {
+    try {
+      if (html5QrCode.isScanning) {
+        await html5QrCode.stop();
       }
-      // 讀取當前作業原有的單元與頁數作為預設值
-      document.getElementById('modal-unit').value = curr.unit || '';
-      document.getElementById('modal-note').value = curr.page || '';
-      document.getElementById('meta-modal').classList.remove('hidden');
-    }
+      html5QrCode.clear();
+    } catch (e) {}
+    html5QrCode = null;
+  }
+  stopAllMediaTracksSync();
+}
 
-    function closeMetaModal() {
-      // 關閉 Modal 時即刻清空暫存輸入框
-      document.getElementById('modal-unit').value = '';
-      document.getElementById('modal-note').value = '';
-      document.getElementById('meta-modal').classList.add('hidden');
-    }
-
-    async function saveMetaModal() {
-      const curr = getCurrAssign();
-      if (!curr) return;
-
-      const unitVal = document.getElementById('modal-unit').value.trim();
-      const pageVal = document.getElementById('modal-note').value.trim();
-
-      showToast('⏳ 正在儲存作業說明...', 'success');
-      try {
-        const res = await gasApi('updateHomeworkMetadata', {
-          colIndex: curr.colIndex,
-          unit: unitVal,
-          note: pageVal,
-          targetSheet: 'matrix'
-        });
-        if (res && res.success) {
-          showToast('🟢 作業說明更新成功！', 'success');
-          closeMetaModal();
-          await fetchMatrixData();
-        } else {
-          showToast('❌ 更新失敗: ' + (res ? res.message : ''), 'error');
-        }
-      } catch (err) {
-        showToast('❌ 系統連線異常', 'error');
-      }
-    }
-
-    let availableCameras = [];
-    let currentCameraIndex = -1;
-
-    async function stopActiveCamera() {
-      if (html5QrCode) {
+function stopAllMediaTracksSync() {
+  try {
+    const videos = document.querySelectorAll('video');
+    videos.forEach((v) => {
+      if (v.srcObject) {
         try {
-          if (html5QrCode.isScanning) {
-            await html5QrCode.stop();
-          }
-          html5QrCode.clear();
-        } catch(e) {}
-        html5QrCode = null;
+          v.srcObject.getTracks().forEach((t) => t.stop());
+        } catch (e) {}
+        v.srcObject = null;
       }
-      stopAllMediaTracksSync();
-    }
+    });
+  } catch (e) {}
+  const readerEl = document.getElementById('reader');
+  if (readerEl) {
+    readerEl.innerHTML = '';
+  }
+}
 
-    function stopAllMediaTracksSync() {
+async function startCameraWithFacingMode(preferTarget) {
+  await stopActiveCamera();
+  await initAndStartCamera(preferTarget !== undefined ? preferTarget : currentFacingMode);
+}
+
+function showGasCameraBlockedNotice() {
+  let modal = document.getElementById('gas-camera-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'gas-camera-modal';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(4px); padding:16px;';
+    const baseGasUrl = window._GAS_WEBAPP_URL || (location.hostname.includes('script.google.com') ? location.href.split('?')[0] : '');
+    modal.innerHTML = "\n          <div style=\"background:#1e293b; border:1px solid #38bdf8; border-radius:16px; max-width:440px; width:100%; padding:24px; box-shadow:0 12px 36px rgba(0,0,0,0.6); text-align:center;\">\n            <div style=\"font-size:2.8rem; margin-bottom:10px;\">📷🚫</div>\n            <h3 style=\"color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;\">Google 試算表原生網址限制相機調用</h3>\n            <p style=\"color:#cbd5e1; font-size:0.86rem; line-height:1.6; text-align:left; margin-bottom:18px;\">\n              因 Google Apps Script 官方安全沙箱限制，凡透過 <code>script.google.com</code> 原生網址開啟之頁面均無法授權調用瀏覽器相機（<code>getUserMedia</code>）。<br><br>\n              👉 <strong>建議使用方式：</strong><br>\n              1. 點擊下方<strong>「✏️ 切換至錯題主頁」</strong>，直接在電腦大螢幕以按鈕登記錯題或依矩陣銷案。<br>\n              2. 如需手機相機即掃即銷案，請改用手機開啟 <strong>Neocities 外部託管網址</strong> 或手機安裝之 <strong>PWA App</strong>！\n            </p>\n            <div style=\"display:flex; gap:10px; justify-content:center; flex-wrap:wrap;\">\n              <a href=\"".concat(
+
+
+
+
+
+
+
+
+
+
+      baseGasUrl ? "".concat(baseGasUrl, "?page=correction") : 'correction.html', "\" class=\"nav-btn\" style=\"background:#0284c7; color:#fff; text-decoration:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:0.9rem;\" target=\"_top\">✏️ 切換至錯題主頁</a>\n              <button onclick=\"document.getElementById('gas-camera-modal').style.display='none'\" style=\"background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.85rem;\">我知道了</button>\n            </div>\n          </div>\n        ");
+
+
+
+
+    document.body.appendChild(modal);
+  } else {
+    modal.style.display = 'flex';
+  }
+}
+
+async function initAndStartCamera(preferTarget = 'environment') {
+  const isGas = typeof google !== 'undefined' && google.script && google.script.run ||
+  location.hostname.includes('script.google.com') ||
+  location.hostname.includes('googleusercontent.com');
+
+  if (isGas) {
+    showToast('⚠️ Google 原生網址封鎖相機權限，請切換錯題主頁或使用手機 PWA', 'error');
+    showGasCameraBlockedNotice();
+    return;
+  }
+
+  showToast('⏳ 正在啟動高清相機...', 'success');
+  await stopActiveCamera();
+
+  // 小幅緩衝 80ms，給予 iOS WebKit / AVCaptureSession 釋放前一鏡頭實例的空間
+  await new Promise((r) => setTimeout(r, 80));
+
+  // 🚀 滿版全畫面取樣優化：
+  // 不限制小尺寸 qrbox，啟用整幅視訊畫面全像素解碼（Full Frame Sampling）
+  // 支援羅技 C270 等固定對焦 (Fixed Focus) Webcam 在 35~50cm 最佳景深處秒掃，無需湊近防模糊！
+  const scanConfig = {
+    fps: 10
+  };
+
+  let startedSuccess = false;
+  let target = preferTarget;
+  if (target === true) target = 'environment';
+  if (target === false) target = 'user';
+
+  try {
+    if (availableCameras.length === 0) {
       try {
-        const videos = document.querySelectorAll('video');
-        videos.forEach(v => {
-          if (v.srcObject) {
-            try {
-              v.srcObject.getTracks().forEach(t => t.stop());
-            } catch(e){}
-            v.srcObject = null;
-          }
-        });
-      } catch(e){}
-      const readerEl = document.getElementById('reader');
-      if (readerEl) {
-        readerEl.innerHTML = '';
+        const cams = await Html5Qrcode.getCameras();
+        if (cams && cams.length > 0) availableCameras = cams;
+      } catch (e) {}
+    }
+    if (availableCameras.length > 0 && (target === 'environment' || target === true)) {
+      // 優先找後置主鏡頭（特別針對 iPhone/iPad 多鏡頭，避開 Ultra Wide 超廣角）
+      let rearIdx = availableCameras.findIndex((c) =>
+      /back.*wide|wide.*back|後置.*廣角/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
+      );
+      if (rearIdx < 0) {
+        rearIdx = availableCameras.findIndex((c) =>
+        /back|rear|environment|後|後置|主|標準/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
+        );
       }
+      if (rearIdx < 0) {
+        rearIdx = availableCameras.findIndex((c) =>
+        /back|rear|environment|後|後置|主|標準/i.test(c.label)
+        );
+      }
+      const pickIdx = rearIdx >= 0 ? rearIdx : 0;
+      currentCameraIndex = pickIdx;
+      target = availableCameras[pickIdx].id;
     }
 
-    async function startCameraWithFacingMode(preferTarget) {
-      await stopActiveCamera();
-      await initAndStartCamera(preferTarget !== undefined ? preferTarget : currentFacingMode);
-    }
-
-    function showGasCameraBlockedNotice() {
-      let modal = document.getElementById('gas-camera-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'gas-camera-modal';
-        modal.className = 'modal-overlay';
-        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(4px); padding:16px;';
-        const baseGasUrl = window._GAS_WEBAPP_URL || (location.hostname.includes('script.google.com') ? location.href.split('?')[0] : '');
-        modal.innerHTML = `
-          <div style="background:#1e293b; border:1px solid #38bdf8; border-radius:16px; max-width:440px; width:100%; padding:24px; box-shadow:0 12px 36px rgba(0,0,0,0.6); text-align:center;">
-            <div style="font-size:2.8rem; margin-bottom:10px;">📷🚫</div>
-            <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">Google 試算表原生網址限制相機調用</h3>
-            <p style="color:#cbd5e1; font-size:0.86rem; line-height:1.6; text-align:left; margin-bottom:18px;">
-              因 Google Apps Script 官方安全沙箱限制，凡透過 <code>script.google.com</code> 原生網址開啟之頁面均無法授權調用瀏覽器相機（<code>getUserMedia</code>）。<br><br>
-              👉 <strong>建議使用方式：</strong><br>
-              1. 點擊下方<strong>「✏️ 切換至錯題主頁」</strong>，直接在電腦大螢幕以按鈕登記錯題或依矩陣銷案。<br>
-              2. 如需手機相機即掃即銷案，請改用手機開啟 <strong>Neocities 外部託管網址</strong> 或手機安裝之 <strong>PWA App</strong>！
-            </p>
-            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-              <a href="${baseGasUrl ? `${baseGasUrl}?page=correction` : 'correction.html'}" class="nav-btn" style="background:#0284c7; color:#fff; text-decoration:none; padding:8px 18px; border-radius:8px; font-weight:700; font-size:0.9rem;" target="_top">✏️ 切換至錯題主頁</a>
-              <button onclick="document.getElementById('gas-camera-modal').style.display='none'" style="background:#334155; color:#cbd5e1; border:1px solid #475569; padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer; font-size:0.85rem;">我知道了</button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(modal);
-      } else {
-        modal.style.display = 'flex';
+    html5QrCode = new Html5Qrcode("reader", {
+      verbose: false,
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
       }
-    }
+    });
 
-    async function initAndStartCamera(preferTarget = 'environment') {
-      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
-                    location.hostname.includes('script.google.com') ||
-                    location.hostname.includes('googleusercontent.com');
-
-      if (isGas) {
-        showToast('⚠️ Google 原生網址封鎖相機權限，請切換錯題主頁或使用手機 PWA', 'error');
-        showGasCameraBlockedNotice();
-        return;
-      }
-
-      showToast('⏳ 正在啟動高清相機...', 'success');
-      await stopActiveCamera();
-
-      // 小幅緩衝 80ms，給予 iOS WebKit / AVCaptureSession 釋放前一鏡頭實例的空間
-      await new Promise(r => setTimeout(r, 80));
-
-      // 🚀 滿版全畫面取樣優化：
-      // 不限制小尺寸 qrbox，啟用整幅視訊畫面全像素解碼（Full Frame Sampling）
-      // 支援羅技 C270 等固定對焦 (Fixed Focus) Webcam 在 35~50cm 最佳景深處秒掃，無需湊近防模糊！
-      const scanConfig = {
-        fps: 10
-      };
-
-      let startedSuccess = false;
-      let target = preferTarget;
-      if (target === true) target = 'environment';
-      if (target === false) target = 'user';
-
+    // 情況 A：指定 cameraId (由多鏡頭選取)
+    if (typeof target === 'string' && target !== 'environment' && target !== 'user') {
       try {
-        if (availableCameras.length === 0) {
-          try {
-            const cams = await Html5Qrcode.getCameras();
-            if (cams && cams.length > 0) availableCameras = cams;
-          } catch(e){}
-        }
-        if (availableCameras.length > 0 && (target === 'environment' || target === true)) {
-          // 優先找後置主鏡頭（特別針對 iPhone/iPad 多鏡頭，避開 Ultra Wide 超廣角）
-          let rearIdx = availableCameras.findIndex(c =>
-            /back.*wide|wide.*back|後置.*廣角/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
-          );
-          if (rearIdx < 0) {
-            rearIdx = availableCameras.findIndex(c =>
-              /back|rear|environment|後|後置|主|標準/i.test(c.label) && !/ultra|超廣角/i.test(c.label)
-            );
-          }
-          if (rearIdx < 0) {
-            rearIdx = availableCameras.findIndex(c =>
-              /back|rear|environment|後|後置|主|標準/i.test(c.label)
-            );
-          }
-          const pickIdx = rearIdx >= 0 ? rearIdx : 0;
-          currentCameraIndex = pickIdx;
-          target = availableCameras[pickIdx].id;
-        }
-
-        html5QrCode = new Html5Qrcode("reader", {
-          verbose: false,
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          }
-        });
-
-        // 情況 A：指定 cameraId (由多鏡頭選取)
-        if (typeof target === 'string' && target !== 'environment' && target !== 'user') {
-          try {
-            await html5QrCode.start(target, scanConfig, onScanSuccess);
-            startedSuccess = true;
-            const camObj = availableCameras.find(c => c.id === target);
-            const label = camObj ? (camObj.label || '指定相機') : '相機';
-            showToast(`🟢 訂正掃碼器就緒 (${label})`, 'success');
-          } catch (camErr) {
-            console.warn('[Camera] 指定 cameraId 啟動失敗，回退至 facingMode 模式:', camErr);
-          }
-        }
-
-        // 情況 B：啟動後置相機 (螢幕背面)
-        if (!startedSuccess && target === 'environment') {
-          currentFacingMode = 'environment';
-          try {
-            await html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess);
-            startedSuccess = true;
-            showToast('🟢 訂正掃碼器就緒 (後置相機/螢幕背面)', 'success');
-          } catch (envErr) {
-            console.warn('[Camera] facingMode environment 啟動失敗:', envErr);
-          }
-        }
-
-        // 情況 C：啟動前置相機 (螢幕同側)
-        if (!startedSuccess && target === 'user') {
-          currentFacingMode = 'user';
-          try {
-            await html5QrCode.start({ facingMode: "user" }, scanConfig, onScanSuccess);
-            startedSuccess = true;
-            showToast('🟢 訂正掃碼器就緒 (前置相機/螢幕同側)', 'success');
-          } catch (userErr) {
-            console.warn('[Camera] user facingMode 失敗:', userErr);
-          }
-        }
-
-        // 情況 D：自動緩衝重試 (處理 iOS 切頁後的短暫硬體衝突)
-        if (!startedSuccess) {
-          console.warn('[Camera] 首次啟動未成功，等待 500ms 自動重試一次...');
-          await new Promise(r => setTimeout(r, 500));
-          try {
-            await html5QrCode.start({ facingMode: currentFacingMode }, scanConfig, onScanSuccess);
-            startedSuccess = true;
-            showToast(`🟢 訂正掃碼器就緒 (${currentFacingMode === 'environment' ? '後置相機/螢幕背面' : '前置相機/螢幕同側'})`, 'success');
-          } catch (retryErr) {
-            console.warn('[Camera] 重試依然失敗，嘗試枚舉設備:', retryErr);
-          }
-        }
-
-        // 情況 E：終極回退 (枚舉可用設備)
-        if (!startedSuccess) {
-          if (availableCameras.length === 0) {
-            await refreshCameraListAsync();
-          }
-          if (availableCameras.length > 0) {
-            let pickIdx = 0;
-            if (currentFacingMode === 'environment') {
-              const rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|主|標準/i.test(c.label));
-              if (rearIdx >= 0) pickIdx = rearIdx;
-            } else {
-              const frontIdx = availableCameras.findIndex(c => /front|user|前|自拍|selfie/i.test(c.label));
-              if (frontIdx >= 0) pickIdx = frontIdx;
-            }
-            currentCameraIndex = pickIdx;
-            const chosenId = availableCameras[pickIdx].id;
-            await html5QrCode.start(chosenId, scanConfig, onScanSuccess);
-            startedSuccess = true;
-            const label = availableCameras[pickIdx].label || `相機 ${pickIdx + 1}`;
-            showToast(`🟢 訂正掃碼器就緒 (${label})`, 'success');
-          }
-        }
-
-        if (startedSuccess) {
-          ensureVideoPlayback();
-          setupManualFocus();
-          refreshCameraListAsync();
-        } else {
-          showToast('❌ 無法啟動相機，請點擊螢幕重試或檢查相機權限', 'error');
-        }
-
-      } catch (err) {
-        showToast('❌ 相機啟動失敗: ' + (err.message || err), 'error');
+        await html5QrCode.start(target, scanConfig, onScanSuccess);
+        startedSuccess = true;
+        const camObj = availableCameras.find((c) => c.id === target);
+        const label = camObj ? camObj.label || '指定相機' : '相機';
+        showToast("🟢 訂正掃碼器就緒 (".concat(label, ")"), 'success');
+      } catch (camErr) {
+        console.warn('[Camera] 指定 cameraId 啟動失敗，回退至 facingMode 模式:', camErr);
       }
     }
 
-    function ensureVideoPlayback() {
-      const video = document.querySelector('#reader video');
-      if (video) {
-        if (!video.hasAttribute('playsinline')) video.setAttribute('playsinline', 'true');
-        if (!video.hasAttribute('webkit-playsinline')) video.setAttribute('webkit-playsinline', 'true');
-        video.muted = true;
-        video.playsInline = true;
-        if (video.paused) {
-          video.play().catch(e => console.warn('[Video] auto play error:', e));
-        }
-      }
-    }
-
-    function setupManualFocus() {
-      const cameraBox = document.querySelector('.camera-wrapper') || document.getElementById('reader');
-      if (cameraBox && !cameraBox._hasTapFocus) {
-        cameraBox._hasTapFocus = true;
-        const doFocusOrRestart = async (e) => {
-          try {
-            const video = document.querySelector('#reader video');
-            const isStalled = !video || !video.srcObject || video.paused || video.readyState < 2 || video.videoWidth === 0;
-            if (isStalled) {
-              showToast('🔄 偵測到畫面停滯，正在手勢喚醒重啟鏡頭...', 'info');
-              await startCameraWithFacingMode(currentFacingMode);
-              return;
-            }
-            ensureVideoPlayback();
-            showToast('🎯 鏡頭就緒對焦中', 'info');
-          } catch(e){
-            startCameraWithFacingMode(currentFacingMode);
-          }
-        };
-        cameraBox.addEventListener('click', doFocusOrRestart);
-        cameraBox.addEventListener('touchend', doFocusOrRestart);
-      }
-    }
-
-    async function refreshCameraListAsync() {
+    // 情況 B：啟動後置相機 (螢幕背面)
+    if (!startedSuccess && target === 'environment') {
+      currentFacingMode = 'environment';
       try {
-        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoDevices = devices.filter(d => d.kind === 'videoinput');
-          if (videoDevices.length > 0) {
-            availableCameras = videoDevices.map(d => ({
-              id: d.deviceId,
-              label: d.label || ''
-            }));
-            if (currentCameraIndex < 0) {
-              if (currentFacingMode === 'environment') {
-                let rearIdx = availableCameras.findIndex(c => /back.*wide|wide.*back|後置.*廣角/i.test(c.label) && !/ultra|超廣角/i.test(c.label));
-                if (rearIdx < 0) rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|後置|主|標準/i.test(c.label) && !/ultra|超廣角/i.test(c.label));
-                if (rearIdx < 0) rearIdx = availableCameras.findIndex(c => /back|rear|environment|後|後置|主|標準/i.test(c.label));
-                currentCameraIndex = rearIdx >= 0 ? rearIdx : 0;
-              } else {
-                const frontIdx = availableCameras.findIndex(c => /front|user|前|自拍|selfie/i.test(c.label));
-                currentCameraIndex = frontIdx >= 0 ? frontIdx : 0;
-              }
-            }
-          }
-        }
-      } catch(e){}
+        await html5QrCode.start({ facingMode: "environment" }, scanConfig, onScanSuccess);
+        startedSuccess = true;
+        showToast('🟢 訂正掃碼器就緒 (後置相機/螢幕背面)', 'success');
+      } catch (envErr) {
+        console.warn('[Camera] facingMode environment 啟動失敗:', envErr);
+      }
     }
 
-    async function switchNextCamera() {
-      showToast('⏳ 正在切換相機鏡頭...', 'info');
-      await stopActiveCamera();
+    // 情況 C：啟動前置相機 (螢幕同側)
+    if (!startedSuccess && target === 'user') {
+      currentFacingMode = 'user';
+      try {
+        await html5QrCode.start({ facingMode: "user" }, scanConfig, onScanSuccess);
+        startedSuccess = true;
+        showToast('🟢 訂正掃碼器就緒 (前置相機/螢幕同側)', 'success');
+      } catch (userErr) {
+        console.warn('[Camera] user facingMode 失敗:', userErr);
+      }
+    }
 
+    // 情況 D：自動緩衝重試 (處理 iOS 切頁後的短暫硬體衝突)
+    if (!startedSuccess) {
+      console.warn('[Camera] 首次啟動未成功，等待 500ms 自動重試一次...');
+      await new Promise((r) => setTimeout(r, 500));
+      try {
+        await html5QrCode.start({ facingMode: currentFacingMode }, scanConfig, onScanSuccess);
+        startedSuccess = true;
+        showToast("🟢 訂正掃碼器就緒 (".concat(currentFacingMode === 'environment' ? '後置相機/螢幕背面' : '前置相機/螢幕同側', ")"), 'success');
+      } catch (retryErr) {
+        console.warn('[Camera] 重試依然失敗，嘗試枚舉設備:', retryErr);
+      }
+    }
+
+    // 情況 E：終極回退 (枚舉可用設備)
+    if (!startedSuccess) {
       if (availableCameras.length === 0) {
         await refreshCameraListAsync();
       }
-
-      if (availableCameras.length > 1) {
-        currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
-        const nextCam = availableCameras[currentCameraIndex];
-        const label = nextCam.label || `相機 ${currentCameraIndex + 1}`;
-        if (/front|user|前|自拍|selfie/i.test(label)) {
-          currentFacingMode = 'user';
+      if (availableCameras.length > 0) {
+        let pickIdx = 0;
+        if (currentFacingMode === 'environment') {
+          const rearIdx = availableCameras.findIndex((c) => /back|rear|environment|後|主|標準/i.test(c.label));
+          if (rearIdx >= 0) pickIdx = rearIdx;
         } else {
-          currentFacingMode = 'environment';
+          const frontIdx = availableCameras.findIndex((c) => /front|user|前|自拍|selfie/i.test(c.label));
+          if (frontIdx >= 0) pickIdx = frontIdx;
         }
-        showToast(`🔄 已切換至：${label}`, 'success');
-        await startCameraWithFacingMode(nextCam.id);
-      } else {
-        // 若只有 1 個相機或系統未回傳多個 ID，直接切換 facingMode
-        currentFacingMode = (currentFacingMode === 'environment' ? 'user' : 'environment');
-        const modeLabel = currentFacingMode === 'environment' ? '後置相機 (螢幕背面)' : '前置相機 (螢幕同側)';
-        showToast(`🔄 已切換至：${modeLabel}`, 'success');
-        await startCameraWithFacingMode(currentFacingMode);
+        currentCameraIndex = pickIdx;
+        const chosenId = availableCameras[pickIdx].id;
+        await html5QrCode.start(chosenId, scanConfig, onScanSuccess);
+        startedSuccess = true;
+        const label = availableCameras[pickIdx].label || "相機 ".concat(pickIdx + 1);
+        showToast("🟢 訂正掃碼器就緒 (".concat(label, ")"), 'success');
       }
     }
 
-    // ── 頁面跳轉與生命週期管理（防止 iOS Safari 鏡頭佔用與黑屏） ──
-    let isNavigatingAway = false;
-    document.addEventListener('click', async (e) => {
-      const link = e.target.closest('a');
-      if (!link || !link.href || link.href.startsWith('javascript:') || link.target === '_blank') return;
-      if (isNavigatingAway) return;
-      const href = link.getAttribute('href');
-      if (href && (href.includes('scanner') || href.includes('correction') || href.includes('index') || href.includes('Sticker'))) {
-        e.preventDefault();
-        e.stopPropagation();
-        isNavigatingAway = true;
-        showToast('⏳ 正在釋放鏡頭並切換頁面...', 'info');
-        try {
-          await stopActiveCamera();
-        } catch(err){}
-        await new Promise(r => setTimeout(r, 180));
-        window.location.href = link.href;
-      }
-    }, true);
+    if (startedSuccess) {
+      ensureVideoPlayback();
+      setupManualFocus();
+      refreshCameraListAsync();
+    } else {
+      showToast('❌ 無法啟動相機，請點擊螢幕重試或檢查相機權限', 'error');
+    }
 
-    window.addEventListener('pagehide', () => {
-      stopAllMediaTracksSync();
-    });
+  } catch (err) {
+    showToast('❌ 相機啟動失敗: ' + (err.message || err), 'error');
+  }
+}
 
-    window.addEventListener('beforeunload', () => {
-      stopAllMediaTracksSync();
-    });
+function ensureVideoPlayback() {
+  const video = document.querySelector('#reader video');
+  if (video) {
+    if (!video.hasAttribute('playsinline')) video.setAttribute('playsinline', 'true');
+    if (!video.hasAttribute('webkit-playsinline')) video.setAttribute('webkit-playsinline', 'true');
+    video.muted = true;
+    video.playsInline = true;
+    if (video.paused) {
+      video.play().catch((e) => console.warn('[Video] auto play error:', e));
+    }
+  }
+}
 
-    window.addEventListener('pageshow', (event) => {
-      if (event.persisted) {
-        console.log('[Camera] 頁面自快存 (bfcache) 恢復，重新啟動相機...');
-        stopAllMediaTracksSync();
-        setTimeout(() => {
-          startCameraWithFacingMode(currentFacingMode);
-        }, 300);
-      }
-    });
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
+function setupManualFocus() {
+  const cameraBox = document.querySelector('.camera-wrapper') || document.getElementById('reader');
+  if (cameraBox && !cameraBox._hasTapFocus) {
+    cameraBox._hasTapFocus = true;
+    const doFocusOrRestart = async (e) => {
+      try {
         const video = document.querySelector('#reader video');
-        if (!video || !video.srcObject || video.readyState === 0 || video.paused) {
-          console.log('[Camera] 頁面切回前景且畫面未就緒，自動重啟鏡頭...');
-          startCameraWithFacingMode(currentFacingMode);
+        const isStalled = !video || !video.srcObject || video.paused || video.readyState < 2 || video.videoWidth === 0;
+        if (isStalled) {
+          showToast('🔄 偵測到畫面停滯，正在手勢喚醒重啟鏡頭...', 'info');
+          await startCameraWithFacingMode(currentFacingMode);
+          return;
+        }
+        ensureVideoPlayback();
+        showToast('🎯 鏡頭就緒對焦中', 'info');
+      } catch (e) {
+        startCameraWithFacingMode(currentFacingMode);
+      }
+    };
+    cameraBox.addEventListener('click', doFocusOrRestart);
+    cameraBox.addEventListener('touchend', doFocusOrRestart);
+  }
+}
+
+async function refreshCameraListAsync() {
+  try {
+    if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices.filter((d) => d.kind === 'videoinput');
+      if (videoDevices.length > 0) {
+        availableCameras = videoDevices.map((d) => ({
+          id: d.deviceId,
+          label: d.label || ''
+        }));
+        if (currentCameraIndex < 0) {
+          if (currentFacingMode === 'environment') {
+            let rearIdx = availableCameras.findIndex((c) => /back.*wide|wide.*back|後置.*廣角/i.test(c.label) && !/ultra|超廣角/i.test(c.label));
+            if (rearIdx < 0) rearIdx = availableCameras.findIndex((c) => /back|rear|environment|後|後置|主|標準/i.test(c.label) && !/ultra|超廣角/i.test(c.label));
+            if (rearIdx < 0) rearIdx = availableCameras.findIndex((c) => /back|rear|environment|後|後置|主|標準/i.test(c.label));
+            currentCameraIndex = rearIdx >= 0 ? rearIdx : 0;
+          } else {
+            const frontIdx = availableCameras.findIndex((c) => /front|user|前|自拍|selfie/i.test(c.label));
+            currentCameraIndex = frontIdx >= 0 ? frontIdx : 0;
+          }
         }
       }
-    });
-
-    function showToast(msg, type = 'success') {
-      const banner = document.getElementById('toast-banner');
-      banner.className = `toast-banner ${type}`;
-      banner.textContent = msg;
-      banner.style.display = 'block';
-      setTimeout(() => { banner.style.display = 'none'; }, 3000);
     }
+  } catch (e) {}
+}
 
-    function triggerFeedback(type) {
-      if (navigator.vibrate) {
-        if (type === 'success') navigator.vibrate([100, 50, 100]);
-        else if (type === 'duplicate') navigator.vibrate([200, 100, 200]);
-        else navigator.vibrate(400);
-      }
+async function switchNextCamera() {
+  showToast('⏳ 正在切換相機鏡頭...', 'info');
+  await stopActiveCamera();
+
+  if (availableCameras.length === 0) {
+    await refreshCameraListAsync();
+  }
+
+  if (availableCameras.length > 1) {
+    currentCameraIndex = (currentCameraIndex + 1) % availableCameras.length;
+    const nextCam = availableCameras[currentCameraIndex];
+    const label = nextCam.label || "相機 ".concat(currentCameraIndex + 1);
+    if (/front|user|前|自拍|selfie/i.test(label)) {
+      currentFacingMode = 'user';
+    } else {
+      currentFacingMode = 'environment';
     }
-  </script>
+    showToast("🔄 已切換至：".concat(label), 'success');
+    await startCameraWithFacingMode(nextCam.id);
+  } else {
+    // 若只有 1 個相機或系統未回傳多個 ID，直接切換 facingMode
+    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+    const modeLabel = currentFacingMode === 'environment' ? '後置相機 (螢幕背面)' : '前置相機 (螢幕同側)';
+    showToast("🔄 已切換至：".concat(modeLabel), 'success');
+    await startCameraWithFacingMode(currentFacingMode);
+  }
+}
+
+// ── 頁面跳轉與生命週期管理（防止 iOS Safari 鏡頭佔用與黑屏） ──
+let isNavigatingAway = false;
+document.addEventListener('click', async (e) => {
+  const link = e.target.closest('a');
+  if (!link || !link.href || link.href.startsWith('javascript:') || link.target === '_blank') return;
+  if (isNavigatingAway) return;
+  const href = link.getAttribute('href');
+  if (href && (href.includes('scanner') || href.includes('correction') || href.includes('index') || href.includes('Sticker'))) {
+    e.preventDefault();
+    e.stopPropagation();
+    isNavigatingAway = true;
+    showToast('⏳ 正在釋放鏡頭並切換頁面...', 'info');
+    try {
+      await stopActiveCamera();
+    } catch (err) {}
+    await new Promise((r) => setTimeout(r, 180));
+    window.location.href = link.href;
+  }
+}, true);
+
+window.addEventListener('pagehide', () => {
+  stopAllMediaTracksSync();
+});
+
+window.addEventListener('beforeunload', () => {
+  stopAllMediaTracksSync();
+});
+
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) {
+    console.log('[Camera] 頁面自快存 (bfcache) 恢復，重新啟動相機...');
+    stopAllMediaTracksSync();
+    setTimeout(() => {
+      startCameraWithFacingMode(currentFacingMode);
+    }, 300);
+  }
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    const video = document.querySelector('#reader video');
+    if (!video || !video.srcObject || video.readyState === 0 || video.paused) {
+      console.log('[Camera] 頁面切回前景且畫面未就緒，自動重啟鏡頭...');
+      startCameraWithFacingMode(currentFacingMode);
+    }
+  }
+});
+
+function showToast(msg, type = 'success') {
+  const banner = document.getElementById('toast-banner');
+  banner.className = "toast-banner ".concat(type);
+  banner.textContent = msg;
+  banner.style.display = 'block';
+  setTimeout(() => {banner.style.display = 'none';}, 3000);
+}
+
+function triggerFeedback(type) {
+  if (navigator.vibrate) {
+    if (type === 'success') navigator.vibrate([100, 50, 100]);else
+    if (type === 'duplicate') navigator.vibrate([200, 100, 200]);else
+    navigator.vibrate(400);
+  }
+}
+</script>
 </body>
 </html>

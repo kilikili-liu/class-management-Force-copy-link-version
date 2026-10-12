@@ -1142,19 +1142,18 @@
         modal.id = 'ios-pwa-modal';
         modal.className = 'modal-overlay';
         modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(4px); padding:16px;';
-        modal.innerHTML = `
-          <div style="background:#1e293b; border:1px solid #38bdf8; border-radius:16px; max-width:400px; width:100%; padding:22px; box-shadow:0 12px 36px rgba(0,0,0,0.6); text-align:center;">
-            <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
-            <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
-            <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
-              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
-              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
-              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
-              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
-            </div>
-            <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
-          </div>
-        `;
+        modal.innerHTML =
+          '<div style="background:#1e293b; border:1px solid #38bdf8; border-radius:16px; max-width:400px; width:100%; padding:22px; box-shadow:0 12px 36px rgba(0,0,0,0.6); text-align:center;">' +
+            '<div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>' +
+            '<h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>' +
+            '<div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">' +
+              '<div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>' +
+              '<div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>' +
+              '<div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>' +
+              '<div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>' +
+            '</div>' +
+            '<button onclick="document.getElementById(\'ios-pwa-modal\').style.display=\'none\'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>' +
+          '</div>';
         document.body.appendChild(modal);
       } else {
         modal.style.display = 'flex';
@@ -1203,16 +1202,16 @@
 
       if (base && base.includes('script.google.com')) {
         const clean = cleanGasUrl(base);
-        const targetUrl = (pageName === 'index' || !pageName) ? clean : `${clean}?page=${pageName}`;
+        const targetUrl = (pageName === 'index' || !pageName) ? clean : (clean + '?page=' + pageName);
         try {
           window.top.location.href = targetUrl;
         } catch(e) {
           window.location.href = targetUrl;
         }
       } else {
-        const targetFile = (pageName === 'index' || !pageName) ? 'index.html' : `${pageName}.html`;
-        const apiParam = base ? `?api_url=${encodeURIComponent(cleanGasUrl(base))}` : '';
-        window.location.href = `${targetFile}${apiParam}`;
+        const targetFile = (pageName === 'index' || !pageName) ? 'index.html' : (pageName + '.html');
+        const apiParam = base ? ('?api_url=' + encodeURIComponent(cleanGasUrl(base))) : '';
+        window.location.href = targetFile + apiParam;
       }
     }
 
@@ -1245,17 +1244,17 @@
           const href = a.getAttribute('href');
           if (!href) return;
           const currentApi = (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) ? GAS_API_URL : (safeStorage.getItem('class_mgmt_gas_api_url') || '');
-          const apiParam = currentApi ? `?api_url=${encodeURIComponent(currentApi)}` : '';
+          const apiParam = currentApi ? ('?api_url=' + encodeURIComponent(currentApi)) : '';
           if (href.includes('page=scanner') || href.includes('scanner.html')) {
-            a.href = `scanner.html${apiParam}`;
+            a.href = 'scanner.html' + apiParam;
           } else if (href.includes('page=correction_scanner') || href.includes('correction_scanner.html')) {
-            a.href = `correction_scanner.html${apiParam}`;
+            a.href = 'correction_scanner.html' + apiParam;
           } else if (href.includes('page=correction') || href.includes('correction.html')) {
-            a.href = `correction.html${apiParam}`;
+            a.href = 'correction.html' + apiParam;
           } else if (href.includes('page=grading') || href.includes('grading.html')) {
-            a.href = `grading.html${apiParam}`;
+            a.href = 'grading.html' + apiParam;
           } else if (href.includes('page=sticker') || href.includes('StickerGenerator.html')) {
-            a.href = `StickerGenerator.html${apiParam}`;
+            a.href = 'StickerGenerator.html' + apiParam;
           }
         });
         return;
@@ -1267,22 +1266,22 @@
           const href = a.getAttribute('href');
           if (!href) return;
           if (href === 'scanner.html' || href.includes('page=scanner')) {
-            a.href = `${baseGasUrl}?page=scanner`;
+            a.href = baseGasUrl + '?page=scanner';
             a.target = '_top';
           } else if (href === 'index.html' || href === baseGasUrl || href.endsWith('/exec')) {
-            a.href = `${baseGasUrl}`;
+            a.href = baseGasUrl;
             a.target = '_top';
           } else if (href === 'correction.html' || href.includes('page=correction')) {
-            a.href = `${baseGasUrl}?page=correction`;
+            a.href = baseGasUrl + '?page=correction';
             a.target = '_top';
           } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
-            a.href = `${baseGasUrl}?page=correction_scanner`;
+            a.href = baseGasUrl + '?page=correction_scanner';
             a.target = '_top';
           } else if (href === 'grading.html' || href.includes('page=grading')) {
-            a.href = `${baseGasUrl}?page=grading`;
+            a.href = baseGasUrl + '?page=grading';
             a.target = '_top';
           } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
-            a.href = `${baseGasUrl}?page=sticker`;
+            a.href = baseGasUrl + '?page=sticker';
             a.target = '_top';
           }
         });
@@ -1320,7 +1319,7 @@
         }
       } catch(e){}
       if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
-        return `https://script.google.com/macros/s/${clean}/exec`;
+        return 'https://script.google.com/macros/s/' + clean + '/exec';
       }
       return clean.split('?')[0].trim();
     }
@@ -1659,7 +1658,7 @@
         neoBase = neoBase.slice(0, -1);
       }
       const toolFile = currentPairTool.page || 'scanner.html';
-      return `${neoBase}/${toolFile}?api_url=${encodeURIComponent(gasUrl)}`;
+      return neoBase + '/' + toolFile + '?api_url=' + encodeURIComponent(gasUrl);
     }
 
     function updateAndroidQrCode() {
@@ -1702,7 +1701,7 @@
       while (neoBase.endsWith('/')) {
         neoBase = neoBase.slice(0, -1);
       }
-      return `${neoBase}/class_app.mobileconfig`;
+      return neoBase + '/class_app.mobileconfig';
     }
 
     function updateIosProfileQrCode() {
@@ -1757,7 +1756,7 @@
 
       const previewEl = document.getElementById('pair-ios-bind-preview');
       if (previewEl) {
-        previewEl.innerHTML = `<span style="color:#c084fc; font-weight:700;">部署碼：</span><br><code style="font-size:0.75rem; word-break:break-all;">${qrContent}</code>`;
+        previewEl.innerHTML = '<span style="color:#c084fc; font-weight:700;">部署碼：</span><br><code style="font-size:0.75rem; word-break:break-all;">' + qrContent + '</code>';
       }
 
       const container = document.getElementById('pair-qrcode-ios-bind-container');
@@ -1806,7 +1805,7 @@
     function renderFallbackQrImg(container, url) {
       container.innerHTML = '';
       const img = document.createElement('img');
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(url)}`;
+      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(url);
       img.alt = 'QR Code';
       img.style.width = '240px';
       img.style.height = '240px';
@@ -1907,7 +1906,7 @@
       for (let i = 1; i <= 30; i++) {
         const btn = document.createElement('button');
         btn.className = 'seat-btn unsubmitted';
-        btn.innerHTML = `<div>${String(i).padStart(2, '0')}號</div><span class="status-badge unsubmitted">🔴 未繳</span>`;
+        btn.innerHTML = '<div>' + String(i).padStart(2, '0') + '號</div><span class="status-badge unsubmitted">🔴 未繳</span>';
         btn.onclick = () => onSeatButtonClick(i);
         grid.appendChild(btn);
       }
@@ -1923,7 +1922,7 @@
       }
 
       const matrix = (todayData && todayData.submissionMatrix) ? todayData.submissionMatrix : {};
-      const assignKey = `${subject}_${category}`;
+      const assignKey = subject + '_' + category;
       const firstKey = Object.keys(matrix)[0];
       const isSeatKeyedFormat = firstKey !== undefined && !isNaN(parseInt(firstKey, 10));
 
@@ -1956,7 +1955,7 @@
     async function loadTodayStatus() {
       const subject = document.getElementById('hw-subject').value;
       const category = document.getElementById('hw-category').value;
-      const assignKey = `${subject}_${category}`;
+      const assignKey = subject + '_' + category;
 
       try {
         const res = await apiCall('getTodayScanData');
@@ -1964,7 +1963,7 @@
         todayData = res;
 
         const assignList = res.assignments || [];
-        const currAssign = assignList.find(a => `${a.subject}_${a.category}` === assignKey);
+        const currAssign = assignList.find(a => (a.subject + '_' + a.category) === assignKey);
 
         if (currAssign) {
           document.getElementById('hw-unit').value = currAssign.unit || '';
@@ -1997,22 +1996,22 @@
           if (isSubmitted) submittedCount++;
 
           const btn = document.createElement('button');
-          btn.className = `seat-btn ${isSubmitted ? 'submitted' : 'unsubmitted'}`;
-          btn.innerHTML = `<div>${String(i).padStart(2, '0')}號</div><span class="status-badge ${isSubmitted ? 'submitted' : 'unsubmitted'}">${isSubmitted ? '🟢 已繳' : '🔴 未繳'}</span>`;
+          btn.className = 'seat-btn ' + (isSubmitted ? 'submitted' : 'unsubmitted');
+          btn.innerHTML = '<div>' + String(i).padStart(2, '0') + '號</div><span class="status-badge ' + (isSubmitted ? 'submitted' : 'unsubmitted') + '">' + (isSubmitted ? '🟢 已繳' : '🔴 未繳') + '</span>';
           btn.onclick = () => toggleSeatStatus(i, subject, category, !isSubmitted);
           grid.appendChild(btn);
         }
 
-        document.getElementById('submitted-summary').textContent = `已繳 ${submittedCount} / ${activeTotal} 人`;
+        document.getElementById('submitted-summary').textContent = '已繳 ' + submittedCount + ' / ' + activeTotal + ' 人';
       } catch(e) {
         console.error(e);
-        showToast(`❌ 載入失敗：${e.message || e}`);
+        showToast('❌ 載入失敗：' + (e.message || e));
       }
     }
 
     async function toggleSeatStatus(seatNo, subject, category, targetState) {
       const seatStr = String(seatNo).padStart(2, '0');
-      showToast(`⏳ 正在變更 ${seatStr}號 狀態...`, null);
+      showToast('⏳ 正在變更 ' + seatStr + '號 狀態...', null);
 
       const unit = document.getElementById('hw-unit') ? document.getElementById('hw-unit').value.trim() : '';
       const note = document.getElementById('hw-note') ? document.getElementById('hw-note').value.trim() : '';
@@ -2020,30 +2019,30 @@
       try {
         const res = await apiCall('toggleManualSubmission', {
           seatNo: seatNo,
-          assignKey: `${subject}_${category}`,
+          assignKey: subject + '_' + category,
           unit: unit,
           note: note
         });
         if (res && res.success) {
           loadTodayStatus();
-          showToast(`已切換 ${seatStr}號【${subject} ${category}】為 ${res.isSubmitted ? '🟢 已繳' : '🔴 未繳'}`, null);
+          showToast('已切換 ' + seatStr + '號【' + subject + ' ' + category + '】為 ' + (res.isSubmitted ? '🟢 已繳' : '🔴 未繳'), null);
         } else {
-          showToast(`❌ 切換失敗：${res ? res.message : ''}`, null);
+          showToast('❌ 切換失敗：' + (res ? res.message : ''), null);
         }
       } catch (err) {
-        showToast(`❌ 切換錯誤：${err.message || err}`, null);
+        showToast('❌ 切換錯誤：' + (err.message || err), null);
       }
     }
 
     function saveHomeworkMeta() {
       const subject = document.getElementById('hw-subject').value;
       const category = document.getElementById('hw-category').value;
-      const assignKey = `${subject}_${category}`;
+      const assignKey = subject + '_' + category;
       const unit = document.getElementById('hw-unit').value.trim();
       const note = document.getElementById('hw-note').value.trim();
 
       if (!todayData || !todayData.assignments) return;
-      const assignObj = todayData.assignments.find(a => `${a.subject}_${a.category}` === assignKey);
+      const assignObj = todayData.assignments.find(a => (a.subject + '_' + a.category) === assignKey);
       if (assignObj) {
         apiCall('updateHomeworkMetadata', {
           colIndex: assignObj.colIndex,
@@ -2072,7 +2071,7 @@
         cachedReminderRes = res;
         renderReminderTable();
       }).catch(err => {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">❌ 讀取失敗：${err.message || err}</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#ef4444;">❌ 讀取失敗：' + (err.message || err) + '</td></tr>';
       });
     }
 
@@ -2100,7 +2099,7 @@
       }
 
       if (filteredRecords.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#4ade80;">🎉 讚！【${currentReminderSubject}】全班皆已繳清，無缺交！</td></tr>`;
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#4ade80;">🎉 讚！【' + currentReminderSubject + '】全班皆已繳清，無缺交！</td></tr>';
         return;
       }
 
@@ -2108,10 +2107,10 @@
 
       filteredRecords.forEach((r, idx) => {
         const tr = document.createElement('tr');
-        const unitNote = r.assignment.unit ? ` (${r.assignment.unit})` : '';
-        const hwMain = `${r.assignment.subject} ${r.assignment.type}${unitNote}`;
+        const unitNote = r.assignment.unit ? (' (' + r.assignment.unit + ')') : '';
+        const hwMain = r.assignment.subject + ' ' + r.assignment.type + unitNote;
         const hwPage = r.assignment.note
-          ? `<span style="color:#94a3b8; font-size:0.8em; margin-left:6px;">p.${r.assignment.note}</span>`
+          ? ('<span style="color:#94a3b8; font-size:0.8em; margin-left:6px;">p.' + r.assignment.note + '</span>')
           : '';
 
         // 每列用 data 屬性儲存 rowIndex/colIndex 供送出時讀取
@@ -2120,15 +2119,14 @@
         tr.dataset.seatNo   = r.seatNo;
         tr.dataset.name     = r.name;
 
-        tr.innerHTML = `
-          <td style="text-align:center;">
-            <input type="checkbox" class="makeup-cb" onchange="updateMakeUpSubmitBtn()"
-              style="width:17px; height:17px; cursor:pointer; accent-color:#22c55e;">
-          </td>
-          <td><strong>${String(r.seatNo).padStart(2, '0')}</strong></td>
-          <td>${r.name}</td>
-          <td style="color:#fca5a5; font-weight:600;">${hwMain}${hwPage}</td>
-        `;
+        tr.innerHTML =
+          '<td style="text-align:center;">' +
+            '<input type="checkbox" class="makeup-cb" onchange="updateMakeUpSubmitBtn()"' +
+              ' style="width:17px; height:17px; cursor:pointer; accent-color:#22c55e;">' +
+          '</td>' +
+          '<td><strong>' + String(r.seatNo).padStart(2, '0') + '</strong></td>' +
+          '<td>' + r.name + '</td>' +
+          '<td style="color:#fca5a5; font-weight:600;">' + hwMain + hwPage + '</td>';
 
         // 點擊整列也切換 checkbox（方便手機操作）
         tr.style.cursor = 'pointer';
@@ -2152,7 +2150,7 @@
       const selAll  = document.getElementById('makeup-select-all');
 
       if (btn) {
-        btn.textContent = `✅ 送出補登 (${checked})`;
+        btn.textContent = '✅ 送出補登 (' + checked + ')';
         btn.disabled = checked === 0;
         btn.style.opacity  = checked === 0 ? '0.4' : '1';
         btn.style.cursor   = checked === 0 ? 'not-allowed' : 'pointer';
@@ -2160,7 +2158,7 @@
       if (label) {
         label.textContent = checked === 0
           ? '請勾選要補登的項目'
-          : `已勾選 ${checked} 筆，確認後按送出`;
+          : ('已勾選 ' + checked + ' 筆，確認後按送出');
         label.style.color = checked === 0 ? '#94a3b8' : '#4ade80';
       }
       if (selAll && total > 0) {
@@ -2190,14 +2188,14 @@
       });
       if (makeUpList.length === 0) return;
 
-      showToast(`⏳ 正在送出 ${makeUpList.length} 筆補登...`);
+      showToast('⏳ 正在送出 ' + makeUpList.length + ' 筆補登...');
       const btn = document.getElementById('makeup-submit-btn');
       if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
 
       apiCall('batchSubmitMakeUp', { makeUpList: makeUpList })
         .then(res => {
           if (res && res.success) {
-            showToast(`🟢 成功補登 ${res.updatedCount} 筆！`);
+            showToast('🟢 成功補登 ' + res.updatedCount + ' 筆！');
             loadReminderData();
             loadTodayStatus();
           } else {
@@ -2206,7 +2204,7 @@
           }
         })
         .catch(err => {
-          showToast(`❌ 補登錯誤：${err.message || err}`);
+          showToast('❌ 補登錯誤：' + (err.message || err));
           if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
         });
     }

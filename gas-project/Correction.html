@@ -14,14 +14,15 @@
   <link rel="icon" type="image/svg+xml" href="icon.svg">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script>
-    // 🛡️ 安全 Storage 存取器（防止 Google Apps Script / Brave / Safari 沙箱丟出 DOMException 阻斷程式執行）
-    window.safeStorage = {
-      getItem: function(k) { try { return window.localStorage ? localStorage.getItem(k) : null; } catch(e) { return null; } },
-      setItem: function(k, v) { try { if (window.localStorage) localStorage.setItem(k, v); } catch(e) {} },
-      removeItem: function(k) { try { if (window.localStorage) localStorage.removeItem(k); } catch(e) {} }
-    };
-    var safeStorage = window.safeStorage;
-  </script>
+
+// 🛡️ 安全 Storage 存取器（防止 Google Apps Script / Brave / Safari 沙箱丟出 DOMException 阻斷程式執行）
+window.safeStorage = {
+  getItem: function (k) {try {return window.localStorage ? localStorage.getItem(k) : null;} catch (e) {return null;}},
+  setItem: function (k, v) {try {if (window.localStorage) localStorage.setItem(k, v);} catch (e) {}},
+  removeItem: function (k) {try {if (window.localStorage) localStorage.removeItem(k);} catch (e) {}}
+};
+var safeStorage = window.safeStorage;
+</script>
   <style>
     :root {
       --bg-dark: #0f172a;
@@ -1101,1670 +1102,1671 @@
   </div>
 
   <script>
-    // ── PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
-    let deferredInstallPrompt = null;
-    const hadPriorController = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
 
-    function forceHardReload() {
-      try {
-        if ('caches' in window) {
-          caches.keys().then(names => {
-            names.forEach(name => caches.delete(name));
-          });
-        }
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(regs => {
-            regs.forEach(reg => reg.unregister());
-          });
-        }
-      } catch(e){}
+// ── PWA Service Worker 註冊、自動更新偵測與安裝提示 ──
+let deferredInstallPrompt = null;
+const hadPriorController = 'serviceWorker' in navigator && !!navigator.serviceWorker.controller;
 
-      setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.set('_t', Date.now());
-        window.location.href = url.toString();
-      }, 300);
+function forceHardReload() {
+  try {
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => caches.delete(name));
+      });
     }
-
-    function showPwaUpdateBanner() {
-      const banner = document.getElementById('pwa-update-banner');
-      if (banner) {
-        banner.style.display = 'flex';
-      }
-    }
-
     if ('serviceWorker' in navigator) {
-      // 監聽 Controller 變化：當有舊的 SW 且新 SW 接管時，觸發新版本提示
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (hadPriorController) {
-          showPwaUpdateBanner();
-        }
-      });
-
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
-          .then(reg => {
-            // 1. 定期與切換前台時主動向伺服器檢查新版本
-            reg.update().catch(() => {});
-            document.addEventListener('visibilitychange', () => {
-              if (document.visibilityState === 'visible') {
-                reg.update().catch(() => {});
-              }
-            });
-            setInterval(() => {
-              reg.update().catch(() => {});
-            }, 10 * 60 * 1000); // 每 10 分鐘背景檢查一次
-
-            // 2. 監聽更新事件
-            reg.addEventListener('updatefound', () => {
-              const newWorker = reg.installing;
-              if (!newWorker) return;
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  showPwaUpdateBanner();
-                }
-              });
-            });
-          })
-          .catch(err => console.log('SW note:', err));
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.unregister());
       });
     }
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault();
-      deferredInstallPrompt = e;
-      const btn = document.getElementById('btn-pwa-install');
-      if (btn) btn.style.display = 'inline-flex';
-    });
-    window.addEventListener('appinstalled', () => {
+  } catch (e) {}
+
+  setTimeout(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('_t', Date.now());
+    window.location.href = url.toString();
+  }, 300);
+}
+
+function showPwaUpdateBanner() {
+  const banner = document.getElementById('pwa-update-banner');
+  if (banner) {
+    banner.style.display = 'flex';
+  }
+}
+
+if ('serviceWorker' in navigator) {
+  // 監聽 Controller 變化：當有舊的 SW 且新 SW 接管時，觸發新版本提示
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadPriorController) {
+      showPwaUpdateBanner();
+    }
+  });
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).
+    then((reg) => {
+      // 1. 定期與切換前台時主動向伺服器檢查新版本
+      reg.update().catch(() => {});
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          reg.update().catch(() => {});
+        }
+      });
+      setInterval(() => {
+        reg.update().catch(() => {});
+      }, 10 * 60 * 1000); // 每 10 分鐘背景檢查一次
+
+      // 2. 監聽更新事件
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            showPwaUpdateBanner();
+          }
+        });
+      });
+    }).
+    catch((err) => console.log('SW note:', err));
+  });
+}
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  const btn = document.getElementById('btn-pwa-install');
+  if (btn) btn.style.display = 'inline-flex';
+});
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const btn = document.getElementById('btn-pwa-install');
+  if (btn) btn.style.display = 'none';
+  console.log('PWA 已成功安裝至主畫面');
+});
+
+function showIosInstallModal() {
+  let modal = document.getElementById('ios-pwa-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'ios-pwa-modal';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(4px); padding:16px;';
+    modal.innerHTML = "\n          <div style=\"background:#1e293b; border:1px solid #38bdf8; border-radius:16px; max-width:400px; width:100%; padding:22px; box-shadow:0 12px 36px rgba(0,0,0,0.6); text-align:center;\">\n            <div style=\"font-size:2.6rem; margin-bottom:10px;\">📲🍎</div>\n            <h3 style=\"color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;\">iPhone / iPad 加入主畫面教學</h3>\n            <div style=\"color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;\">\n              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>\n              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>\n              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>\n              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>\n            </div>\n            <button onclick=\"document.getElementById('ios-pwa-modal').style.display='none'\" style=\"background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;\">我知道了</button>\n          </div>\n        ";
+
+
+
+
+
+
+
+
+
+
+
+
+    document.body.appendChild(modal);
+  } else {
+    modal.style.display = 'flex';
+  }
+}
+
+function checkIosPwaButton() {
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  if (isIos && !isStandalone) {
+    const btn = document.getElementById('btn-pwa-install');
+    if (btn) btn.style.display = 'inline-flex';
+  }
+}
+
+function triggerPwaInstall() {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(() => {
       deferredInstallPrompt = null;
       const btn = document.getElementById('btn-pwa-install');
       if (btn) btn.style.display = 'none';
-      console.log('PWA 已成功安裝至主畫面');
     });
+  } else {
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIos) {
+      showIosInstallModal();
+    }
+  }
+}
 
-    function showIosInstallModal() {
-      let modal = document.getElementById('ios-pwa-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'ios-pwa-modal';
-        modal.className = 'modal-overlay';
-        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.85); display:flex; align-items:center; justify-content:center; z-index:999999; backdrop-filter:blur(4px); padding:16px;';
-        modal.innerHTML = `
-          <div style="background:#1e293b; border:1px solid #38bdf8; border-radius:16px; max-width:400px; width:100%; padding:22px; box-shadow:0 12px 36px rgba(0,0,0,0.6); text-align:center;">
-            <div style="font-size:2.6rem; margin-bottom:10px;">📲🍎</div>
-            <h3 style="color:#f8fafc; font-size:1.15rem; font-weight:800; margin-bottom:12px;">iPhone / iPad 加入主畫面教學</h3>
-            <div style="color:#cbd5e1; font-size:0.86rem; line-height:1.7; text-align:left; background:#0f172a; padding:14px; border-radius:10px; border:1px solid #334155; margin-bottom:16px;">
-              <div>1️⃣ 請確認是在 <strong>Safari</strong> 瀏覽器中開啟本頁面</div>
-              <div>2️⃣ 點擊 Safari 底部工具列中間的 <strong>「分享」圖示</strong>（📤 方塊向上箭頭）</div>
-              <div>3️⃣ 在選單中往下滑動，找到並點選 <strong>「加入主畫面」</strong>（➕）</div>
-              <div>4️⃣ 點擊右上角 <strong>「新增」</strong> 即可在手機桌面建立全螢幕 App！</div>
-            </div>
-            <button onclick="document.getElementById('ios-pwa-modal').style.display='none'" style="background:#0284c7; color:#fff; border:none; padding:9px 24px; border-radius:8px; font-weight:700; cursor:pointer; font-size:0.9rem;">我知道了</button>
-          </div>
-        `;
-        document.body.appendChild(modal);
+function cleanGasUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  let clean = url.trim();
+  try {
+    if (clean.includes('%3A') || clean.includes('%2F')) {
+      clean = decodeURIComponent(clean);
+    }
+  } catch (e) {}
+  if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
+    return "https://script.google.com/macros/s/".concat(clean, "/exec");
+  }
+  return clean.split('?')[0].trim();
+}
+
+function getGasApiUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
+  if (paramGasUrl) {
+    const clean = cleanGasUrl(paramGasUrl);
+    try {safeStorage.setItem('class_management_gas_api_url', clean);} catch (e) {}
+    return clean;
+  }
+
+  if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.includes('script.google.com')) {
+    return cleanGasUrl(window._GAS_WEBAPP_URL);
+  }
+  if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL && window.GAS_API_URL.includes('script.google.com')) {
+    return cleanGasUrl(window.GAS_API_URL);
+  }
+
+  const stored = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url');
+  if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
+    return cleanGasUrl(stored);
+  }
+
+  if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+    return cleanGasUrl(location.href.split('?')[0]);
+  }
+
+  // 首次使用：若無網址參數且無 localStorage，不跳出阻擋性 prompt，返回空字串
+  return '';
+}
+
+let GAS_API_URL = getGasApiUrl();
+
+async function apiCallCorrection(action, params = {}) {
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    return new Promise((resolve, reject) => {
+      google.script.run.
+      withSuccessHandler((res) => resolve(res)).
+      withFailureHandler((err) => reject(err)).
+      handleScannerApiAction(action, params);
+    });
+  } else {
+    const cleanBase = cleanGasUrl(GAS_API_URL);
+    const url = new URL(cleanBase);
+    url.searchParams.set('action', action);
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null) {
+        url.searchParams.set(k, String(v));
+      }
+    }
+    return await gasApiFetch(url.toString());
+  }
+}
+
+// 增強版超穩定 GAS API 呼叫器（支援 fetch 優先、JSONP 備援、自動重試、與 18 秒冷啟動逾時）
+async function gasApiFetch(url, retries = 2, timeoutMs = 18000) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await singleGasApiFetch(url, timeoutMs);
+    } catch (err) {
+      console.warn('[GAS API] 第 ' + (attempt + 1) + ' 次連線失敗: ' + (err ? err.message : ''));
+      if (attempt < retries) {
+        // 重試前等待 1 秒（喚醒 GAS 冷啟動容器）
+        await new Promise((r) => setTimeout(r, 1000));
       } else {
-        modal.style.display = 'flex';
+        throw err;
+      }
+    }
+  }
+}
+
+function singleGasApiFetch(url, timeoutMs = 18000) {
+  return new Promise((resolve, reject) => {
+    const cleanUrl = cleanGasUrl(String(url));
+    const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+    const sep = cleanUrl.includes('?') ? '&' : '?';
+    const finalUrl = cleanUrl + sep + 'callback=' + callbackName + '&_t=' + Date.now();
+
+    let isSettled = false;
+    let scriptTag = null;
+
+    const timeoutTimer = setTimeout(() => {
+      if (isSettled) return;
+      isSettled = true;
+      cleanup();
+      reject(new Error('伺服器回應較慢 (逾時)'));
+    }, timeoutMs);
+
+    function cleanup() {
+      try {delete window[callbackName];} catch (e) {}
+      if (scriptTag && scriptTag.parentNode) {
+        scriptTag.parentNode.removeChild(scriptTag);
       }
     }
 
-    function checkIosPwaButton() {
-      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-      if (isIos && !isStandalone) {
-        const btn = document.getElementById('btn-pwa-install');
-        if (btn) btn.style.display = 'inline-flex';
-      }
-    }
+    window[callbackName] = function (data) {
+      if (isSettled) return;
+      isSettled = true;
+      clearTimeout(timeoutTimer);
+      cleanup();
+      resolve(data);
+    };
 
-    function triggerPwaInstall() {
-      if (deferredInstallPrompt) {
-        deferredInstallPrompt.prompt();
-        deferredInstallPrompt.userChoice.then(() => {
-          deferredInstallPrompt = null;
-          const btn = document.getElementById('btn-pwa-install');
-          if (btn) btn.style.display = 'none';
-        });
+    // 1. 優先嘗試 fetch（加入 credentials: 'omit' 避免 Google 多帳號 Cookie 衝突）
+    fetch(finalUrl, { method: 'GET', redirect: 'follow', credentials: 'omit' }).
+    then((res) => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    }).
+    then((text) => {
+      if (isSettled) return;
+      const trimmed = (text || '').trim();
+      let parsedData = null;
+      if (trimmed.startsWith(callbackName + '(')) {
+        // 支援結尾有分號、換行等情況
+        const inner = trimmed.substring(callbackName.length + 1).replace(/\);?$/, '');
+        try {parsedData = JSON.parse(inner);} catch (e) {}
+      } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try {parsedData = JSON.parse(trimmed);} catch (e) {}
+      }
+      if (parsedData) {
+        isSettled = true;
+        clearTimeout(timeoutTimer);
+        cleanup();
+        resolve(parsedData);
       } else {
-        const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-        if (isIos) {
-          showIosInstallModal();
-        }
+        throw new Error('無法解析伺服器回應格式');
       }
+    }).
+    catch((fetchErr) => {
+      if (isSettled) return;
+      console.warn('[GAS API] fetch 失敗或無法解析，改用 JSONP script 標籤備援:', fetchErr);
+      scriptTag = document.createElement('script');
+      scriptTag.crossOrigin = 'anonymous';
+      scriptTag.src = finalUrl;
+      scriptTag.onerror = function () {
+        if (isSettled) return;
+        isSettled = true;
+        clearTimeout(timeoutTimer);
+        cleanup();
+        reject(new Error('跨域連線失敗 (可能被瀏覽器防追蹤或擴充功能阻擋)'));
+      };
+      document.head.appendChild(scriptTag);
+    });
+  });
+}
+
+let currentMainView = 'register'; // 'register', 'query', 'matrix'
+let currentRegSubmode = 'button'; // 'button', 'scan'
+let currentQuerySub = 'student'; // 'student', 'assignment'
+let matrixData = { assignments: [], seatSummary: {}, records: [] };
+let html5QrcodeScanner = null;
+let isProcessingScan = false;
+let audioSuccess = new Audio('https://actions.google.com/sounds/v1/cartoon/clink_clink.ogg');
+
+let hasUserSelectedSubjectCategory = false;
+
+// ── 連線設定彈窗 ──
+function openPairModal() {
+  const input = document.getElementById('gas-url-input');
+  if (input) input.value = GAS_API_URL || safeStorage.getItem('class_mgmt_gas_api_url') || '';
+  const modal = document.getElementById('pair-modal');
+  if (modal) modal.classList.add('show');
+}
+function closePairModal() {
+  const modal = document.getElementById('pair-modal');
+  if (modal) modal.classList.remove('show');
+}
+function savePairGasUrl() {
+  const input = document.getElementById('gas-url-input');
+  const val = input ? input.value.trim() : '';
+  if (!val) {
+    showToast('⚠️ 請輸入有效的 GAS 網址', 'orange');
+    return;
+  }
+  const clean = cleanGasUrl(val);
+  GAS_API_URL = clean;
+  try {
+    safeStorage.setItem('class_management_gas_api_url', clean);
+    safeStorage.setItem('class_mgmt_gas_api_url', clean);
+  } catch (e) {}
+  closePairModal();
+  showToast('🟢 連線設定已儲存！', 'green');
+  fetchCorrectionMatrixData();
+}
+function clearPairGasUrl() {
+  const input = document.getElementById('gas-url-input');
+  if (input) input.value = '';
+  try {
+    safeStorage.removeItem('class_management_gas_api_url');
+    safeStorage.removeItem('class_mgmt_gas_api_url');
+  } catch (e) {}
+  GAS_API_URL = '';
+  closePairModal();
+  showToast('⚠️ 已解除試算表綁定', 'orange');
+}
+
+function navToPage(pageName, evt) {
+  if (evt && typeof evt.preventDefault === 'function') {
+    evt.preventDefault();
+  }
+  let base = typeof window !== 'undefined' && window._GAS_WEBAPP_URL ? window._GAS_WEBAPP_URL : typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '';
+  if (!base && location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
+    base = location.href.split('?')[0];
+  }
+  if (!base && document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
+    base = document.referrer.split('?')[0];
+  }
+  if (!base) {
+    base = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url') || '';
+  }
+
+  if (base && base.includes('script.google.com')) {
+    const clean = cleanGasUrl(base);
+    const targetUrl = pageName === 'index' || !pageName ? clean : "".concat(clean, "?page=").concat(pageName);
+    try {
+      window.top.location.href = targetUrl;
+    } catch (e) {
+      window.location.href = targetUrl;
     }
+  } else {
+    const targetFile = pageName === 'index' || !pageName ? 'index.html' : "".concat(pageName, ".html");
+    const apiParam = base ? "?api_url=".concat(encodeURIComponent(cleanGasUrl(base))) : '';
+    window.location.href = "".concat(targetFile).concat(apiParam);
+  }
+}
 
-    function cleanGasUrl(url) {
-      if (!url || typeof url !== 'string') return '';
-      let clean = url.trim();
-      try {
-        if (clean.includes('%3A') || clean.includes('%2F')) {
-          clean = decodeURIComponent(clean);
-        }
-      } catch(e){}
-      if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(clean)) {
-        return `https://script.google.com/macros/s/${clean}/exec`;
+// ── 雙環境路由自動適配 (Google Apps Script vs Neocities 靜態網頁) ──
+function adaptInternalLinks() {
+  const isGas = typeof google !== 'undefined' && google.script && google.script.run ||
+  location.hostname.includes('script.google.com') ||
+  location.hostname.includes('googleusercontent.com');
+
+  if (!isGas) {
+    checkIosPwaButton();
+    document.querySelectorAll('a[href]').forEach((a) => {
+      const href = a.getAttribute('href');
+      if (!href) return;
+      const currentApi = typeof GAS_API_URL !== 'undefined' && GAS_API_URL ? GAS_API_URL : safeStorage.getItem('class_mgmt_gas_api_url') || '';
+      const apiParam = currentApi ? "?api_url=".concat(encodeURIComponent(currentApi)) : '';
+      if (href.includes('page=correction_scanner') || href === 'correction_scanner.html') {
+        a.href = "correction_scanner.html".concat(apiParam);
+      } else if (href.includes('page=scanner') || href === 'scanner.html') {
+        a.href = "scanner.html".concat(apiParam);
+      } else if (href.includes('page=index') || href === 'index.html') {
+        a.href = "index.html".concat(apiParam);
+      } else if (href.includes('page=grading') || href === 'grading.html') {
+        a.href = "grading.html".concat(apiParam);
       }
-      return clean.split('?')[0].trim();
+    });
+    return;
+  }
+
+  function applyGasUrls(baseGasUrl) {
+    if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
+    document.querySelectorAll('a[href]').forEach((a) => {
+      const href = a.getAttribute('href');
+      if (!href) return;
+      if (href === 'scanner.html' || href.includes('page=scanner')) {
+        a.href = "".concat(baseGasUrl, "?page=scanner");
+        a.target = '_top';
+      } else if (href === 'index.html' || href === baseGasUrl || href.endsWith('/exec')) {
+        a.href = "".concat(baseGasUrl);
+        a.target = '_top';
+      } else if (href === 'correction.html' || href.includes('page=correction')) {
+        a.href = "".concat(baseGasUrl, "?page=correction");
+        a.target = '_top';
+      } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
+        a.href = "".concat(baseGasUrl, "?page=correction_scanner");
+        a.target = '_top';
+      } else if (href === 'grading.html' || href.includes('page=grading')) {
+        a.href = "".concat(baseGasUrl, "?page=grading");
+        a.target = '_top';
+      } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
+        a.href = "".concat(baseGasUrl, "?page=sticker");
+        a.target = '_top';
+      }
+    });
+  }
+
+  let baseGasUrl = window._GAS_WEBAPP_URL;
+  if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
+    baseGasUrl = safeStorage.getItem('class_mgmt_gas_api_url');
+  }
+  if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
+    baseGasUrl = location.href.split('?')[0];
+  }
+
+  if (baseGasUrl && baseGasUrl.startsWith('https://script.google.com')) {
+    applyGasUrls(baseGasUrl);
+  }
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run.withSuccessHandler((serverUrl) => {
+      if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
+        window._GAS_WEBAPP_URL = serverUrl;
+        safeStorage.setItem('class_mgmt_gas_api_url', serverUrl);
+        applyGasUrls(serverUrl);
+      }
+    }).getGasWebAppUrl();
+  }
+}
+
+function startCorrectionApp() {
+  adaptInternalLinks();
+  checkIosPwaButton();
+  hasUserSelectedSubjectCategory = false;
+  onSubjectChange(); // 初始化種類選單
+  fetchCorrectionMatrixData();
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', startCorrectionApp);
+} else {
+  startCorrectionApp();
+}
+
+function openSelectPromptModal() {
+  document.getElementById('select-prompt-modal').classList.remove('hidden');
+}
+
+function closeSelectPromptModal() {
+  document.getElementById('select-prompt-modal').classList.add('hidden');
+}
+
+function switchMainView(viewName) {
+  currentMainView = viewName;
+
+  document.getElementById('tab-register').classList.toggle('active', viewName === 'register');
+  document.getElementById('tab-query').classList.toggle('active', viewName === 'query');
+  document.getElementById('tab-matrix').classList.toggle('active', viewName === 'matrix');
+
+  document.getElementById('view-register').classList.toggle('active', viewName === 'register');
+  document.getElementById('view-query').classList.toggle('active', viewName === 'query');
+  document.getElementById('view-matrix').classList.toggle('active', viewName === 'matrix');
+
+  if (viewName === 'matrix') {
+    renderMatrixTable();
+  }
+}
+
+function switchRegisterSubmode(submode) {
+  currentRegSubmode = submode;
+  document.getElementById('submode-scan-btn').classList.toggle('active', submode === 'scan');
+  document.getElementById('submode-button-btn').classList.toggle('active', submode === 'button');
+
+  document.getElementById('reg-box-scan').style.display = submode === 'scan' ? 'flex' : 'none';
+  document.getElementById('reg-box-button').style.display = submode === 'button' ? 'flex' : 'none';
+
+  if (submode === 'scan') {
+    initCameraScanner();
+  }
+}
+
+function switchQuerySub(sub) {
+  currentQuerySub = sub;
+  document.getElementById('query-tab-student').classList.toggle('active', sub === 'student');
+  document.getElementById('query-tab-assignment').classList.toggle('active', sub === 'assignment');
+
+  document.getElementById('query-box-student').style.display = sub === 'student' ? 'flex' : 'none';
+  document.getElementById('query-box-assignment').style.display = sub === 'assignment' ? 'flex' : 'none';
+
+  if (sub === 'assignment') {
+    renderAssignmentDropdown();
+  }
+}
+
+function getTodayStringJS() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return "".concat(yyyy, "/").concat(mm, "/").concat(dd);
+}
+
+function normalizeDateStr(rawDate) {
+  if (!rawDate) return '';
+  let str = String(rawDate).trim().replace(/-/g, '/').replace(/\./g, '/');
+  const parts = str.split('/');
+  if (parts.length === 3) {
+    return "".concat(parts[0], "/").concat(parts[1].padStart(2, '0'), "/").concat(parts[2].padStart(2, '0'));
+  }
+  return str;
+}
+
+let currentSelectedUnit = '';
+let currentSelectedPage = '';
+let currentSelectedDate = '';
+let tempSelectedOtherPage = null;
+let pendingScanSeat = null;
+
+function getCheckinListForCurrentSubjectCategory() {
+  const subjectEl = document.getElementById('reg-subject');
+  const categoryEl = document.getElementById('reg-category');
+  const sub = subjectEl ? subjectEl.value : '';
+  const cat = categoryEl ? categoryEl.value : '';
+  if (!sub || !cat) return [];
+  const checkinAll = matrixData.checkinAssignments || [];
+  return checkinAll.filter((item) => item.subject === sub && item.category === cat);
+}
+
+function getCurrentTargetAssign(subject, category) {
+  if (!subject || !category) return null;
+  const assignments = matrixData.assignments || [];
+
+  // 1. 如果已選取特定的單元與頁數，優先比對相同單元與頁數
+  if (currentSelectedUnit || currentSelectedPage) {
+    const matched = assignments.find((a) =>
+    a.subject === subject && a.category === category &&
+    String(a.unit || '').trim() === currentSelectedUnit &&
+    String(a.page || '').trim() === currentSelectedPage
+    );
+    if (matched) return matched;
+  }
+
+  // 2. 若無指定單元，但有清點歷史紀錄，預設對應最新一筆清點紀錄
+  const checkinList = getCheckinListForCurrentSubjectCategory();
+  if (checkinList.length > 0) {
+    const latestCheckin = checkinList[0];
+    const matched = assignments.find((a) =>
+    a.subject === subject && a.category === category &&
+    String(a.unit || '').trim() === String(latestCheckin.unit || '').trim() &&
+    String(a.page || '').trim() === String(latestCheckin.page || '').trim()
+    );
+    if (matched) return matched;
+  }
+
+  // 3. 最後嘗試比對同科目同種類的當日或最新欄位
+  const todayStr = getTodayStringJS();
+  const todayAssign = assignments.find((a) =>
+  a.subject === subject && a.category === category && (normalizeDateStr(a.date) === todayStr || !a.date)
+  );
+  if (todayAssign) return todayAssign;
+
+  const sameSubCat = assignments.filter((a) => a.subject === subject && a.category === category);
+  return sameSubCat.length > 0 ? sameSubCat[sameSubCat.length - 1] : null;
+}
+
+// Helper: 更新目前選定作業的「單元/頁數」顯示文字
+function updateCurrentMetaText() {
+  const metaTextEl = document.getElementById('current-meta-text');
+  if (!metaTextEl) return;
+
+  const subjectEl = document.getElementById('reg-subject');
+  const categoryEl = document.getElementById('reg-category');
+  const subject = subjectEl ? subjectEl.value : '';
+  const category = categoryEl ? categoryEl.value : '';
+
+  if (!subject || !category) {
+    metaTextEl.innerHTML = '請先選擇科目與種類';
+    return;
+  }
+
+  const checkinList = getCheckinListForCurrentSubjectCategory();
+  // 若尚未手動選取單元，自動預設帶入最新清點的一筆
+  if (!currentSelectedUnit && !currentSelectedPage && checkinList.length > 0) {
+    currentSelectedUnit = checkinList[0].unit || '';
+    currentSelectedPage = checkinList[0].page || '';
+    currentSelectedDate = checkinList[0].date || '';
+  }
+
+  const existingAssign = getCurrentTargetAssign(subject, category);
+
+  let displayUnit = currentSelectedUnit || (existingAssign ? existingAssign.unit : '');
+  let displayPage = currentSelectedPage || (existingAssign ? existingAssign.page : '');
+  let displayDate = currentSelectedDate || (existingAssign ? existingAssign.date : '');
+
+  const dateBadge = displayDate ? "[".concat(displayDate, "] ") : '';
+  const unitStr = displayUnit ? "單元: ".concat(displayUnit) : '無單元';
+  const pageStr = displayPage ? " (頁數: ".concat(displayPage, ")") : '';
+
+  if (displayUnit || displayPage) {
+    metaTextEl.innerHTML = "".concat(dateBadge).concat(unitStr).concat(pageStr);
+  } else if (existingAssign) {
+    metaTextEl.innerHTML = "".concat(dateBadge, "未命名單元");
+  } else {
+    metaTextEl.innerHTML = '尚未登記單元 (可按「它頁」選擇或直接點座號)';
+  }
+}
+
+async function ensureMatrixColumn(subject, category, unit, page, date) {
+  if (!subject || !category) return;
+  try {
+    const res = await apiCallCorrection('addCorrectionRecordMatrix', {
+      createOnly: true,
+      subject: subject,
+      category: category,
+      unit: unit || '',
+      page: page || '',
+      date: date || ''
+    });
+    if (res && res.success) {
+      await fetchCorrectionMatrixData();
     }
+  } catch (e) {
+    console.warn('ensureMatrixColumn failed:', e);
+  }
+}
 
-    function getGasApiUrl() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const paramGasUrl = urlParams.get('api_url') || urlParams.get('gas') || urlParams.get('gas_url');
-      if (paramGasUrl) {
-        const clean = cleanGasUrl(paramGasUrl);
-        try { safeStorage.setItem('class_management_gas_api_url', clean); } catch(e){}
-        return clean;
-      }
+// Modal Operations: 選擇作業單元 (它頁) Modal
+async function openOtherPageModal(isAutoPrompt = false) {
+  const subjectEl = document.getElementById('reg-subject');
+  const categoryEl = document.getElementById('reg-category');
+  const subject = subjectEl ? subjectEl.value : '';
+  const category = categoryEl ? categoryEl.value : '';
 
-      if (typeof window._GAS_WEBAPP_URL === 'string' && window._GAS_WEBAPP_URL && window._GAS_WEBAPP_URL.includes('script.google.com')) {
-        return cleanGasUrl(window._GAS_WEBAPP_URL);
-      }
-      if (typeof window.GAS_API_URL === 'string' && window.GAS_API_URL && window.GAS_API_URL.includes('script.google.com')) {
-        return cleanGasUrl(window.GAS_API_URL);
-      }
+  if (!hasUserSelectedSubjectCategory || !subject || !category) {
+    openSelectPromptModal();
+    return;
+  }
 
-      const stored = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url');
-      if (stored && stored !== 'YOUR_GAS_WEB_APP_URL') {
-        return cleanGasUrl(stored);
-      }
+  const modalTitleEl = document.getElementById('other-page-modal-title');
+  if (modalTitleEl) {
+    modalTitleEl.textContent = isAutoPrompt ? "📑 請選擇作業單元 — 【".concat(
+      subject, " ").concat(category, "】") : "📑 選擇作業單元 (它頁) — 【".concat(
+      subject, " ").concat(category, "】");
+  }
 
-      if (location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
-        return cleanGasUrl(location.href.split('?')[0]);
-      }
+  const listEl = document.getElementById('other-page-list');
+  listEl.innerHTML = '';
 
-      // 首次使用：若無網址參數且無 localStorage，不跳出阻擋性 prompt，返回空字串
-      return '';
+  // 永遠即時向後端查詢「作業清點表」最新欄位，確保試算表改動 (例如 15 改成 16) 能 100% 即時呈現
+  let checkinList = [];
+  try {
+    const chkRes = await apiCallCorrection('getCheckinAssignments', { subject, category });
+    if (chkRes && chkRes.success && Array.isArray(chkRes.list)) {
+      checkinList = chkRes.list;
+      if (!matrixData.checkinAssignments) matrixData.checkinAssignments = [];
+      matrixData.checkinAssignments = matrixData.checkinAssignments.filter((c) =>
+      !(c.subject === subject && c.category === category)
+      ).concat(chkRes.list);
     }
+  } catch (e) {
+    console.warn('即時查詢清點紀錄失敗:', e);
+    checkinList = getCheckinListForCurrentSubjectCategory();
+  }
 
-    let GAS_API_URL = getGasApiUrl();
+  const assignments = matrixData.assignments || [];
 
-    async function apiCallCorrection(action, params = {}) {
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        return new Promise((resolve, reject) => {
-          google.script.run
-            .withSuccessHandler(res => resolve(res))
-            .withFailureHandler(err => reject(err))
-            .handleScannerApiAction(action, params);
-        });
-      } else {
-        const cleanBase = cleanGasUrl(GAS_API_URL);
-        const url = new URL(cleanBase);
-        url.searchParams.set('action', action);
-        for (const [k, v] of Object.entries(params)) {
-          if (v !== undefined && v !== null) {
-            url.searchParams.set(k, String(v));
-          }
-        }
-        return await gasApiFetch(url.toString());
-      }
-    }
+  if (checkinList.length === 0) {
+    listEl.innerHTML = "\n          <div style=\"font-size:0.82rem; color:#94a3b8; text-align:center; padding:12px; background:#0f172a; border-radius:8px;\">\n            清點分頁尚未有【".concat(
 
-    // 增強版超穩定 GAS API 呼叫器（支援 fetch 優先、JSONP 備援、自動重試、與 18 秒冷啟動逾時）
-    async function gasApiFetch(url, retries = 2, timeoutMs = 18000) {
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-          return await singleGasApiFetch(url, timeoutMs);
-        } catch (err) {
-          console.warn('[GAS API] 第 ' + (attempt + 1) + ' 次連線失敗: ' + (err ? err.message : ''));
-          if (attempt < retries) {
-            // 重試前等待 1 秒（喚醒 GAS 冷啟動容器）
-            await new Promise(r => setTimeout(r, 1000));
-          } else {
-            throw err;
-          }
-        }
-      }
-    }
+      subject, " ").concat(category, "】的收繳紀錄。<br>\n            您可以直接在下方輸入單元與頁數進行登記！\n          </div>\n        ");
 
-    function singleGasApiFetch(url, timeoutMs = 18000) {
-      return new Promise((resolve, reject) => {
-        const cleanUrl = cleanGasUrl(String(url));
-        const callbackName = 'gas_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-        const sep = cleanUrl.includes('?') ? '&' : '?';
-        const finalUrl = cleanUrl + sep + 'callback=' + callbackName + '&_t=' + Date.now();
 
-        let isSettled = false;
-        let scriptTag = null;
 
-        const timeoutTimer = setTimeout(() => {
-          if (isSettled) return;
-          isSettled = true;
-          cleanup();
-          reject(new Error('伺服器回應較慢 (逾時)'));
-        }, timeoutMs);
-
-        function cleanup() {
-          try { delete window[callbackName]; } catch(e){}
-          if (scriptTag && scriptTag.parentNode) {
-            scriptTag.parentNode.removeChild(scriptTag);
-          }
-        }
-
-        window[callbackName] = function(data) {
-          if (isSettled) return;
-          isSettled = true;
-          clearTimeout(timeoutTimer);
-          cleanup();
-          resolve(data);
-        };
-
-        // 1. 優先嘗試 fetch（加入 credentials: 'omit' 避免 Google 多帳號 Cookie 衝突）
-        fetch(finalUrl, { method: 'GET', redirect: 'follow', credentials: 'omit' })
-          .then(res => {
-            if (!res.ok) throw new Error('HTTP ' + res.status);
-            return res.text();
-          })
-          .then(text => {
-            if (isSettled) return;
-            const trimmed = (text || '').trim();
-            let parsedData = null;
-            if (trimmed.startsWith(callbackName + '(')) {
-              // 支援結尾有分號、換行等情況
-              const inner = trimmed.substring(callbackName.length + 1).replace(/\);?$/, '');
-              try { parsedData = JSON.parse(inner); } catch(e){}
-            } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-              try { parsedData = JSON.parse(trimmed); } catch(e){}
-            }
-            if (parsedData) {
-              isSettled = true;
-              clearTimeout(timeoutTimer);
-              cleanup();
-              resolve(parsedData);
-            } else {
-              throw new Error('無法解析伺服器回應格式');
-            }
-          })
-          .catch(fetchErr => {
-            if (isSettled) return;
-            console.warn('[GAS API] fetch 失敗或無法解析，改用 JSONP script 標籤備援:', fetchErr);
-            scriptTag = document.createElement('script');
-            scriptTag.crossOrigin = 'anonymous';
-            scriptTag.src = finalUrl;
-            scriptTag.onerror = function() {
-              if (isSettled) return;
-              isSettled = true;
-              clearTimeout(timeoutTimer);
-              cleanup();
-              reject(new Error('跨域連線失敗 (可能被瀏覽器防追蹤或擴充功能阻擋)'));
-            };
-            document.head.appendChild(scriptTag);
-          });
-      });
-    }
-
-    let currentMainView = 'register'; // 'register', 'query', 'matrix'
-    let currentRegSubmode = 'button'; // 'button', 'scan'
-    let currentQuerySub = 'student'; // 'student', 'assignment'
-    let matrixData = { assignments: [], seatSummary: {}, records: [] };
-    let html5QrcodeScanner = null;
-    let isProcessingScan = false;
-    let audioSuccess = new Audio('https://actions.google.com/sounds/v1/cartoon/clink_clink.ogg');
-
-    let hasUserSelectedSubjectCategory = false;
-
-    // ── 連線設定彈窗 ──
-    function openPairModal() {
-      const input = document.getElementById('gas-url-input');
-      if (input) input.value = GAS_API_URL || safeStorage.getItem('class_mgmt_gas_api_url') || '';
-      const modal = document.getElementById('pair-modal');
-      if (modal) modal.classList.add('show');
-    }
-    function closePairModal() {
-      const modal = document.getElementById('pair-modal');
-      if (modal) modal.classList.remove('show');
-    }
-    function savePairGasUrl() {
-      const input = document.getElementById('gas-url-input');
-      const val = input ? input.value.trim() : '';
-      if (!val) {
-        showToast('⚠️ 請輸入有效的 GAS 網址', 'orange');
-        return;
-      }
-      const clean = cleanGasUrl(val);
-      GAS_API_URL = clean;
-      try {
-        safeStorage.setItem('class_management_gas_api_url', clean);
-        safeStorage.setItem('class_mgmt_gas_api_url', clean);
-      } catch(e){}
-      closePairModal();
-      showToast('🟢 連線設定已儲存！', 'green');
-      fetchCorrectionMatrixData();
-    }
-    function clearPairGasUrl() {
-      const input = document.getElementById('gas-url-input');
-      if (input) input.value = '';
-      try {
-        safeStorage.removeItem('class_management_gas_api_url');
-        safeStorage.removeItem('class_mgmt_gas_api_url');
-      } catch(e){}
-      GAS_API_URL = '';
-      closePairModal();
-      showToast('⚠️ 已解除試算表綁定', 'orange');
-    }
-
-    function navToPage(pageName, evt) {
-      if (evt && typeof evt.preventDefault === 'function') {
-        evt.preventDefault();
-      }
-      let base = (typeof window !== 'undefined' && window._GAS_WEBAPP_URL) ? window._GAS_WEBAPP_URL : (typeof GAS_API_URL !== 'undefined' ? GAS_API_URL : '');
-      if (!base && location.hostname.includes('script.google.com') && !location.hostname.includes('googleusercontent.com')) {
-        base = location.href.split('?')[0];
-      }
-      if (!base && document.referrer && (document.referrer.includes('script.google.com/macros/s/') || document.referrer.includes('script.google.com/a/'))) {
-        base = document.referrer.split('?')[0];
-      }
-      if (!base) {
-        base = safeStorage.getItem('class_management_gas_api_url') || safeStorage.getItem('class_mgmt_gas_api_url') || '';
-      }
-
-      if (base && base.includes('script.google.com')) {
-        const clean = cleanGasUrl(base);
-        const targetUrl = (pageName === 'index' || !pageName) ? clean : `${clean}?page=${pageName}`;
-        try {
-          window.top.location.href = targetUrl;
-        } catch(e) {
-          window.location.href = targetUrl;
-        }
-      } else {
-        const targetFile = (pageName === 'index' || !pageName) ? 'index.html' : `${pageName}.html`;
-        const apiParam = base ? `?api_url=${encodeURIComponent(cleanGasUrl(base))}` : '';
-        window.location.href = `${targetFile}${apiParam}`;
-      }
-    }
-
-    // ── 雙環境路由自動適配 (Google Apps Script vs Neocities 靜態網頁) ──
-    function adaptInternalLinks() {
-      const isGas = (typeof google !== 'undefined' && google.script && google.script.run) ||
-                    location.hostname.includes('script.google.com') ||
-                    location.hostname.includes('googleusercontent.com');
-
-      if (!isGas) {
-        checkIosPwaButton();
-        document.querySelectorAll('a[href]').forEach(a => {
-          const href = a.getAttribute('href');
-          if (!href) return;
-          const currentApi = (typeof GAS_API_URL !== 'undefined' && GAS_API_URL) ? GAS_API_URL : (safeStorage.getItem('class_mgmt_gas_api_url') || '');
-          const apiParam = currentApi ? `?api_url=${encodeURIComponent(currentApi)}` : '';
-          if (href.includes('page=correction_scanner') || href === 'correction_scanner.html') {
-            a.href = `correction_scanner.html${apiParam}`;
-          } else if (href.includes('page=scanner') || href === 'scanner.html') {
-            a.href = `scanner.html${apiParam}`;
-          } else if (href.includes('page=index') || href === 'index.html') {
-            a.href = `index.html${apiParam}`;
-          } else if (href.includes('page=grading') || href === 'grading.html') {
-            a.href = `grading.html${apiParam}`;
-          }
-        });
-        return;
-      }
-
-      function applyGasUrls(baseGasUrl) {
-        if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) return;
-        document.querySelectorAll('a[href]').forEach(a => {
-          const href = a.getAttribute('href');
-          if (!href) return;
-          if (href === 'scanner.html' || href.includes('page=scanner')) {
-            a.href = `${baseGasUrl}?page=scanner`;
-            a.target = '_top';
-          } else if (href === 'index.html' || href === baseGasUrl || href.endsWith('/exec')) {
-            a.href = `${baseGasUrl}`;
-            a.target = '_top';
-          } else if (href === 'correction.html' || href.includes('page=correction')) {
-            a.href = `${baseGasUrl}?page=correction`;
-            a.target = '_top';
-          } else if (href === 'correction_scanner.html' || href.includes('page=correction_scanner')) {
-            a.href = `${baseGasUrl}?page=correction_scanner`;
-            a.target = '_top';
-          } else if (href === 'grading.html' || href.includes('page=grading')) {
-            a.href = `${baseGasUrl}?page=grading`;
-            a.target = '_top';
-          } else if (href === 'StickerGenerator.html' || href === 'sticker.html' || href.includes('page=sticker')) {
-            a.href = `${baseGasUrl}?page=sticker`;
-            a.target = '_top';
-          }
-        });
-      }
-
-      let baseGasUrl = window._GAS_WEBAPP_URL;
-      if (!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) {
-        baseGasUrl = safeStorage.getItem('class_mgmt_gas_api_url');
-      }
-      if ((!baseGasUrl || !baseGasUrl.startsWith('https://script.google.com')) && location.hostname.includes('script.google.com')) {
-        baseGasUrl = location.href.split('?')[0];
-      }
-
-      if (baseGasUrl && baseGasUrl.startsWith('https://script.google.com')) {
-        applyGasUrls(baseGasUrl);
-      }
-
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run.withSuccessHandler(serverUrl => {
-          if (serverUrl && serverUrl.startsWith('https://script.google.com')) {
-            window._GAS_WEBAPP_URL = serverUrl;
-            safeStorage.setItem('class_mgmt_gas_api_url', serverUrl);
-            applyGasUrls(serverUrl);
-          }
-        }).getGasWebAppUrl();
-      }
-    }
-
-    function startCorrectionApp() {
-      adaptInternalLinks();
-      checkIosPwaButton();
-      hasUserSelectedSubjectCategory = false;
-      onSubjectChange();   // 初始化種類選單
-      fetchCorrectionMatrixData();
-    }
-
-    if (document.readyState === 'loading') {
-      window.addEventListener('DOMContentLoaded', startCorrectionApp);
-    } else {
-      startCorrectionApp();
-    }
-
-    function openSelectPromptModal() {
-      document.getElementById('select-prompt-modal').classList.remove('hidden');
-    }
-
-    function closeSelectPromptModal() {
-      document.getElementById('select-prompt-modal').classList.add('hidden');
-    }
-
-    function switchMainView(viewName) {
-      currentMainView = viewName;
-
-      document.getElementById('tab-register').classList.toggle('active', viewName === 'register');
-      document.getElementById('tab-query').classList.toggle('active', viewName === 'query');
-      document.getElementById('tab-matrix').classList.toggle('active', viewName === 'matrix');
-
-      document.getElementById('view-register').classList.toggle('active', viewName === 'register');
-      document.getElementById('view-query').classList.toggle('active', viewName === 'query');
-      document.getElementById('view-matrix').classList.toggle('active', viewName === 'matrix');
-
-      if (viewName === 'matrix') {
-        renderMatrixTable();
-      }
-    }
-
-    function switchRegisterSubmode(submode) {
-      currentRegSubmode = submode;
-      document.getElementById('submode-scan-btn').classList.toggle('active', submode === 'scan');
-      document.getElementById('submode-button-btn').classList.toggle('active', submode === 'button');
-
-      document.getElementById('reg-box-scan').style.display = (submode === 'scan') ? 'flex' : 'none';
-      document.getElementById('reg-box-button').style.display = (submode === 'button') ? 'flex' : 'none';
-
-      if (submode === 'scan') {
-        initCameraScanner();
-      }
-    }
-
-    function switchQuerySub(sub) {
-      currentQuerySub = sub;
-      document.getElementById('query-tab-student').classList.toggle('active', sub === 'student');
-      document.getElementById('query-tab-assignment').classList.toggle('active', sub === 'assignment');
-
-      document.getElementById('query-box-student').style.display = (sub === 'student') ? 'flex' : 'none';
-      document.getElementById('query-box-assignment').style.display = (sub === 'assignment') ? 'flex' : 'none';
-
-      if (sub === 'assignment') {
-        renderAssignmentDropdown();
-      }
-    }
-
-    function getTodayStringJS() {
-      const d = new Date();
-      const yyyy = d.getFullYear();
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const dd = String(d.getDate()).padStart(2, '0');
-      return `${yyyy}/${mm}/${dd}`;
-    }
-
-    function normalizeDateStr(rawDate) {
-      if (!rawDate) return '';
-      let str = String(rawDate).trim().replace(/-/g, '/').replace(/\./g, '/');
-      const parts = str.split('/');
-      if (parts.length === 3) {
-        return `${parts[0]}/${parts[1].padStart(2, '0')}/${parts[2].padStart(2, '0')}`;
-      }
-      return str;
-    }
-
-    let currentSelectedUnit = '';
-    let currentSelectedPage = '';
-    let currentSelectedDate = '';
-    let tempSelectedOtherPage = null;
-    let pendingScanSeat = null;
-
-    function getCheckinListForCurrentSubjectCategory() {
-      const subjectEl = document.getElementById('reg-subject');
-      const categoryEl = document.getElementById('reg-category');
-      const sub = subjectEl ? subjectEl.value : '';
-      const cat = categoryEl ? categoryEl.value : '';
-      if (!sub || !cat) return [];
-      const checkinAll = matrixData.checkinAssignments || [];
-      return checkinAll.filter(item => item.subject === sub && item.category === cat);
-    }
-
-    function getCurrentTargetAssign(subject, category) {
-      if (!subject || !category) return null;
-      const assignments = matrixData.assignments || [];
-
-      // 1. 如果已選取特定的單元與頁數，優先比對相同單元與頁數
-      if (currentSelectedUnit || currentSelectedPage) {
-        const matched = assignments.find(a =>
-          a.subject === subject && a.category === category &&
-          String(a.unit || '').trim() === currentSelectedUnit &&
-          String(a.page || '').trim() === currentSelectedPage
-        );
-        if (matched) return matched;
-      }
-
-      // 2. 若無指定單元，但有清點歷史紀錄，預設對應最新一筆清點紀錄
-      const checkinList = getCheckinListForCurrentSubjectCategory();
-      if (checkinList.length > 0) {
-        const latestCheckin = checkinList[0];
-        const matched = assignments.find(a =>
-          a.subject === subject && a.category === category &&
-          String(a.unit || '').trim() === String(latestCheckin.unit || '').trim() &&
-          String(a.page || '').trim() === String(latestCheckin.page || '').trim()
-        );
-        if (matched) return matched;
-      }
-
-      // 3. 最後嘗試比對同科目同種類的當日或最新欄位
-      const todayStr = getTodayStringJS();
-      const todayAssign = assignments.find(a =>
-        a.subject === subject && a.category === category && (normalizeDateStr(a.date) === todayStr || !a.date)
+    const customBox = document.getElementById('custom-unit-box');
+    if (customBox) customBox.style.display = 'flex';
+    tempSelectedOtherPage = 'custom';
+  } else {
+    checkinList.forEach((item, idx) => {
+      const matchedAssign = assignments.find((a) =>
+      a.subject === item.subject && a.category === item.category &&
+      String(a.unit || '').trim() === String(item.unit || '').trim() &&
+      String(a.page || '').trim() === String(item.page || '').trim()
       );
-      if (todayAssign) return todayAssign;
 
-      const sameSubCat = assignments.filter(a => a.subject === subject && a.category === category);
-      return sameSubCat.length > 0 ? sameSubCat[sameSubCat.length - 1] : null;
-    }
-
-    // Helper: 更新目前選定作業的「單元/頁數」顯示文字
-    function updateCurrentMetaText() {
-      const metaTextEl = document.getElementById('current-meta-text');
-      if (!metaTextEl) return;
-
-      const subjectEl = document.getElementById('reg-subject');
-      const categoryEl = document.getElementById('reg-category');
-      const subject = subjectEl ? subjectEl.value : '';
-      const category = categoryEl ? categoryEl.value : '';
-
-      if (!subject || !category) {
-        metaTextEl.innerHTML = '請先選擇科目與種類';
-        return;
-      }
-
-      const checkinList = getCheckinListForCurrentSubjectCategory();
-      // 若尚未手動選取單元，自動預設帶入最新清點的一筆
-      if (!currentSelectedUnit && !currentSelectedPage && checkinList.length > 0) {
-        currentSelectedUnit = checkinList[0].unit || '';
-        currentSelectedPage = checkinList[0].page || '';
-        currentSelectedDate = checkinList[0].date || '';
-      }
-
-      const existingAssign = getCurrentTargetAssign(subject, category);
-
-      let displayUnit = currentSelectedUnit || (existingAssign ? existingAssign.unit : '');
-      let displayPage = currentSelectedPage || (existingAssign ? existingAssign.page : '');
-      let displayDate = currentSelectedDate || (existingAssign ? existingAssign.date : '');
-
-      const dateBadge = displayDate ? `[${displayDate}] ` : '';
-      const unitStr = displayUnit ? `單元: ${displayUnit}` : '無單元';
-      const pageStr = displayPage ? ` (頁數: ${displayPage})` : '';
-
-      if (displayUnit || displayPage) {
-        metaTextEl.innerHTML = `${dateBadge}${unitStr}${pageStr}`;
-      } else if (existingAssign) {
-        metaTextEl.innerHTML = `${dateBadge}未命名單元`;
-      } else {
-        metaTextEl.innerHTML = '尚未登記單元 (可按「它頁」選擇或直接點座號)';
-      }
-    }
-
-    async function ensureMatrixColumn(subject, category, unit, page, date) {
-      if (!subject || !category) return;
-      try {
-        const res = await apiCallCorrection('addCorrectionRecordMatrix', {
-          createOnly: true,
-          subject: subject,
-          category: category,
-          unit: unit || '',
-          page: page || '',
-          date: date || ''
-        });
-        if (res && res.success) {
-          await fetchCorrectionMatrixData();
+      let statusBadge = '<span style="font-size:0.7rem; color:#64748b; background:#1e293b; padding:2px 6px; border-radius:4px;">未建欄</span>';
+      if (matchedAssign) {
+        const errorCount = (matrixData.records || []).filter((r) => r.colIndex === matchedAssign.colIndex && r.status === 'X').length;
+        if (errorCount > 0) {
+          statusBadge = "<span style=\"font-size:0.7rem; color:#fb923c; background:rgba(249,115,22,0.2); border:1px solid #f97316; padding:2px 6px; border-radius:4px; font-weight:700;\">待訂正: ".concat(errorCount, "人</span>");
+        } else {
+          statusBadge = '<span style="font-size:0.7rem; color:#38bdf8; background:rgba(56,189,248,0.2); border:1px solid #0284c7; padding:2px 6px; border-radius:4px; font-weight:700;">已建欄</span>';
         }
-      } catch (e) {
-        console.warn('ensureMatrixColumn failed:', e);
-      }
-    }
-
-    // Modal Operations: 選擇作業單元 (它頁) Modal
-    async function openOtherPageModal(isAutoPrompt = false) {
-      const subjectEl = document.getElementById('reg-subject');
-      const categoryEl = document.getElementById('reg-category');
-      const subject = subjectEl ? subjectEl.value : '';
-      const category = categoryEl ? categoryEl.value : '';
-
-      if (!hasUserSelectedSubjectCategory || !subject || !category) {
-        openSelectPromptModal();
-        return;
       }
 
-      const modalTitleEl = document.getElementById('other-page-modal-title');
-      if (modalTitleEl) {
-        modalTitleEl.textContent = isAutoPrompt
-          ? `📑 請選擇作業單元 — 【${subject} ${category}】`
-          : `📑 選擇作業單元 (它頁) — 【${subject} ${category}】`;
-      }
+      const isCurrent = currentSelectedUnit === String(item.unit || '').trim() && currentSelectedPage === String(item.page || '').trim() ||
+      !currentSelectedUnit && !currentSelectedPage && idx === 0;
 
-      const listEl = document.getElementById('other-page-list');
-      listEl.innerHTML = '';
+      const card = document.createElement('label');
+      card.style.cssText = "display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:".concat(isCurrent ? '#172554' : '#0f172a', "; border:1px solid ").concat(isCurrent ? '#38bdf8' : '#334155', "; border-radius:8px; cursor:pointer; gap:8px; transition:all 0.15s;");
+      card.innerHTML = "\n            <div style=\"display:flex; align-items:center; gap:10px; min-width:0;\">\n              <input type=\"radio\" name=\"other_page_opt\" value=\"".concat(
 
-      // 永遠即時向後端查詢「作業清點表」最新欄位，確保試算表改動 (例如 15 改成 16) 能 100% 即時呈現
-      let checkinList = [];
-      try {
-        const chkRes = await apiCallCorrection('getCheckinAssignments', { subject, category });
-        if (chkRes && chkRes.success && Array.isArray(chkRes.list)) {
-          checkinList = chkRes.list;
-          if (!matrixData.checkinAssignments) matrixData.checkinAssignments = [];
-          matrixData.checkinAssignments = matrixData.checkinAssignments.filter(c =>
-            !(c.subject === subject && c.category === category)
-          ).concat(chkRes.list);
-        }
-      } catch (e) {
-        console.warn('即時查詢清點紀錄失敗:', e);
-        checkinList = getCheckinListForCurrentSubjectCategory();
-      }
+        idx, "\" ").concat(isCurrent ? 'checked' : '', " style=\"accent-color:#38bdf8; transform:scale(1.15);\">\n              <div style=\"display:flex; flex-direction:column; gap:2px; min-width:0;\">\n                <div style=\"font-size:0.85rem; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:6px;\">\n                  <span style=\"color:#38bdf8; font-size:0.75rem;\">[").concat(
 
-      const assignments = matrixData.assignments || [];
 
-      if (checkinList.length === 0) {
-        listEl.innerHTML = `
-          <div style="font-size:0.82rem; color:#94a3b8; text-align:center; padding:12px; background:#0f172a; border-radius:8px;">
-            清點分頁尚未有【${subject} ${category}】的收繳紀錄。<br>
-            您可以直接在下方輸入單元與頁數進行登記！
-          </div>
-        `;
-        const customBox = document.getElementById('custom-unit-box');
-        if (customBox) customBox.style.display = 'flex';
-        tempSelectedOtherPage = 'custom';
-      } else {
-        checkinList.forEach((item, idx) => {
-          const matchedAssign = assignments.find(a =>
-            a.subject === item.subject && a.category === item.category &&
-            String(a.unit || '').trim() === String(item.unit || '').trim() &&
-            String(a.page || '').trim() === String(item.page || '').trim()
-          );
+        item.date, "]</span>\n                  <span>").concat(
+        item.unit || '無單元', "</span>\n                  <span style=\"color:#94a3b8; font-size:0.78rem;\">").concat(
+        item.page ? '(' + item.page + ')' : '', "</span>\n                </div>\n              </div>\n            </div>\n            <div>").concat(
 
-          let statusBadge = '<span style="font-size:0.7rem; color:#64748b; background:#1e293b; padding:2px 6px; border-radius:4px;">未建欄</span>';
-          if (matchedAssign) {
-            const errorCount = (matrixData.records || []).filter(r => r.colIndex === matchedAssign.colIndex && r.status === 'X').length;
-            if (errorCount > 0) {
-              statusBadge = `<span style="font-size:0.7rem; color:#fb923c; background:rgba(249,115,22,0.2); border:1px solid #f97316; padding:2px 6px; border-radius:4px; font-weight:700;">待訂正: ${errorCount}人</span>`;
-            } else {
-              statusBadge = '<span style="font-size:0.7rem; color:#38bdf8; background:rgba(56,189,248,0.2); border:1px solid #0284c7; padding:2px 6px; border-radius:4px; font-weight:700;">已建欄</span>';
-            }
-          }
 
-          const isCurrent = (currentSelectedUnit === String(item.unit || '').trim() && currentSelectedPage === String(item.page || '').trim()) ||
-                            (!currentSelectedUnit && !currentSelectedPage && idx === 0);
 
-          const card = document.createElement('label');
-          card.style.cssText = `display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:${isCurrent ? '#172554' : '#0f172a'}; border:1px solid ${isCurrent ? '#38bdf8' : '#334155'}; border-radius:8px; cursor:pointer; gap:8px; transition:all 0.15s;`;
-          card.innerHTML = `
-            <div style="display:flex; align-items:center; gap:10px; min-width:0;">
-              <input type="radio" name="other_page_opt" value="${idx}" ${isCurrent ? 'checked' : ''} style="accent-color:#38bdf8; transform:scale(1.15);">
-              <div style="display:flex; flex-direction:column; gap:2px; min-width:0;">
-                <div style="font-size:0.85rem; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:6px;">
-                  <span style="color:#38bdf8; font-size:0.75rem;">[${item.date}]</span>
-                  <span>${item.unit || '無單元'}</span>
-                  <span style="color:#94a3b8; font-size:0.78rem;">${item.page ? '(' + item.page + ')' : ''}</span>
-                </div>
-              </div>
-            </div>
-            <div>${statusBadge}</div>
-          `;
-          card.onclick = () => {
-            document.querySelectorAll('#other-page-list label').forEach(l => {
-              l.style.background = '#0f172a';
-              l.style.borderColor = '#334155';
-            });
-            card.style.background = '#172554';
-            card.style.borderColor = '#38bdf8';
-            const customBox = document.getElementById('custom-unit-box');
-            if (customBox) customBox.style.display = 'none';
-            tempSelectedOtherPage = item;
-          };
-          listEl.appendChild(card);
+        statusBadge, "</div>\n          ");
 
-          if (isCurrent) {
-            tempSelectedOtherPage = item;
-          }
-        });
-      }
-
-      // ➕ 自訂新單元選項
-      const customCard = document.createElement('label');
-      customCard.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 12px; background:#0f172a; border:1px dashed #475569; border-radius:8px; cursor:pointer; margin-top:4px;';
-      customCard.innerHTML = `
-        <input type="radio" name="other_page_opt" value="custom" style="accent-color:#38bdf8; transform:scale(1.15);">
-        <span style="font-size:0.82rem; font-weight:700; color:#94a3b8;">➕ 自訂其它新單元/頁數...</span>
-      `;
-      customCard.onclick = () => {
-        document.querySelectorAll('#other-page-list label').forEach(l => {
+      card.onclick = () => {
+        document.querySelectorAll('#other-page-list label').forEach((l) => {
           l.style.background = '#0f172a';
           l.style.borderColor = '#334155';
         });
-        customCard.style.background = '#1e293b';
-        customCard.style.borderColor = '#38bdf8';
+        card.style.background = '#172554';
+        card.style.borderColor = '#38bdf8';
         const customBox = document.getElementById('custom-unit-box');
-        if (customBox) customBox.style.display = 'flex';
-        tempSelectedOtherPage = 'custom';
+        if (customBox) customBox.style.display = 'none';
+        tempSelectedOtherPage = item;
       };
-      listEl.appendChild(customCard);
+      listEl.appendChild(card);
 
-      document.getElementById('other-page-modal').classList.remove('hidden');
-    }
-
-    function closeOtherPageModal() {
-      document.getElementById('other-page-modal').classList.add('hidden');
-      pendingScanSeat = null;
-      isProcessingScan = false;
-    }
-
-    async function confirmOtherPageSelection() {
-      if (!tempSelectedOtherPage) {
-        closeOtherPageModal();
-        return;
+      if (isCurrent) {
+        tempSelectedOtherPage = item;
       }
+    });
+  }
 
-      const subjectEl = document.getElementById('reg-subject');
-      const categoryEl = document.getElementById('reg-category');
-      const subject = subjectEl ? subjectEl.value : '';
-      const category = categoryEl ? categoryEl.value : '';
+  // ➕ 自訂新單元選項
+  const customCard = document.createElement('label');
+  customCard.style.cssText = 'display:flex; align-items:center; gap:10px; padding:10px 12px; background:#0f172a; border:1px dashed #475569; border-radius:8px; cursor:pointer; margin-top:4px;';
+  customCard.innerHTML = "\n        <input type=\"radio\" name=\"other_page_opt\" value=\"custom\" style=\"accent-color:#38bdf8; transform:scale(1.15);\">\n        <span style=\"font-size:0.82rem; font-weight:700; color:#94a3b8;\">➕ 自訂其它新單元/頁數...</span>\n      ";
 
-      if (tempSelectedOtherPage === 'custom') {
-        const customUnit = document.getElementById('custom-unit-input').value.trim();
-        const customPage = document.getElementById('custom-page-input').value.trim();
-        if (!customUnit && !customPage) {
-          alert('請輸入自訂的單元或頁數！');
+
+
+  customCard.onclick = () => {
+    document.querySelectorAll('#other-page-list label').forEach((l) => {
+      l.style.background = '#0f172a';
+      l.style.borderColor = '#334155';
+    });
+    customCard.style.background = '#1e293b';
+    customCard.style.borderColor = '#38bdf8';
+    const customBox = document.getElementById('custom-unit-box');
+    if (customBox) customBox.style.display = 'flex';
+    tempSelectedOtherPage = 'custom';
+  };
+  listEl.appendChild(customCard);
+
+  document.getElementById('other-page-modal').classList.remove('hidden');
+}
+
+function closeOtherPageModal() {
+  document.getElementById('other-page-modal').classList.add('hidden');
+  pendingScanSeat = null;
+  isProcessingScan = false;
+}
+
+async function confirmOtherPageSelection() {
+  if (!tempSelectedOtherPage) {
+    closeOtherPageModal();
+    return;
+  }
+
+  const subjectEl = document.getElementById('reg-subject');
+  const categoryEl = document.getElementById('reg-category');
+  const subject = subjectEl ? subjectEl.value : '';
+  const category = categoryEl ? categoryEl.value : '';
+
+  if (tempSelectedOtherPage === 'custom') {
+    const customUnit = document.getElementById('custom-unit-input').value.trim();
+    const customPage = document.getElementById('custom-page-input').value.trim();
+    if (!customUnit && !customPage) {
+      alert('請輸入自訂的單元或頁數！');
+      return;
+    }
+    currentSelectedUnit = customUnit;
+    currentSelectedPage = customPage;
+    currentSelectedDate = getTodayStringJS();
+  } else {
+    currentSelectedUnit = String(tempSelectedOtherPage.unit || '').trim();
+    currentSelectedPage = String(tempSelectedOtherPage.page || '').trim();
+    currentSelectedDate = String(tempSelectedOtherPage.date || '').trim();
+  }
+
+  closeOtherPageModal();
+  updateCurrentMetaText();
+  showToastWithUndo("⏳ 正在切換至【".concat(currentSelectedUnit || '新單元', "】..."), null);
+
+  await ensureMatrixColumn(subject, category, currentSelectedUnit, currentSelectedPage, currentSelectedDate);
+  renderSeatButtons();
+  showToastWithUndo("🟢 已切換登記單元為：".concat(currentSelectedUnit || '無單元', " ").concat(currentSelectedPage ? '(' + currentSelectedPage + ')' : ''), null);
+
+  if (pendingScanSeat) {
+    const s = pendingScanSeat;
+    pendingScanSeat = null;
+    await registerErrorForSeat(s);
+  }
+}
+
+// Modal Operations: 編輯單元與頁碼 Modal
+function openMetaModal() {
+  const subjectEl = document.getElementById('reg-subject');
+  const categoryEl = document.getElementById('reg-category');
+  const subject = subjectEl ? subjectEl.value : '';
+  const category = categoryEl ? categoryEl.value : '';
+
+  if (!hasUserSelectedSubjectCategory || !subject || !category) {
+    openSelectPromptModal();
+    return;
+  }
+
+  const existingAssign = getCurrentTargetAssign(subject, category);
+
+  document.getElementById('modal-unit').value = currentSelectedUnit || (existingAssign ? existingAssign.unit : '');
+  document.getElementById('modal-page').value = currentSelectedPage || (existingAssign ? existingAssign.page : '');
+  document.getElementById('meta-modal').classList.remove('hidden');
+}
+
+function closeMetaModal() {
+  document.getElementById('meta-modal').classList.add('hidden');
+}
+
+async function saveMetaModal() {
+  const subjectEl = document.getElementById('reg-subject');
+  const categoryEl = document.getElementById('reg-category');
+  const subject = subjectEl ? subjectEl.value : '';
+  const category = categoryEl ? categoryEl.value : '';
+
+  if (!subject || !category) {
+    closeMetaModal();
+    openSelectPromptModal();
+    return;
+  }
+
+  const unitVal = document.getElementById('modal-unit').value.trim();
+  const pageVal = document.getElementById('modal-page').value.trim();
+
+  currentSelectedUnit = unitVal;
+  currentSelectedPage = pageVal;
+
+  let existingAssign = getCurrentTargetAssign(subject, category);
+  let colIndex = existingAssign ? existingAssign.colIndex : null;
+
+  showToastWithUndo("⏳ 正在儲存【".concat(subject).concat(category, "】單元說明..."), null);
+  closeMetaModal();
+
+  try {
+    if (!colIndex) {
+      const createRes = await apiCallCorrection('addCorrectionRecordMatrix', {
+        seat: '01',
+        subject: subject,
+        category: category,
+        unit: unitVal,
+        page: pageVal,
+        date: currentSelectedDate || getTodayStringJS()
+      });
+      if (createRes && createRes.success) {
+        colIndex = createRes.colIndex;
+      }
+    }
+
+    if (colIndex) {
+      const res = await apiCallCorrection('updateHomeworkMetadata', {
+        colIndex: colIndex,
+        unit: unitVal,
+        note: pageVal,
+        targetSheet: 'matrix'
+      });
+      if (res && res.success) {
+        audioSuccess.play().catch(() => {});
+        showToastWithUndo("🟢 已更新【".concat(subject).concat(category, "】說明為：").concat(unitVal || '無單元', " ").concat(pageVal ? '(P.' + pageVal + ')' : ''), null);
+        await fetchCorrectionMatrixData();
+      } else {
+        showToastWithUndo("❌ 更新失敗：".concat(res ? res.message : ''), null);
+      }
+    } else {
+      showToastWithUndo("❌ 建立作業欄位失敗", null);
+    }
+  } catch (err) {
+    showToastWithUndo("❌ 請求異常：".concat(err.message), null);
+  }
+}
+
+// Helper: 判斷該學生在「目前登錄的這項作業」中是否有需訂正標記 (X)
+function isSeatErrorInCurrentAssignment(seatStr) {
+  const subjectEl = document.getElementById('reg-subject');
+  const categoryEl = document.getElementById('reg-category');
+  if (!subjectEl || !categoryEl) return false;
+
+  const subject = subjectEl.value;
+  const category = categoryEl.value;
+  if (!subject || !category) return false;
+
+  const existingAssign = getCurrentTargetAssign(subject, category);
+
+  if (existingAssign) {
+    const existingRecord = (matrixData.records || []).find((r) =>
+    r.colIndex === existingAssign.colIndex && r.seat === seatStr && r.status === 'X'
+    );
+    return !!existingRecord;
+  }
+  return false;
+}
+
+// 科目 → 種類 對照表（與清點系統一致）
+const subjectCategoryMap = {
+  '國語': ['甲本', '乙本', '國習', '圈詞', '預習單', '學習單', '國練', '評量', '考卷', '作業本'],
+  '數學': ['數習', '數課', '數練', '學習單', '評量', '考卷', '作業本'],
+  '社會': ['社習', '預習單', '學習單', '評量', '考卷', '作業本'],
+  '自然': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
+  '英語': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
+  '聯絡簿': ['聯絡簿'],
+  '日記': ['日記'],
+  '其它': ['其它']
+};
+
+function onSubjectChange() {
+  const subjectSelect = document.getElementById('reg-subject');
+  const categorySelect = document.getElementById('reg-category');
+  const subject = subjectSelect ? subjectSelect.value : '';
+
+  currentSelectedUnit = '';
+  currentSelectedPage = '';
+  currentSelectedDate = '';
+
+  if (!subject) {
+    categorySelect.innerHTML = '<option value="" disabled selected>-- 請先選科目 --</option>';
+    hasUserSelectedSubjectCategory = false;
+    updateCurrentMetaText();
+    renderSeatButtons();
+    return;
+  }
+
+  const categories = subjectCategoryMap[subject] || ['習作', '預習單', '學習單', '評量', '考卷', '作業本'];
+
+  const currentVal = categorySelect.value;
+  categorySelect.innerHTML = '<option value="" disabled selected>-- 請選擇種類 --</option>';
+  categories.forEach((cat) => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = cat;
+    categorySelect.appendChild(opt);
+  });
+
+  if (currentVal && categories.includes(currentVal)) {
+    categorySelect.value = currentVal;
+    hasUserSelectedSubjectCategory = true;
+  } else {
+    hasUserSelectedSubjectCategory = false;
+  }
+
+  updateCurrentMetaText();
+  renderSeatButtons();
+}
+
+async function onCategoryChange() {
+  const subjectEl = document.getElementById('reg-subject');
+  const categoryEl = document.getElementById('reg-category');
+  const subject = subjectEl ? subjectEl.value : '';
+  const category = categoryEl ? categoryEl.value : '';
+
+  currentSelectedUnit = '';
+  currentSelectedPage = '';
+  currentSelectedDate = '';
+
+  if (subject && category) {
+    hasUserSelectedSubjectCategory = true;
+    let checkinList = getCheckinListForCurrentSubjectCategory();
+
+    if (checkinList.length === 0) {
+      try {
+        const chkRes = await apiCallCorrection('getCheckinAssignments', { subject, category });
+        if (chkRes && chkRes.success && Array.isArray(chkRes.list) && chkRes.list.length > 0) {
+          checkinList = chkRes.list;
+          if (!matrixData.checkinAssignments) matrixData.checkinAssignments = [];
+          chkRes.list.forEach((item) => {
+            const exists = matrixData.checkinAssignments.some((c) =>
+            c.subject === item.subject && c.category === item.category &&
+            c.unit === item.unit && c.page === item.page && c.date === item.date
+            );
+            if (!exists) matrixData.checkinAssignments.push(item);
+          });
+        }
+      } catch (e) {}
+    }
+
+    if (checkinList.length > 1) {
+      // 超過一筆，自動跳出彈窗選單供使用者選擇！
+      updateCurrentMetaText();
+      renderSeatButtons();
+      await openOtherPageModal(true);
+      return;
+    } else if (checkinList.length === 1) {
+      // 只有一筆，直接選定該筆並自動確保訂正分頁開欄
+      currentSelectedUnit = String(checkinList[0].unit || '').trim();
+      currentSelectedPage = String(checkinList[0].page || '').trim();
+      currentSelectedDate = String(checkinList[0].date || '').trim();
+      ensureMatrixColumn(subject, category, currentSelectedUnit, currentSelectedPage, currentSelectedDate);
+    }
+  } else {
+    hasUserSelectedSubjectCategory = false;
+  }
+  updateCurrentMetaText();
+  renderSeatButtons();
+}
+
+// Render Seat Grid Buttons (01~30)
+function renderSeatButtons() {
+  const regGrid = document.getElementById('seat-grid-register');
+  const queryGrid = document.getElementById('seat-grid-query');
+  if (regGrid) regGrid.innerHTML = '';
+  if (queryGrid) queryGrid.innerHTML = '';
+
+  const vacantSeats = matrixData.vacantSeats || [];
+
+  for (let seatNum = 1; seatNum <= 30; seatNum++) {
+    // 空號跳過
+    if (vacantSeats.includes(seatNum)) continue;
+
+    const seatStr = String(seatNum).padStart(2, '0');
+    const count = matrixData.seatSummary[seatStr] || 0;
+    const hasErrorInCurrent = isSeatErrorInCurrentAssignment(seatStr);
+
+    // Reg seat button
+    if (regGrid) {
+      const btn1 = document.createElement('button');
+      btn1.className = "seat-btn ".concat(hasErrorInCurrent ? 'has-error' : 'clean');
+      btn1.innerHTML = "\n            <div>".concat(
+        seatStr, "號</div>\n            <div class=\"badge-count ").concat(
+        count > 0 ? 'badge-has-error' : 'badge-clean', "\">").concat(count > 0 ? '🟧 ' + count : '⚪ 0', "</div>\n          ");
+
+      btn1.onclick = () => {
+        const subject = document.getElementById('reg-subject').value;
+        const category = document.getElementById('reg-category').value;
+        if (!hasUserSelectedSubjectCategory || !subject || !category) {
+          openSelectPromptModal();
           return;
         }
-        currentSelectedUnit = customUnit;
-        currentSelectedPage = customPage;
-        currentSelectedDate = getTodayStringJS();
-      } else {
-        currentSelectedUnit = String(tempSelectedOtherPage.unit || '').trim();
-        currentSelectedPage = String(tempSelectedOtherPage.page || '').trim();
-        currentSelectedDate = String(tempSelectedOtherPage.date || '').trim();
-      }
-
-      closeOtherPageModal();
-      updateCurrentMetaText();
-      showToastWithUndo(`⏳ 正在切換至【${currentSelectedUnit || '新單元'}】...`, null);
-
-      await ensureMatrixColumn(subject, category, currentSelectedUnit, currentSelectedPage, currentSelectedDate);
-      renderSeatButtons();
-      showToastWithUndo(`🟢 已切換登記單元為：${currentSelectedUnit || '無單元'} ${currentSelectedPage ? '(' + currentSelectedPage + ')' : ''}`, null);
-
-      if (pendingScanSeat) {
-        const s = pendingScanSeat;
-        pendingScanSeat = null;
-        await registerErrorForSeat(s);
-      }
-    }
-
-    // Modal Operations: 編輯單元與頁碼 Modal
-    function openMetaModal() {
-      const subjectEl = document.getElementById('reg-subject');
-      const categoryEl = document.getElementById('reg-category');
-      const subject = subjectEl ? subjectEl.value : '';
-      const category = categoryEl ? categoryEl.value : '';
-
-      if (!hasUserSelectedSubjectCategory || !subject || !category) {
-        openSelectPromptModal();
-        return;
-      }
-
-      const existingAssign = getCurrentTargetAssign(subject, category);
-
-      document.getElementById('modal-unit').value = currentSelectedUnit || (existingAssign ? existingAssign.unit : '');
-      document.getElementById('modal-page').value = currentSelectedPage || (existingAssign ? existingAssign.page : '');
-      document.getElementById('meta-modal').classList.remove('hidden');
-    }
-
-    function closeMetaModal() {
-      document.getElementById('meta-modal').classList.add('hidden');
-    }
-
-    async function saveMetaModal() {
-      const subjectEl = document.getElementById('reg-subject');
-      const categoryEl = document.getElementById('reg-category');
-      const subject = subjectEl ? subjectEl.value : '';
-      const category = categoryEl ? categoryEl.value : '';
-
-      if (!subject || !category) {
-        closeMetaModal();
-        openSelectPromptModal();
-        return;
-      }
-
-      const unitVal = document.getElementById('modal-unit').value.trim();
-      const pageVal = document.getElementById('modal-page').value.trim();
-
-      currentSelectedUnit = unitVal;
-      currentSelectedPage = pageVal;
-
-      let existingAssign = getCurrentTargetAssign(subject, category);
-      let colIndex = existingAssign ? existingAssign.colIndex : null;
-
-      showToastWithUndo(`⏳ 正在儲存【${subject}${category}】單元說明...`, null);
-      closeMetaModal();
-
-      try {
-        if (!colIndex) {
-          const createRes = await apiCallCorrection('addCorrectionRecordMatrix', {
-            seat: '01',
-            subject: subject,
-            category: category,
-            unit: unitVal,
-            page: pageVal,
-            date: currentSelectedDate || getTodayStringJS()
-          });
-          if (createRes && createRes.success) {
-            colIndex = createRes.colIndex;
-          }
-        }
-
-        if (colIndex) {
-          const res = await apiCallCorrection('updateHomeworkMetadata', {
-            colIndex: colIndex,
-            unit: unitVal,
-            note: pageVal,
-            targetSheet: 'matrix'
-          });
-          if (res && res.success) {
-            audioSuccess.play().catch(()=>{});
-            showToastWithUndo(`🟢 已更新【${subject}${category}】說明為：${unitVal || '無單元'} ${pageVal ? '(P.' + pageVal + ')' : ''}`, null);
-            await fetchCorrectionMatrixData();
-          } else {
-            showToastWithUndo(`❌ 更新失敗：${res ? res.message : ''}`, null);
-          }
+        if (hasErrorInCurrent) {
+          unregisterLatestErrorForSeat(seatStr);
         } else {
-          showToastWithUndo(`❌ 建立作業欄位失敗`, null);
+          registerErrorForSeat(seatStr);
         }
-      } catch (err) {
-        showToastWithUndo(`❌ 請求異常：${err.message}`, null);
-      }
+      };
+      regGrid.appendChild(btn1);
     }
 
-    // Helper: 判斷該學生在「目前登錄的這項作業」中是否有需訂正標記 (X)
-    function isSeatErrorInCurrentAssignment(seatStr) {
-      const subjectEl = document.getElementById('reg-subject');
-      const categoryEl = document.getElementById('reg-category');
-      if (!subjectEl || !categoryEl) return false;
+    // Query seat button
+    if (queryGrid) {
+      const btn2 = document.createElement('button');
+      btn2.className = "seat-btn ".concat(count > 0 ? 'has-error' : 'clean');
+      btn2.innerHTML = "\n            <div>".concat(
+        seatStr, "號</div>\n            <div class=\"badge-count ").concat(
+        count > 0 ? 'badge-has-error' : 'badge-clean', "\">").concat(count > 0 ? '🟧 ' + count : '⚪ 0', "</div>\n          ");
 
-      const subject = subjectEl.value;
-      const category = categoryEl.value;
-      if (!subject || !category) return false;
-
-      const existingAssign = getCurrentTargetAssign(subject, category);
-
-      if (existingAssign) {
-        const existingRecord = (matrixData.records || []).find(r =>
-          r.colIndex === existingAssign.colIndex && r.seat === seatStr && r.status === 'X'
-        );
-        return !!existingRecord;
-      }
-      return false;
+      btn2.onclick = () => openModalForSeat(seatStr);
+      queryGrid.appendChild(btn2);
     }
+  }
+}
 
-    // 科目 → 種類 對照表（與清點系統一致）
-    const subjectCategoryMap = {
-      '國語': ['甲本', '乙本', '國習', '圈詞', '預習單', '學習單', '國練', '評量', '考卷', '作業本'],
-      '數學': ['數習', '數課', '數練', '學習單', '評量', '考卷', '作業本'],
-      '社會': ['社習', '預習單', '學習單', '評量', '考卷', '作業本'],
-      '自然': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
-      '英語': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
-      '聯絡簿': ['聯絡簿'],
-      '日記': ['日記'],
-      '其它': ['其它']
+let lastAction = null; // { type: 'register'|'clear', seat, colIndex, prevStatus, subject, category }
+let toastTimer = null;
+
+function showToastWithUndo(msg, actionData = null) {
+  lastAction = actionData;
+  const banner = document.getElementById('toast-banner');
+  const textEl = document.getElementById('toast-text');
+  const undoBtn = document.getElementById('toast-undo-btn');
+
+  textEl.textContent = msg;
+  if (actionData) {
+    undoBtn.style.display = 'inline-block';
+  } else {
+    undoBtn.style.display = 'none';
+  }
+
+  banner.style.display = 'flex';
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    banner.style.display = 'none';
+  }, 7000);
+}
+
+async function executeUndo() {
+  if (!lastAction) return;
+  const act = lastAction;
+  lastAction = null;
+  document.getElementById('toast-banner').style.display = 'none';
+
+  if (act.type === 'register') {
+    showToastWithUndo("⏳ 正在復原 ".concat(act.seat, "號 的登記..."), null);
+    try {
+      const res = await apiCallCorrection('updateCorrectionMatrixCell', {
+        colIndex: act.colIndex,
+        seat: act.seat,
+        status: ''
+      });
+      if (res.success) {
+        audioSuccess.play().catch(() => {});
+        showToastWithUndo("↩️ 已成功撤銷 ".concat(act.seat, "號【").concat(act.subject || '').concat(act.category || '', "】的這筆登記！"), null);
+        await fetchCorrectionMatrixData();
+      } else {
+        showToastWithUndo("❌ 復原失敗：".concat(res.message), null);
+      }
+    } catch (err) {
+      showToastWithUndo("❌ 復原異常：".concat(err.message), null);
+    }
+  } else if (act.type === 'clear') {
+    showToastWithUndo("⏳ 正在復原 ".concat(act.seat, "號 的銷案..."), null);
+    try {
+      const res = await apiCallCorrection('updateCorrectionMatrixCell', {
+        colIndex: act.colIndex,
+        seat: act.seat,
+        status: act.prevStatus || 'X'
+      });
+      if (res.success) {
+        audioSuccess.play().catch(() => {});
+        showToastWithUndo("↩️ 已復原 ".concat(act.seat, "號 狀態為待訂正 (X)！"), null);
+        await fetchCorrectionMatrixData();
+        if (document.getElementById('uncorrected-modal').classList.contains('show')) {
+          openModalForSeat(act.seat);
+        }
+      } else {
+        showToastWithUndo("❌ 復原失敗：".concat(res.message), null);
+      }
+    } catch (err) {
+      showToastWithUndo("❌ 復原異常：".concat(err.message), null);
+    }
+  }
+}
+
+// Unregister (cancel) the latest 'X' record for seat in current assignment
+async function unregisterLatestErrorForSeat(seatStr) {
+  const subject = document.getElementById('reg-subject').value;
+  const category = document.getElementById('reg-category').value;
+  if (!hasUserSelectedSubjectCategory || !subject || !category) {
+    openSelectPromptModal();
+    return;
+  }
+
+  const existingAssign = getCurrentTargetAssign(subject, category);
+  if (!existingAssign) {
+    showToastWithUndo("❌ 找不到對應的作業欄位，無法撤銷", null);
+    return;
+  }
+
+  const colIndex = existingAssign.colIndex;
+  showToastWithUndo("⏳ 正在撤銷 ".concat(seatStr, "號 需訂正登記..."), null);
+  try {
+    const res = await apiCallCorrection('updateCorrectionMatrixCell', {
+      colIndex: colIndex,
+      seat: seatStr,
+      status: ''
+    });
+    if (res.success) {
+      audioSuccess.play().catch(() => {});
+      await fetchCorrectionMatrixData();
+      showToastWithUndo("↩️ 已撤銷 ".concat(seatStr, "號【").concat(subject).concat(category, "】的需訂正登記"), {
+        type: 'register',
+        seat: seatStr,
+        colIndex: colIndex,
+        subject: subject,
+        category: category
+      });
+    } else {
+      showToastWithUndo("❌ 撤銷失敗：".concat(res.message), null);
+    }
+  } catch (err) {
+    showToastWithUndo("❌ 請求連線異常：".concat(err.message), null);
+  }
+}
+
+let pendingMakeUpParams = null;
+
+function showMakeUpConfirmModal(params, serverRes) {
+  pendingMakeUpParams = { ...params };
+  const descEl = document.getElementById('makeup-modal-desc');
+  if (descEl) {
+    const seatStr = serverRes.seat || params.seat;
+    const sub = serverRes.subject || params.subject;
+    const cat = serverRes.category || params.category;
+    const u = serverRes.unit || params.unit || '';
+    const p = serverRes.page || params.page || '';
+    const d = serverRes.date || params.date || '';
+    descEl.innerHTML = "\n          座號 <b style=\"color:#38bdf8; font-size:1.05rem;\">".concat(
+      seatStr, "</b> 號 在「作業清點表」中尚未登記繳交：<br>\n          <div style=\"margin-top:6px; padding:6px 10px; background:#1e293b; border-radius:6px; color:#f59e0b; font-weight:700;\">\n            ").concat(
+
+      d ? '[' + d + '] ' : '').concat(sub, " ").concat(cat).concat(u ? ' 單元 ' + u : '').concat(p ? ' (' + p + ')' : '', "\n          </div>\n        ");
+
+
+  }
+  document.getElementById('makeup-confirm-modal').classList.remove('hidden');
+}
+
+function closeMakeUpModal() {
+  document.getElementById('makeup-confirm-modal').classList.add('hidden');
+  pendingMakeUpParams = null;
+}
+
+async function confirmMakeUpChoice(shouldMakeUp) {
+  if (!pendingMakeUpParams) {
+    closeMakeUpModal();
+    return;
+  }
+  const params = { ...pendingMakeUpParams, makeUpCheckin: shouldMakeUp };
+  closeMakeUpModal();
+
+  const seatStr = params.seat;
+  const sub = params.subject;
+  const cat = params.category;
+  const u = params.unit || '';
+
+  showToastWithUndo("⏳ 正在為 ".concat(seatStr, "號 登錄錯題").concat(shouldMakeUp ? '並補登繳交' : '', "..."), null);
+  try {
+    const res = await apiCallCorrection('addCorrectionRecordMatrix', params);
+    if (res && res.success) {
+      audioSuccess.play().catch(() => {});
+      await fetchCorrectionMatrixData();
+      let msg = "🔴 已登錄 ".concat(seatStr, "號【").concat(sub).concat(cat, " ").concat(u ? u : '', "】需訂正 (X)");
+      if (res.madeUpCheckin) {
+        msg += "，並已同步補登清點表 (1)";
+      }
+      showToastWithUndo(msg, {
+        type: 'register',
+        seat: seatStr,
+        colIndex: res.colIndex,
+        subject: sub,
+        category: cat
+      });
+    } else {
+      showToastWithUndo("❌ 登錄失敗：".concat(res ? res.message : ''), null);
+    }
+  } catch (err) {
+    showToastWithUndo("❌ 請求連線異常：".concat(err.message), null);
+  }
+}
+
+// Register error for seat (writes 'X' to matrix column)
+async function registerErrorForSeat(seatStr) {
+  const subject = document.getElementById('reg-subject').value;
+  const category = document.getElementById('reg-category').value;
+  if (!hasUserSelectedSubjectCategory || !subject || !category) {
+    openSelectPromptModal();
+    return;
+  }
+
+  const existingAssign = getCurrentTargetAssign(subject, category);
+  const displayUnit = currentSelectedUnit || (existingAssign ? existingAssign.unit : '');
+  const displayPage = currentSelectedPage || (existingAssign ? existingAssign.page : '');
+  const displayDate = currentSelectedDate || (existingAssign ? existingAssign.date : '');
+
+  showToastWithUndo("⏳ 正在為 ".concat(seatStr, "號 登錄【").concat(subject).concat(category, "】..."), null);
+  try {
+    const params = {
+      seat: seatStr,
+      subject: subject,
+      category: category,
+      unit: displayUnit,
+      page: displayPage,
+      date: displayDate
     };
+    if (existingAssign && existingAssign.colIndex) {
+      params.colIndex = existingAssign.colIndex;
+    }
+    const res = await apiCallCorrection('addCorrectionRecordMatrix', params);
 
-    function onSubjectChange() {
-      const subjectSelect = document.getElementById('reg-subject');
-      const categorySelect = document.getElementById('reg-category');
-      const subject = subjectSelect ? subjectSelect.value : '';
-
-      currentSelectedUnit = '';
-      currentSelectedPage = '';
-      currentSelectedDate = '';
-
-      if (!subject) {
-        categorySelect.innerHTML = '<option value="" disabled selected>-- 請先選科目 --</option>';
-        hasUserSelectedSubjectCategory = false;
-        updateCurrentMetaText();
-        renderSeatButtons();
-        return;
+    if (res.success) {
+      audioSuccess.play().catch(() => {});
+      await fetchCorrectionMatrixData();
+      let msg = "🔴 已登錄 ".concat(seatStr, "號【").concat(subject).concat(category, " ").concat(displayUnit || '', "】需訂正 (X)");
+      if (res.madeUpCheckin) {
+        msg += "（📢 該生原未在清點表登記，已自動補登為已繳交 1）";
       }
-
-      const categories = subjectCategoryMap[subject] || ['習作', '預習單', '學習單', '評量', '考卷', '作業本'];
-
-      const currentVal = categorySelect.value;
-      categorySelect.innerHTML = '<option value="" disabled selected>-- 請選擇種類 --</option>';
-      categories.forEach(cat => {
-        const opt = document.createElement('option');
-        opt.value = cat;
-        opt.textContent = cat;
-        categorySelect.appendChild(opt);
+      showToastWithUndo(msg, {
+        type: 'register',
+        seat: seatStr,
+        colIndex: res.colIndex,
+        subject: subject,
+        category: category
       });
+    } else {
+      showToastWithUndo("❌ 登錄失敗：".concat(res.message), null);
+    }
+  } catch (err) {
+    showToastWithUndo("❌ 請求連線異常：".concat(err.message), null);
+  }
+}
 
-      if (currentVal && categories.includes(currentVal)) {
-        categorySelect.value = currentVal;
-        hasUserSelectedSubjectCategory = true;
-      } else {
-        hasUserSelectedSubjectCategory = false;
-      }
-
+// Fetch matrix data from GAS
+async function fetchCorrectionMatrixData() {
+  document.getElementById('uncorrected-summary-badge').textContent = '更新中...';
+  try {
+    const res = await apiCallCorrection('getCorrectionMatrixData');
+    if (res && res.success) {
+      matrixData = res;
       updateCurrentMetaText();
       renderSeatButtons();
+      if (currentMainView === 'matrix') renderMatrixTable();
+      if (currentQuerySub === 'assignment') renderAssignmentQueryGrid();
+
+      const totalUncorrected = Object.values(res.seatSummary || {}).reduce((a, b) => a + b, 0);
+      document.getElementById('uncorrected-summary-badge').textContent = "全班未訂正共 ".concat(totalUncorrected, " 筆");
+    } else {
+      document.getElementById('uncorrected-summary-badge').textContent = res && res.message ? res.message : '讀取失敗';
     }
+  } catch (err) {
+    console.error('fetchCorrectionMatrixData error:', err);
+    document.getElementById('uncorrected-summary-badge').textContent = '讀取失敗';
+  }
+}
 
-    async function onCategoryChange() {
-      const subjectEl = document.getElementById('reg-subject');
-      const categoryEl = document.getElementById('reg-category');
-      const subject = subjectEl ? subjectEl.value : '';
-      const category = categoryEl ? categoryEl.value : '';
-
-      currentSelectedUnit = '';
-      currentSelectedPage = '';
-      currentSelectedDate = '';
-
-      if (subject && category) {
-        hasUserSelectedSubjectCategory = true;
-        let checkinList = getCheckinListForCurrentSubjectCategory();
-
-        if (checkinList.length === 0) {
-          try {
-            const chkRes = await apiCallCorrection('getCheckinAssignments', { subject, category });
-            if (chkRes && chkRes.success && Array.isArray(chkRes.list) && chkRes.list.length > 0) {
-              checkinList = chkRes.list;
-              if (!matrixData.checkinAssignments) matrixData.checkinAssignments = [];
-              chkRes.list.forEach(item => {
-                const exists = matrixData.checkinAssignments.some(c =>
-                  c.subject === item.subject && c.category === item.category &&
-                  c.unit === item.unit && c.page === item.page && c.date === item.date
-                );
-                if (!exists) matrixData.checkinAssignments.push(item);
-              });
-            }
-          } catch (e) {}
-        }
-
-        if (checkinList.length > 1) {
-          // 超過一筆，自動跳出彈窗選單供使用者選擇！
-          updateCurrentMetaText();
-          renderSeatButtons();
-          await openOtherPageModal(true);
-          return;
-        } else if (checkinList.length === 1) {
-          // 只有一筆，直接選定該筆並自動確保訂正分頁開欄
-          currentSelectedUnit = String(checkinList[0].unit || '').trim();
-          currentSelectedPage = String(checkinList[0].page || '').trim();
-          currentSelectedDate = String(checkinList[0].date || '').trim();
-          ensureMatrixColumn(subject, category, currentSelectedUnit, currentSelectedPage, currentSelectedDate);
-        }
-      } else {
-        hasUserSelectedSubjectCategory = false;
-      }
-      updateCurrentMetaText();
-      renderSeatButtons();
+async function openModalForSeat(seatStr) {
+  try {
+    const res = await apiCallCorrection('getStudentUncorrectedMatrix', { seat: seatStr });
+    if (res.success) {
+      const stName = res.name || matrixData.seatNames && matrixData.seatNames[seatStr] || '';
+      showUncorrectedModal(seatStr, res.records || [], stName);
     }
+  } catch (err) {
+    showToastWithUndo("❌ 讀取失敗：".concat(err.message), null);
+  }
+}
 
-    // Render Seat Grid Buttons (01~30)
-    function renderSeatButtons() {
-      const regGrid = document.getElementById('seat-grid-register');
-      const queryGrid = document.getElementById('seat-grid-query');
-      if (regGrid) regGrid.innerHTML = '';
-      if (queryGrid) queryGrid.innerHTML = '';
+function showUncorrectedModal(seatStr, records, studentName = '') {
+  const modal = document.getElementById('uncorrected-modal');
+  const title = document.getElementById('modal-title-text');
+  const listContainer = document.getElementById('modal-item-list');
 
-      const vacantSeats = matrixData.vacantSeats || [];
+  const stName = studentName || matrixData.seatNames && matrixData.seatNames[seatStr] || '';
+  const namePart = stName ? " ".concat(stName) : '';
+  title.innerHTML = "".concat(seatStr, " 號").concat(namePart, " — 請選擇要註銷銷案的錯題 (X → O)");
+  listContainer.innerHTML = '';
 
-      for (let seatNum = 1; seatNum <= 30; seatNum++) {
-        // 空號跳過
-        if (vacantSeats.includes(seatNum)) continue;
+  if (!records || records.length === 0) {
+    listContainer.innerHTML = "\n          <div style=\"text-align:center; padding:30px 10px; color:#4ade80;\">\n            <div style=\"font-size:2.5rem; margin-bottom:8px;\">🟢</div>\n            <div style=\"font-size:1.05rem; font-weight:700;\">讚！".concat(
 
-        const seatStr = String(seatNum).padStart(2, '0');
-        const count = matrixData.seatSummary[seatStr] || 0;
-        const hasErrorInCurrent = isSeatErrorInCurrentAssignment(seatStr);
 
-        // Reg seat button
-        if (regGrid) {
-          const btn1 = document.createElement('button');
-          btn1.className = `seat-btn ${hasErrorInCurrent ? 'has-error' : 'clean'}`;
-          btn1.innerHTML = `
-            <div>${seatStr}號</div>
-            <div class="badge-count ${count > 0 ? 'badge-has-error' : 'badge-clean'}">${count > 0 ? '🟧 ' + count : '⚪ 0'}</div>
-          `;
-          btn1.onclick = () => {
-            const subject = document.getElementById('reg-subject').value;
-            const category = document.getElementById('reg-category').value;
-            if (!hasUserSelectedSubjectCategory || !subject || !category) {
-              openSelectPromptModal();
-              return;
-            }
-            if (hasErrorInCurrent) {
-              unregisterLatestErrorForSeat(seatStr);
-            } else {
-              registerErrorForSeat(seatStr);
-            }
-          };
-          regGrid.appendChild(btn1);
-        }
+      seatStr, " 號").concat(namePart, " 目前沒有任何待訂正項目</div>\n          </div>\n        ");
 
-        // Query seat button
-        if (queryGrid) {
-          const btn2 = document.createElement('button');
-          btn2.className = `seat-btn ${count > 0 ? 'has-error' : 'clean'}`;
-          btn2.innerHTML = `
-            <div>${seatStr}號</div>
-            <div class="badge-count ${count > 0 ? 'badge-has-error' : 'badge-clean'}">${count > 0 ? '🟧 ' + count : '⚪ 0'}</div>
-          `;
-          btn2.onclick = () => openModalForSeat(seatStr);
-          queryGrid.appendChild(btn2);
-        }
-      }
+
+  } else {
+    records.forEach((rec) => {
+      const itemCard = document.createElement('div');
+      itemCard.className = 'modal-item-card';
+      itemCard.innerHTML = "\n            <div class=\"modal-item-info\">\n              <div class=\"modal-item-main\">\n                <span>".concat(
+
+
+        rec.subject, "</span>\n                <span style=\"color:#38bdf8;\">").concat(
+        rec.category, "</span>\n                <span>").concat(
+        rec.unit ? '· ' + rec.unit : '', " ").concat(rec.page ? ' (P.' + rec.page + ')' : '', "</span>\n              </div>\n              <div class=\"modal-item-sub\">\n                登記日期：").concat(
+
+
+        rec.date, "\n              </div>\n            </div>\n            <button class=\"btn-modal-cancel-item\" onclick=\"executeModalClear('").concat(
+
+
+        rec.colIndex, "', '").concat(seatStr, "')\">\n              銷案\n            </button>\n          ");
+
+
+
+      listContainer.appendChild(itemCard);
+    });
+  }
+
+  modal.classList.add('show');
+}
+
+function closeUncorrectedModal() {
+  document.getElementById('uncorrected-modal').classList.remove('show');
+}
+
+// Execute clearing cell to 'O'
+async function executeModalClear(colIndex, seatStr) {
+  showToastWithUndo("⏳ 正在為 ".concat(seatStr, "號 辦理銷案..."), null);
+  try {
+    const res = await apiCallCorrection('updateCorrectionMatrixCell', {
+      colIndex: colIndex,
+      seat: seatStr,
+      status: 'O'
+    });
+    if (res.success) {
+      audioSuccess.play().catch(() => {});
+      fetchCorrectionMatrixData();
+      openModalForSeat(seatStr);
+      showToastWithUndo("🟢 已完成 ".concat(seatStr, "號 錯題銷案 (標為 O)"), {
+        type: 'clear',
+        seat: seatStr,
+        colIndex: colIndex,
+        prevStatus: 'X'
+      });
+    } else {
+      showToastWithUndo("❌ 更新失敗：".concat(res.message), null);
     }
+  } catch (err) {
+    showToastWithUndo("❌ 請求異常：".concat(err.message), null);
+  }
+}
 
-    let lastAction = null; // { type: 'register'|'clear', seat, colIndex, prevStatus, subject, category }
-    let toastTimer = null;
+// Tab 2 Assignment Dropdown and Query Grid
+function renderAssignmentDropdown() {
+  const select = document.getElementById('query-assign-select');
+  select.innerHTML = '';
 
-    function showToastWithUndo(msg, actionData = null) {
-      lastAction = actionData;
-      const banner = document.getElementById('toast-banner');
-      const textEl = document.getElementById('toast-text');
-      const undoBtn = document.getElementById('toast-undo-btn');
+  if (!matrixData.assignments || matrixData.assignments.length === 0) {
+    select.innerHTML = '<option value="">(目前無任何作業欄位紀錄)</option>';
+    return;
+  }
 
-      textEl.textContent = msg;
-      if (actionData) {
-        undoBtn.style.display = 'inline-block';
-      } else {
-        undoBtn.style.display = 'none';
-      }
+  matrixData.assignments.forEach((a) => {
+    const opt = document.createElement('option');
+    opt.value = a.colIndex;
+    opt.textContent = "".concat(a.subject, " - ").concat(a.category, " ").concat(a.unit || '', " (P.").concat(a.page || '', ") [").concat(a.date, "]");
+    select.appendChild(opt);
+  });
 
-      banner.style.display = 'flex';
+  // 預設選取最新（最後一欄）的一筆作業
+  if (select.options.length > 0) {
+    select.selectedIndex = select.options.length - 1;
+  }
 
-      if (toastTimer) clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => {
-        banner.style.display = 'none';
-      }, 7000);
-    }
+  renderAssignmentQueryGrid();
+}
 
-    async function executeUndo() {
-      if (!lastAction) return;
-      const act = lastAction;
-      lastAction = null;
-      document.getElementById('toast-banner').style.display = 'none';
+function renderAssignmentQueryGrid() {
+  const colIndex = document.getElementById('query-assign-select').value;
+  const grid = document.getElementById('seat-grid-assign-query');
+  grid.innerHTML = '';
 
-      if (act.type === 'register') {
-        showToastWithUndo(`⏳ 正在復原 ${act.seat}號 的登記...`, null);
-        try {
-          const res = await apiCallCorrection('updateCorrectionMatrixCell', {
-            colIndex: act.colIndex,
-            seat: act.seat,
-            status: ''
-          });
-          if (res.success) {
-            audioSuccess.play().catch(()=>{});
-            showToastWithUndo(`↩️ 已成功撤銷 ${act.seat}號【${act.subject || ''}${act.category || ''}】的這筆登記！`, null);
-            await fetchCorrectionMatrixData();
-          } else {
-            showToastWithUndo(`❌ 復原失敗：${res.message}`, null);
-          }
-        } catch (err) {
-          showToastWithUndo(`❌ 復原異常：${err.message}`, null);
-        }
-      } else if (act.type === 'clear') {
-        showToastWithUndo(`⏳ 正在復原 ${act.seat}號 的銷案...`, null);
-        try {
-          const res = await apiCallCorrection('updateCorrectionMatrixCell', {
-            colIndex: act.colIndex,
-            seat: act.seat,
-            status: act.prevStatus || 'X'
-          });
-          if (res.success) {
-            audioSuccess.play().catch(()=>{});
-            showToastWithUndo(`↩️ 已復原 ${act.seat}號 狀態為待訂正 (X)！`, null);
-            await fetchCorrectionMatrixData();
-            if (document.getElementById('uncorrected-modal').classList.contains('show')) {
-              openModalForSeat(act.seat);
-            }
-          } else {
-            showToastWithUndo(`❌ 復原失敗：${res.message}`, null);
-          }
-        } catch (err) {
-          showToastWithUndo(`❌ 復原異常：${err.message}`, null);
-        }
-      }
-    }
+  if (!colIndex) return;
 
-    // Unregister (cancel) the latest 'X' record for seat in current assignment
-    async function unregisterLatestErrorForSeat(seatStr) {
-      const subject = document.getElementById('reg-subject').value;
-      const category = document.getElementById('reg-category').value;
-      if (!hasUserSelectedSubjectCategory || !subject || !category) {
-        openSelectPromptModal();
-        return;
-      }
+  const recordsForCol = (matrixData.records || []).filter((r) => String(r.colIndex) === String(colIndex));
+  const vacantSeats = matrixData.vacantSeats || [];
 
-      const existingAssign = getCurrentTargetAssign(subject, category);
-      if (!existingAssign) {
-        showToastWithUndo(`❌ 找不到對應的作業欄位，無法撤銷`, null);
-        return;
-      }
+  for (let s = 1; s <= 30; s++) {
+    // 空號跳過
+    if (vacantSeats.includes(s)) continue;
 
-      const colIndex = existingAssign.colIndex;
-      showToastWithUndo(`⏳ 正在撤銷 ${seatStr}號 需訂正登記...`, null);
+    const seatStr = String(s).padStart(2, '0');
+    const rec = recordsForCol.find((r) => r.seat === seatStr);
+    const status = rec ? rec.status : '';
+
+    const btn = document.createElement('button');
+    btn.className = "seat-btn ".concat(status === 'X' ? 'has-error' : status === 'O' ? 'corrected' : 'clean');
+    btn.innerHTML = "\n          <div>".concat(
+      seatStr, "號</div>\n          <div class=\"badge-count\">").concat(
+      status === 'X' ? '🟧 X' : status === 'O' ? '🟦 O' : '⚪ 無', "</div>\n        ");
+
+    btn.onclick = async () => {
+      const nextStatus = status === 'X' ? 'O' : 'X';
+      const actionLabel = nextStatus === 'O' ? '標已訂正 (O)' : '改回待訂正 (X)';
+      showToastWithUndo("⏳ 正在為 ".concat(seatStr, "號 ").concat(actionLabel, "..."), null);
       try {
         const res = await apiCallCorrection('updateCorrectionMatrixCell', {
           colIndex: colIndex,
           seat: seatStr,
-          status: ''
+          status: nextStatus
         });
         if (res.success) {
-          audioSuccess.play().catch(()=>{});
-          await fetchCorrectionMatrixData();
-          showToastWithUndo(`↩️ 已撤銷 ${seatStr}號【${subject}${category}】的需訂正登記`, {
-            type: 'register',
-            seat: seatStr,
-            colIndex: colIndex,
-            subject: subject,
-            category: category
-          });
-        } else {
-          showToastWithUndo(`❌ 撤銷失敗：${res.message}`, null);
-        }
-      } catch (err) {
-        showToastWithUndo(`❌ 請求連線異常：${err.message}`, null);
-      }
-    }
-
-    let pendingMakeUpParams = null;
-
-    function showMakeUpConfirmModal(params, serverRes) {
-      pendingMakeUpParams = { ...params };
-      const descEl = document.getElementById('makeup-modal-desc');
-      if (descEl) {
-        const seatStr = serverRes.seat || params.seat;
-        const sub = serverRes.subject || params.subject;
-        const cat = serverRes.category || params.category;
-        const u = serverRes.unit || params.unit || '';
-        const p = serverRes.page || params.page || '';
-        const d = serverRes.date || params.date || '';
-        descEl.innerHTML = `
-          座號 <b style="color:#38bdf8; font-size:1.05rem;">${seatStr}</b> 號 在「作業清點表」中尚未登記繳交：<br>
-          <div style="margin-top:6px; padding:6px 10px; background:#1e293b; border-radius:6px; color:#f59e0b; font-weight:700;">
-            ${d ? '[' + d + '] ' : ''}${sub} ${cat}${u ? ' 單元 ' + u : ''}${p ? ' (' + p + ')' : ''}
-          </div>
-        `;
-      }
-      document.getElementById('makeup-confirm-modal').classList.remove('hidden');
-    }
-
-    function closeMakeUpModal() {
-      document.getElementById('makeup-confirm-modal').classList.add('hidden');
-      pendingMakeUpParams = null;
-    }
-
-    async function confirmMakeUpChoice(shouldMakeUp) {
-      if (!pendingMakeUpParams) {
-        closeMakeUpModal();
-        return;
-      }
-      const params = { ...pendingMakeUpParams, makeUpCheckin: shouldMakeUp };
-      closeMakeUpModal();
-
-      const seatStr = params.seat;
-      const sub = params.subject;
-      const cat = params.category;
-      const u = params.unit || '';
-
-      showToastWithUndo(`⏳ 正在為 ${seatStr}號 登錄錯題${shouldMakeUp ? '並補登繳交' : ''}...`, null);
-      try {
-        const res = await apiCallCorrection('addCorrectionRecordMatrix', params);
-        if (res && res.success) {
-          audioSuccess.play().catch(()=>{});
-          await fetchCorrectionMatrixData();
-          let msg = `🔴 已登錄 ${seatStr}號【${sub}${cat} ${u ? u : ''}】需訂正 (X)`;
-          if (res.madeUpCheckin) {
-            msg += `，並已同步補登清點表 (1)`;
-          }
-          showToastWithUndo(msg, {
-            type: 'register',
-            seat: seatStr,
-            colIndex: res.colIndex,
-            subject: sub,
-            category: cat
-          });
-        } else {
-          showToastWithUndo(`❌ 登錄失敗：${res ? res.message : ''}`, null);
-        }
-      } catch (err) {
-        showToastWithUndo(`❌ 請求連線異常：${err.message}`, null);
-      }
-    }
-
-    // Register error for seat (writes 'X' to matrix column)
-    async function registerErrorForSeat(seatStr) {
-      const subject = document.getElementById('reg-subject').value;
-      const category = document.getElementById('reg-category').value;
-      if (!hasUserSelectedSubjectCategory || !subject || !category) {
-        openSelectPromptModal();
-        return;
-      }
-
-      const existingAssign = getCurrentTargetAssign(subject, category);
-      const displayUnit = currentSelectedUnit || (existingAssign ? existingAssign.unit : '');
-      const displayPage = currentSelectedPage || (existingAssign ? existingAssign.page : '');
-      const displayDate = currentSelectedDate || (existingAssign ? existingAssign.date : '');
-
-      showToastWithUndo(`⏳ 正在為 ${seatStr}號 登錄【${subject}${category}】...`, null);
-      try {
-        const params = {
-          seat: seatStr,
-          subject: subject,
-          category: category,
-          unit: displayUnit,
-          page: displayPage,
-          date: displayDate
-        };
-        if (existingAssign && existingAssign.colIndex) {
-          params.colIndex = existingAssign.colIndex;
-        }
-        const res = await apiCallCorrection('addCorrectionRecordMatrix', params);
-
-        if (res.success) {
-          audioSuccess.play().catch(()=>{});
-          await fetchCorrectionMatrixData();
-          let msg = `🔴 已登錄 ${seatStr}號【${subject}${category} ${displayUnit || ''}】需訂正 (X)`;
-          if (res.madeUpCheckin) {
-            msg += `（📢 該生原未在清點表登記，已自動補登為已繳交 1）`;
-          }
-          showToastWithUndo(msg, {
-            type: 'register',
-            seat: seatStr,
-            colIndex: res.colIndex,
-            subject: subject,
-            category: category
-          });
-        } else {
-          showToastWithUndo(`❌ 登錄失敗：${res.message}`, null);
-        }
-      } catch (err) {
-        showToastWithUndo(`❌ 請求連線異常：${err.message}`, null);
-      }
-    }
-
-    // Fetch matrix data from GAS
-    async function fetchCorrectionMatrixData() {
-      document.getElementById('uncorrected-summary-badge').textContent = '更新中...';
-      try {
-        const res = await apiCallCorrection('getCorrectionMatrixData');
-        if (res && res.success) {
-          matrixData = res;
-          updateCurrentMetaText();
-          renderSeatButtons();
-          if (currentMainView === 'matrix') renderMatrixTable();
-          if (currentQuerySub === 'assignment') renderAssignmentQueryGrid();
-
-          const totalUncorrected = Object.values(res.seatSummary || {}).reduce((a,b)=>a+b, 0);
-          document.getElementById('uncorrected-summary-badge').textContent = `全班未訂正共 ${totalUncorrected} 筆`;
-        } else {
-          document.getElementById('uncorrected-summary-badge').textContent = (res && res.message) ? res.message : '讀取失敗';
-        }
-      } catch (err) {
-        console.error('fetchCorrectionMatrixData error:', err);
-        document.getElementById('uncorrected-summary-badge').textContent = '讀取失敗';
-      }
-    }
-
-    async function openModalForSeat(seatStr) {
-      try {
-        const res = await apiCallCorrection('getStudentUncorrectedMatrix', { seat: seatStr });
-        if (res.success) {
-          const stName = res.name || (matrixData.seatNames && matrixData.seatNames[seatStr]) || '';
-          showUncorrectedModal(seatStr, res.records || [], stName);
-        }
-      } catch (err) {
-        showToastWithUndo(`❌ 讀取失敗：${err.message}`, null);
-      }
-    }
-
-    function showUncorrectedModal(seatStr, records, studentName = '') {
-      const modal = document.getElementById('uncorrected-modal');
-      const title = document.getElementById('modal-title-text');
-      const listContainer = document.getElementById('modal-item-list');
-
-      const stName = studentName || (matrixData.seatNames && matrixData.seatNames[seatStr]) || '';
-      const namePart = stName ? ` ${stName}` : '';
-      title.innerHTML = `${seatStr} 號${namePart} — 請選擇要註銷銷案的錯題 (X → O)`;
-      listContainer.innerHTML = '';
-
-      if (!records || records.length === 0) {
-        listContainer.innerHTML = `
-          <div style="text-align:center; padding:30px 10px; color:#4ade80;">
-            <div style="font-size:2.5rem; margin-bottom:8px;">🟢</div>
-            <div style="font-size:1.05rem; font-weight:700;">讚！${seatStr} 號${namePart} 目前沒有任何待訂正項目</div>
-          </div>
-        `;
-      } else {
-        records.forEach(rec => {
-          const itemCard = document.createElement('div');
-          itemCard.className = 'modal-item-card';
-          itemCard.innerHTML = `
-            <div class="modal-item-info">
-              <div class="modal-item-main">
-                <span>${rec.subject}</span>
-                <span style="color:#38bdf8;">${rec.category}</span>
-                <span>${rec.unit ? '· ' + rec.unit : ''} ${rec.page ? ' (P.' + rec.page + ')' : ''}</span>
-              </div>
-              <div class="modal-item-sub">
-                登記日期：${rec.date}
-              </div>
-            </div>
-            <button class="btn-modal-cancel-item" onclick="executeModalClear('${rec.colIndex}', '${seatStr}')">
-              銷案
-            </button>
-          `;
-          listContainer.appendChild(itemCard);
-        });
-      }
-
-      modal.classList.add('show');
-    }
-
-    function closeUncorrectedModal() {
-      document.getElementById('uncorrected-modal').classList.remove('show');
-    }
-
-    // Execute clearing cell to 'O'
-    async function executeModalClear(colIndex, seatStr) {
-      showToastWithUndo(`⏳ 正在為 ${seatStr}號 辦理銷案...`, null);
-      try {
-        const res = await apiCallCorrection('updateCorrectionMatrixCell', {
-          colIndex: colIndex,
-          seat: seatStr,
-          status: 'O'
-        });
-        if (res.success) {
-          audioSuccess.play().catch(()=>{});
-          fetchCorrectionMatrixData();
-          openModalForSeat(seatStr);
-          showToastWithUndo(`🟢 已完成 ${seatStr}號 錯題銷案 (標為 O)`, {
-            type: 'clear',
-            seat: seatStr,
-            colIndex: colIndex,
-            prevStatus: 'X'
-          });
-        } else {
-          showToastWithUndo(`❌ 更新失敗：${res.message}`, null);
-        }
-      } catch (err) {
-        showToastWithUndo(`❌ 請求異常：${err.message}`, null);
-      }
-    }
-
-    // Tab 2 Assignment Dropdown and Query Grid
-    function renderAssignmentDropdown() {
-      const select = document.getElementById('query-assign-select');
-      select.innerHTML = '';
-
-      if (!matrixData.assignments || matrixData.assignments.length === 0) {
-        select.innerHTML = '<option value="">(目前無任何作業欄位紀錄)</option>';
-        return;
-      }
-
-      matrixData.assignments.forEach(a => {
-        const opt = document.createElement('option');
-        opt.value = a.colIndex;
-        opt.textContent = `${a.subject} - ${a.category} ${a.unit || ''} (P.${a.page || ''}) [${a.date}]`;
-        select.appendChild(opt);
-      });
-
-      // 預設選取最新（最後一欄）的一筆作業
-      if (select.options.length > 0) {
-        select.selectedIndex = select.options.length - 1;
-      }
-
-      renderAssignmentQueryGrid();
-    }
-
-    function renderAssignmentQueryGrid() {
-      const colIndex = document.getElementById('query-assign-select').value;
-      const grid = document.getElementById('seat-grid-assign-query');
-      grid.innerHTML = '';
-
-      if (!colIndex) return;
-
-      const recordsForCol = (matrixData.records || []).filter(r => String(r.colIndex) === String(colIndex));
-      const vacantSeats = matrixData.vacantSeats || [];
-
-      for (let s = 1; s <= 30; s++) {
-        // 空號跳過
-        if (vacantSeats.includes(s)) continue;
-
-        const seatStr = String(s).padStart(2, '0');
-        const rec = recordsForCol.find(r => r.seat === seatStr);
-        const status = rec ? rec.status : '';
-
-        const btn = document.createElement('button');
-        btn.className = `seat-btn ${status === 'X' ? 'has-error' : (status === 'O' ? 'corrected' : 'clean')}`;
-        btn.innerHTML = `
-          <div>${seatStr}號</div>
-          <div class="badge-count">${status === 'X' ? '🟧 X' : (status === 'O' ? '🟦 O' : '⚪ 無')}</div>
-        `;
-        btn.onclick = async () => {
-          const nextStatus = status === 'X' ? 'O' : 'X';
-          const actionLabel = nextStatus === 'O' ? '標已訂正 (O)' : '改回待訂正 (X)';
-          showToastWithUndo(`⏳ 正在為 ${seatStr}號 ${actionLabel}...`, null);
-          try {
-            const res = await apiCallCorrection('updateCorrectionMatrixCell', {
-              colIndex: colIndex,
-              seat: seatStr,
-              status: nextStatus
+          audioSuccess.play().catch(() => {});
+          if (nextStatus === 'O') {
+            showToastWithUndo("🟦 已完成 ".concat(seatStr, "號 錯題銷案 (標為已訂正 O)"), {
+              type: 'clear', seat: seatStr, colIndex: colIndex, prevStatus: 'X'
             });
-            if (res.success) {
-              audioSuccess.play().catch(() => {});
-              if (nextStatus === 'O') {
-                showToastWithUndo(`🟦 已完成 ${seatStr}號 錯題銷案 (標為已訂正 O)`, {
-                  type: 'clear', seat: seatStr, colIndex: colIndex, prevStatus: 'X'
-                });
-              } else {
-                showToastWithUndo(`🟧 已將 ${seatStr}號 改回需訂正 (X)`, {
-                  type: 'reopen', seat: seatStr, colIndex: colIndex, prevStatus: 'O'
-                });
-              }
-              fetchCorrectionMatrixData();
-            } else {
-              showToastWithUndo(`❌ 更新失敗：${res.message}`, null);
-            }
-          } catch (err) {
-            showToastWithUndo(`❌ 請求異常：${err.message}`, null);
+          } else {
+            showToastWithUndo("🟧 已將 ".concat(seatStr, "號 改回需訂正 (X)"), {
+              type: 'reopen', seat: seatStr, colIndex: colIndex, prevStatus: 'O'
+            });
           }
-        };
-        grid.appendChild(btn);
-      }
-    }
-
-    // Tab 3 Matrix Table Render
-    function renderMatrixTable() {
-      const tbody = document.getElementById('matrix-table-body');
-      const subjectFilter = document.getElementById('matrix-filter-subject').value;
-      const showResolved = document.getElementById('matrix-show-resolved').checked;
-
-      tbody.innerHTML = '';
-
-      let filtered = matrixData.records || [];
-
-      // 1. 預設隱藏已銷案 (O) 的紀錄，只保留需訂正 (X)
-      if (!showResolved) {
-        filtered = filtered.filter(r => r.status === 'X');
-      }
-
-      // 2. 科目篩選
-      if (subjectFilter !== '全部') {
-        filtered = filtered.filter(r => r.subject === subjectFilter);
-      }
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#64748b;">
-          ${showResolved ? '目前無符合條件的訂正紀錄' : '🎉 太棒了！目前無任何需訂正 (X) 的催繳項目'}
-        </td></tr>`;
-        return;
-      }
-
-      filtered.forEach(r => {
-        const tr = document.createElement('tr');
-        const isPending = r.status === 'X';
-        const stName = r.name || (matrixData.seatNames && matrixData.seatNames[r.seat]) || '';
-        const displayName = stName ? `${r.seat}${stName}` : `${r.seat}號`;
-        tr.innerHTML = `
-          <td><strong>${displayName}</strong></td>
-          <td>${r.subject}</td>
-          <td>${r.category}</td>
-          <td>${r.unit || '-'} ${r.page ? '(P.' + r.page + ')' : ''}</td>
-          <td><span class="${isPending ? 'status-badge-x' : 'status-badge-o'}">${r.status}</span></td>
-          <td style="text-align:center;">
-            ${isPending ? `<button class="btn-action-correct" onclick="executeModalClear('${r.colIndex}', '${r.seat}')">銷案</button>` : '<span style="color:#38bdf8; font-weight:700;">已銷案</span>'}
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
-
-    // Camera Scanner
-    let correctionCameras = [];
-    let correctionCameraIndex = 0;
-
-    function initCameraScanner() {
-      startCorrectionCamera();
-    }
-
-    async function startCorrectionCamera() {
-      // 停止現有相機
-      if (html5QrcodeScanner) {
-        try { await html5QrcodeScanner.stop(); } catch(e) {}
-        html5QrcodeScanner = null;
-      }
-
-      document.getElementById('scan-toast').textContent = "⏳ 正在啟動相機...";
-      const config = { fps: 10, qrbox: { width: 160, height: 160 } };
-
-      try {
-        // 枚舉所有相機（最可靠方式，避免 facingMode 約束黑屏）
-        if (correctionCameras.length === 0) {
-          correctionCameras = await Html5Qrcode.getCameras();
-        }
-
-        if (!correctionCameras || correctionCameras.length === 0) {
-          document.getElementById('scan-toast').textContent = "❌ 找不到任何相機";
-          return;
-        }
-
-        // 找後置鏡頭，找不到就用最後一個（通常是後置）
-        const rearIdx = correctionCameras.findIndex(c =>
-          /back|rear|environment|後|後置/i.test(c.label)
-        );
-        correctionCameraIndex = rearIdx >= 0 ? rearIdx : correctionCameras.length - 1;
-
-        const cameraId = correctionCameras[correctionCameraIndex].id;
-        html5QrcodeScanner = new Html5Qrcode("reader");
-
-        await html5QrcodeScanner.start(cameraId, config, onScanSuccess);
-        document.getElementById('scan-toast').textContent = "🟢 相機就緒！請將作業本 QR Code 置於鏡頭中央...";
-
-      } catch (err) {
-        document.getElementById('scan-toast').textContent = `❌ 相機啟動失敗: ${err}`;
-      }
-    }
-
-    async function onScanSuccess(decodedText) {
-      if (isProcessingScan) return;
-      isProcessingScan = true;
-
-      let seatNo = -1;
-      let rawSubject = '';
-      let rawCategory = '';
-
-      const parts = String(decodedText).trim().split('|');
-      if (parts[0] === 'CMS' && parts.length >= 2) {
-        seatNo = parseInt(parts[1], 10);
-        if (parts[2]) rawSubject = parts[2].trim();
-        if (parts[3]) rawCategory = parts[3].trim();
-      } else if (!isNaN(parseInt(parts[0], 10))) {
-        seatNo = parseInt(parts[0], 10);
-        if (parts[1]) rawSubject = parts[1].trim();
-        if (parts[2]) rawCategory = parts[2].trim();
-      }
-
-      if (isNaN(seatNo) || seatNo < 1 || seatNo > 30) {
-        setTimeout(() => { isProcessingScan = false; }, 2000);
-        return;
-      }
-
-      const seatStr = String(seatNo).padStart(2, '0');
-
-      if (currentMainView !== 'register') {
-        openModalForSeat(seatStr);
-        setTimeout(() => { isProcessingScan = false; }, 2200);
-        return;
-      }
-
-      const curSub = document.getElementById('reg-subject').value;
-      const curCat = document.getElementById('reg-category').value;
-      const hasQrSub = !!rawSubject;
-      const hasQrCat = !!rawCategory;
-
-      const sub = hasQrSub ? rawSubject : curSub;
-      const cat = hasQrCat ? rawCategory : curCat;
-
-      const isMatching = (curSub === sub && curCat === cat && hasUserSelectedSubjectCategory);
-
-      if (hasQrSub && (document.getElementById('reg-subject').value !== sub || document.getElementById('reg-category').value !== cat)) {
-        document.getElementById('reg-subject').value = sub;
-        onSubjectChange();
-        document.getElementById('reg-category').value = cat;
-        hasUserSelectedSubjectCategory = true;
-      }
-
-      if (isMatching) {
-        registerErrorForSeat(seatStr);
-        setTimeout(() => { isProcessingScan = false; }, 2200);
-      } else {
-        const checkinList = getCheckinListForCurrentSubjectCategory();
-        if (checkinList.length > 1) {
-          pendingScanSeat = seatStr;
-          openOtherPageModal(true);
-        } else if (checkinList.length === 1) {
-          currentSelectedUnit = String(checkinList[0].unit || '').trim();
-          currentSelectedPage = String(checkinList[0].page || '').trim();
-          currentSelectedDate = String(checkinList[0].date || '').trim();
-          await ensureMatrixColumn(sub, cat, currentSelectedUnit, currentSelectedPage, currentSelectedDate);
-          updateCurrentMetaText();
-          registerErrorForSeat(seatStr);
-          setTimeout(() => { isProcessingScan = false; }, 2200);
+          fetchCorrectionMatrixData();
         } else {
-          registerErrorForSeat(seatStr);
-          setTimeout(() => { isProcessingScan = false; }, 2200);
+          showToastWithUndo("❌ 更新失敗：".concat(res.message), null);
         }
+      } catch (err) {
+        showToastWithUndo("❌ 請求異常：".concat(err.message), null);
       }
+    };
+    grid.appendChild(btn);
+  }
+}
+
+// Tab 3 Matrix Table Render
+function renderMatrixTable() {
+  const tbody = document.getElementById('matrix-table-body');
+  const subjectFilter = document.getElementById('matrix-filter-subject').value;
+  const showResolved = document.getElementById('matrix-show-resolved').checked;
+
+  tbody.innerHTML = '';
+
+  let filtered = matrixData.records || [];
+
+  // 1. 預設隱藏已銷案 (O) 的紀錄，只保留需訂正 (X)
+  if (!showResolved) {
+    filtered = filtered.filter((r) => r.status === 'X');
+  }
+
+  // 2. 科目篩選
+  if (subjectFilter !== '全部') {
+    filtered = filtered.filter((r) => r.subject === subjectFilter);
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = "<tr><td colspan=\"6\" style=\"text-align:center; padding:20px; color:#64748b;\">\n          ".concat(
+      showResolved ? '目前無符合條件的訂正紀錄' : '🎉 太棒了！目前無任何需訂正 (X) 的催繳項目', "\n        </td></tr>");
+
+    return;
+  }
+
+  filtered.forEach((r) => {
+    const tr = document.createElement('tr');
+    const isPending = r.status === 'X';
+    const stName = r.name || matrixData.seatNames && matrixData.seatNames[r.seat] || '';
+    const displayName = stName ? "".concat(r.seat).concat(stName) : "".concat(r.seat, "號");
+    tr.innerHTML = "\n          <td><strong>".concat(
+      displayName, "</strong></td>\n          <td>").concat(
+      r.subject, "</td>\n          <td>").concat(
+      r.category, "</td>\n          <td>").concat(
+      r.unit || '-', " ").concat(r.page ? '(P.' + r.page + ')' : '', "</td>\n          <td><span class=\"").concat(
+      isPending ? 'status-badge-x' : 'status-badge-o', "\">").concat(r.status, "</span></td>\n          <td style=\"text-align:center;\">\n            ").concat(
+
+      isPending ? "<button class=\"btn-action-correct\" onclick=\"executeModalClear('".concat(r.colIndex, "', '").concat(r.seat, "')\">銷案</button>") : '<span style="color:#38bdf8; font-weight:700;">已銷案</span>', "\n          </td>\n        ");
+
+
+    tbody.appendChild(tr);
+  });
+}
+
+// Camera Scanner
+let correctionCameras = [];
+let correctionCameraIndex = 0;
+
+function initCameraScanner() {
+  startCorrectionCamera();
+}
+
+async function startCorrectionCamera() {
+  // 停止現有相機
+  if (html5QrcodeScanner) {
+    try {await html5QrcodeScanner.stop();} catch (e) {}
+    html5QrcodeScanner = null;
+  }
+
+  document.getElementById('scan-toast').textContent = "⏳ 正在啟動相機...";
+  const config = { fps: 10, qrbox: { width: 160, height: 160 } };
+
+  try {
+    // 枚舉所有相機（最可靠方式，避免 facingMode 約束黑屏）
+    if (correctionCameras.length === 0) {
+      correctionCameras = await Html5Qrcode.getCameras();
     }
-  </script>
+
+    if (!correctionCameras || correctionCameras.length === 0) {
+      document.getElementById('scan-toast').textContent = "❌ 找不到任何相機";
+      return;
+    }
+
+    // 找後置鏡頭，找不到就用最後一個（通常是後置）
+    const rearIdx = correctionCameras.findIndex((c) =>
+    /back|rear|environment|後|後置/i.test(c.label)
+    );
+    correctionCameraIndex = rearIdx >= 0 ? rearIdx : correctionCameras.length - 1;
+
+    const cameraId = correctionCameras[correctionCameraIndex].id;
+    html5QrcodeScanner = new Html5Qrcode("reader");
+
+    await html5QrcodeScanner.start(cameraId, config, onScanSuccess);
+    document.getElementById('scan-toast').textContent = "🟢 相機就緒！請將作業本 QR Code 置於鏡頭中央...";
+
+  } catch (err) {
+    document.getElementById('scan-toast').textContent = "❌ 相機啟動失敗: ".concat(err);
+  }
+}
+
+async function onScanSuccess(decodedText) {
+  if (isProcessingScan) return;
+  isProcessingScan = true;
+
+  let seatNo = -1;
+  let rawSubject = '';
+  let rawCategory = '';
+
+  const parts = String(decodedText).trim().split('|');
+  if (parts[0] === 'CMS' && parts.length >= 2) {
+    seatNo = parseInt(parts[1], 10);
+    if (parts[2]) rawSubject = parts[2].trim();
+    if (parts[3]) rawCategory = parts[3].trim();
+  } else if (!isNaN(parseInt(parts[0], 10))) {
+    seatNo = parseInt(parts[0], 10);
+    if (parts[1]) rawSubject = parts[1].trim();
+    if (parts[2]) rawCategory = parts[2].trim();
+  }
+
+  if (isNaN(seatNo) || seatNo < 1 || seatNo > 30) {
+    setTimeout(() => {isProcessingScan = false;}, 2000);
+    return;
+  }
+
+  const seatStr = String(seatNo).padStart(2, '0');
+
+  if (currentMainView !== 'register') {
+    openModalForSeat(seatStr);
+    setTimeout(() => {isProcessingScan = false;}, 2200);
+    return;
+  }
+
+  const curSub = document.getElementById('reg-subject').value;
+  const curCat = document.getElementById('reg-category').value;
+  const hasQrSub = !!rawSubject;
+  const hasQrCat = !!rawCategory;
+
+  const sub = hasQrSub ? rawSubject : curSub;
+  const cat = hasQrCat ? rawCategory : curCat;
+
+  const isMatching = curSub === sub && curCat === cat && hasUserSelectedSubjectCategory;
+
+  if (hasQrSub && (document.getElementById('reg-subject').value !== sub || document.getElementById('reg-category').value !== cat)) {
+    document.getElementById('reg-subject').value = sub;
+    onSubjectChange();
+    document.getElementById('reg-category').value = cat;
+    hasUserSelectedSubjectCategory = true;
+  }
+
+  if (isMatching) {
+    registerErrorForSeat(seatStr);
+    setTimeout(() => {isProcessingScan = false;}, 2200);
+  } else {
+    const checkinList = getCheckinListForCurrentSubjectCategory();
+    if (checkinList.length > 1) {
+      pendingScanSeat = seatStr;
+      openOtherPageModal(true);
+    } else if (checkinList.length === 1) {
+      currentSelectedUnit = String(checkinList[0].unit || '').trim();
+      currentSelectedPage = String(checkinList[0].page || '').trim();
+      currentSelectedDate = String(checkinList[0].date || '').trim();
+      await ensureMatrixColumn(sub, cat, currentSelectedUnit, currentSelectedPage, currentSelectedDate);
+      updateCurrentMetaText();
+      registerErrorForSeat(seatStr);
+      setTimeout(() => {isProcessingScan = false;}, 2200);
+    } else {
+      registerErrorForSeat(seatStr);
+      setTimeout(() => {isProcessingScan = false;}, 2200);
+    }
+  }
+}
+</script>
 </body>
 </html>

@@ -1,0 +1,8 @@
+{
+  "devDependencies": {
+    "@babel/core": "^8.0.7",
+    "@babel/plugin-transform-optional-chaining": "^8.0.5",
+    "@babel/plugin-transform-template-literals": "^8.0.1",
+    "esbuild": "^0.28.2"
+  }
+}
