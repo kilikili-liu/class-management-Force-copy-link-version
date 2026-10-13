@@ -24,14 +24,19 @@
 
     window.addEventListener('error', function(e) {
       console.error('Global Error caught:', e);
+      var rawMsg = (e && e.message) ? e.message : (e && e.error ? (e.error.message || e.error) : String(e));
+      if (typeof rawMsg === 'string' && rawMsg.indexOf('gas_cb_') !== -1) {
+        console.warn('[Ignored late JSONP callback error]', rawMsg);
+        return;
+      }
       var b = document.getElementById('debug-err-bar');
       if (!b) {
         b = document.createElement('div');
         b.id = 'debug-err-bar';
-        b.style.cssText = 'position:fixed; bottom:0; left:0; width:100%; background:#b91c1c; color:#fff; font-size:12px; z-index:99999999; padding:8px 12px; word-break:break-all; box-shadow:0 -2px 10px rgba(0,0,0,0.5);';
+        b.style.cssText = 'position:fixed; bottom:0; left:0; width:100%; background:#b91c1c; color:#fff; font-size:12px; z-index:99999999; padding:8px 12px; word-break:break-all; box-shadow:0 -2px 10px rgba(0,0,0,0.5); display:flex; justify-content:space-between; align-items:center;';
         (document.body) ? document.body.appendChild(b) : window.addEventListener('DOMContentLoaded', function(){ document.body.appendChild(b); });
       }
-      b.innerHTML += '<div>⚠️ 系統錯誤: ' + (e.message || e.error || e) + ' (行號: ' + e.lineno + ')</div>';
+      b.innerHTML = '<span>⚠️ 系統錯誤: ' + (e.message || e.error || e) + ' (行號: ' + e.lineno + ')</span><button onclick="this.parentNode.remove()" style="background:none;border:none;color:#fff;font-size:16px;cursor:pointer;padding:0 8px;">✕</button>';
     });
   </script>
   <style>
@@ -1378,7 +1383,12 @@
         }, timeoutMs);
 
         function cleanup() {
-          try { delete window[callbackName]; } catch(e){}
+          try {
+            window[callbackName] = function() {};
+          } catch(e) {}
+          setTimeout(function() {
+            try { delete window[callbackName]; } catch(e) {}
+          }, 60000);
           if (scriptTag && scriptTag.parentNode) scriptTag.parentNode.removeChild(scriptTag);
         }
 
@@ -1405,14 +1415,14 @@
       });
     }
 
-    async function gasApiFetch(url, retries = 2, timeoutMs = 18000) {
+    async function gasApiFetch(url, retries = 2, timeoutMs = 25000) {
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
           return await singleGasApiFetch(url, timeoutMs);
         } catch (err) {
           console.warn('[GAS API] 第 ' + (attempt + 1) + ' 次連線失敗: ' + (err ? err.message : ''));
           if (attempt < retries) {
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, 1200));
           } else {
             throw err;
           }

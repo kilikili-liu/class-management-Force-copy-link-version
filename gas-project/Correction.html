@@ -1301,16 +1301,16 @@ async function apiCallCorrection(action, params = {}) {
   }
 }
 
-// 增強版超穩定 GAS API 呼叫器（支援 fetch 優先、JSONP 備援、自動重試、與 18 秒冷啟動逾時）
-async function gasApiFetch(url, retries = 2, timeoutMs = 18000) {
+// 增強版超穩定 GAS API 呼叫器（支援純 JSONP、自動重試、與 25 秒冷啟動逾時）
+async function gasApiFetch(url, retries = 2, timeoutMs = 25000) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       return await singleGasApiFetch(url, timeoutMs);
     } catch (err) {
       console.warn('[GAS API] 第 ' + (attempt + 1) + ' 次連線失敗: ' + (err ? err.message : ''));
       if (attempt < retries) {
-        // 重試前等待 1 秒（喚醒 GAS 冷啟動容器）
-        await new Promise((r) => setTimeout(r, 1000));
+        // 重試前等待 1.2 秒（喚醒 GAS 冷啟動容器）
+        await new Promise((r) => setTimeout(r, 1200));
       } else {
         throw err;
       }
@@ -1334,7 +1334,12 @@ function singleGasApiFetch(url, timeoutMs = 25000) {
     }, timeoutMs);
 
     function cleanup() {
-      try { delete window[callbackName]; } catch (e) {}
+      try {
+        window[callbackName] = function () {};
+      } catch (e) {}
+      setTimeout(function () {
+        try { delete window[callbackName]; } catch (e) {}
+      }, 60000);
       if (scriptTag && scriptTag.parentNode) scriptTag.parentNode.removeChild(scriptTag);
     }
 

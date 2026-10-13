@@ -15,6 +15,11 @@
 
     window.addEventListener('error', function(e) {
       console.error('Grading Error:', e);
+      var rawMsg = (e && e.message) ? e.message : (e && e.error ? (e.error.message || e.error) : String(e));
+      if (typeof rawMsg === 'string' && rawMsg.indexOf('gas_cb_') !== -1) {
+        console.warn('[Ignored late JSONP callback error]', rawMsg);
+        return;
+      }
       var b = document.getElementById('debug-err-bar');
       if (!b) {
         b = document.createElement('div');
@@ -1436,7 +1441,12 @@
         }, timeoutMs);
 
         function cleanup() {
-          try { delete window[callbackName]; } catch(e){}
+          try {
+            window[callbackName] = function() {};
+          } catch(e){}
+          setTimeout(function() {
+            try { delete window[callbackName]; } catch(e){}
+          }, 60000);
           if (scriptTag && scriptTag.parentNode) scriptTag.parentNode.removeChild(scriptTag);
         }
 
