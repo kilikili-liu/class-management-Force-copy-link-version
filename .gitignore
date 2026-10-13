@@ -13,3 +13,5 @@ gas-project/local_config.js
 Thumbs.db
 *.log
 node_modules/
+.env
+.env.*
