@@ -322,6 +322,7 @@
 
     .assign-select {
       flex: 1;
+      min-width: 0;
       background: #0f172a;
       color: #fff;
       border: 1px solid #475569;
@@ -331,7 +332,24 @@
       font-weight: 600;
       outline: none;
     }
-    .assign-summary { font-size: 0.8rem; font-weight: 700; color: var(--accent-green); white-space: nowrap; }
+    .btn-meta-unit {
+      background: #1e293b;
+      color: var(--accent-blue);
+      border: 1px solid var(--accent-blue);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+    .btn-meta-unit:active, .btn-meta-unit:hover {
+      background: var(--accent-blue);
+      color: #0f172a;
+    }
+    .assign-summary { font-size: 0.82rem; font-weight: 700; color: var(--accent-green); white-space: nowrap; }
 
     .toast-banner {
       background: rgba(15, 23, 42, 0.9);
@@ -352,7 +370,25 @@
     .toast-banner.duplicate { border-color: var(--accent-orange); color: var(--accent-orange); background: rgba(249, 115, 22, 0.15); }
     .toast-banner.error { border-color: var(--accent-red); color: var(--accent-red); background: rgba(239, 68, 68, 0.15); }
 
-    .matrix-title { font-size: 0.78rem; color: var(--text-sub); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+    .matrix-title {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .matrix-title-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-text {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
     
     .seat-grid-scroll-box {
       flex: 1;
@@ -489,7 +525,6 @@
       <a href="correction.html" id="link-correction" class="header-nav-btn nav-btn-cor" title="錯題訂正">訂正</a>
       <a href="grading.html" id="link-grading" class="header-nav-btn nav-btn-grade" title="作業批改">批改</a>
       <button class="header-nav-btn nav-btn-pair" onclick="promptManualGasUrl()" title="連線設定">連線</button>
-      <button class="header-nav-btn nav-btn-pair" onclick="openMetaModal()" title="細節設定">細節</button>
     </div>
   </header>
 
@@ -509,7 +544,7 @@
           <select id="assign-select" class="assign-select" onchange="onAssignmentChanged()">
             <option value="">(無今日作業，掃碼將自動新增)</option>
           </select>
-          <div id="assign-summary" class="assign-summary">已交: 0/-- 人</div>
+          <button type="button" class="btn-meta-unit" onclick="openMetaModal()" title="編輯單元與頁數備註">單元...</button>
         </div>
 
         <div id="toast-banner" class="toast-banner">
@@ -517,8 +552,11 @@
         </div>
 
         <div class="matrix-title">
-          <span>全班 30 人收繳燈號 (🟢已交 / 🔴未交)</span>
-          <span id="assign-subnote" style="color:var(--accent-blue);"></span>
+          <div class="matrix-title-left">
+            <span id="assign-summary" class="assign-summary">已交: 0/-- 人</span>
+            <span class="legend-text">(🟢已交 / 🔴未交)</span>
+          </div>
+          <span id="assign-subnote" style="color:var(--accent-blue); font-weight:600;"></span>
         </div>
 
         <div class="seat-grid-scroll-box">
