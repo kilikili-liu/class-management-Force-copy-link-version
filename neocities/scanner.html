@@ -28,26 +28,52 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
 
     #rotate-hint {
-      display: none;
-      position: fixed; inset: 0; z-index: 9999;
-      background: #0f172a;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      font-size: 1.2rem;
-      color: #38bdf8;
-      font-weight: 700;
-      text-align: center;
-      padding: 24px;
+      display: none !important;
     }
-    #rotate-hint .hint-icon { font-size: 3rem; animation: spin90 1.2s ease-in-out infinite alternate; }
-    @keyframes spin90 {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(90deg); }
-    }
+
+    /* 📱 直向模式 (Portrait) 自適應：相機在上、燈號在下，永不被黑屏阻擋 */
     @media (orientation: portrait) {
-      #rotate-hint { display: flex; }
+      .app-container {
+        flex-direction: column !important;
+      }
+      .camera-panel {
+        flex: none !important;
+        height: 38dvh !important;
+        width: 100% !important;
+      }
+      .viewfinder-box {
+        width: min(200px, 60vw, 28vh) !important;
+        height: min(200px, 60vw, 28vh) !important;
+      }
+      .viewfinder-tip {
+        margin-top: 6px !important;
+        padding: 3px 10px !important;
+        font-size: 0.72rem !important;
+      }
+      .info-panel {
+        flex: 1 !important;
+        width: 100% !important;
+        border-left: none !important;
+        border-top: 1px solid #334155 !important;
+        padding: 6px 8px !important;
+      }
+      .header-controls {
+        gap: 4px !important;
+      }
+      .header-nav-btn {
+        padding: 0 7px !important;
+        font-size: 0.78rem !important;
+      }
+      .header-title {
+        font-size: 0.88rem !important;
+      }
+      .seat-grid {
+        gap: 5px !important;
+      }
+      .seat-pill {
+        padding: 6px 2px !important;
+        font-size: 0.82rem !important;
+      }
     }
 
     body {

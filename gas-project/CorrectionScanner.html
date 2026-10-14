@@ -29,27 +29,65 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
 
-    /* 橫向旋轉提示 Overlay */
     #rotate-hint {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.98);
-      z-index: 9999;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      color: #f8fafc;
-      text-align: center;
-      padding: 20px;
+      display: none !important;
     }
-    #rotate-hint .hint-icon { font-size: 3.5rem; animation: spin90 1.2s ease-in-out infinite alternate; }
-    @keyframes spin90 {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(90deg); }
-    }
+
+    /* 📱 直向模式 (Portrait) 自適應：相機在上、燈號在下，永不被黑屏阻擋 */
     @media (orientation: portrait) {
-      #rotate-hint { display: flex; }
+      .app-body {
+        flex-direction: column !important;
+      }
+      .left-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        height: 38dvh !important;
+        border-right: none !important;
+        border-bottom: 1px solid #334155 !important;
+        padding: 6px 8px !important;
+      }
+      .viewfinder-box {
+        width: min(200px, 60vw, 28vh) !important;
+        height: min(200px, 60vw, 28vh) !important;
+      }
+      .viewfinder-tip {
+        margin-top: 6px !important;
+        padding: 3px 10px !important;
+        font-size: 0.72rem !important;
+      }
+      .right-panel {
+        flex: 1 !important;
+        width: 100% !important;
+        padding: 6px 10px !important;
+        overflow-y: auto !important;
+      }
+      .header-title-box {
+        gap: 6px !important;
+      }
+      .header-title {
+        font-size: 0.88rem !important;
+      }
+      .header-mode-btn {
+        height: 28px !important;
+        padding: 0 8px !important;
+        font-size: 0.78rem !important;
+      }
+      .header-nav-box {
+        gap: 4px !important;
+      }
+      .header-nav-btn {
+        padding: 0 7px !important;
+        font-size: 0.78rem !important;
+      }
+      .seat-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 5px !important;
+      }
+      .seat-pill {
+        padding: 6px 2px !important;
+        font-size: 0.82rem !important;
+      }
     }
 
     body {
