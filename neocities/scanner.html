@@ -570,12 +570,12 @@
     <div class="modal-box">
       <div class="modal-title">⚙️ 編輯作業細部說明</div>
       <div class="form-group">
-        <label class="form-label">單元</label>
-        <input type="text" id="modal-unit" class="input-txt" placeholder="例：第一課 或 第1單元">
+        <label class="form-label">單元／課次</label>
+        <input type="text" id="modal-unit" class="input-txt" placeholder="例：2 (輸入數字自動轉第2課/單元)">
       </div>
       <div class="form-group">
-        <label class="form-label">頁數 / 備註</label>
-        <input type="text" id="modal-note" class="input-txt" placeholder="例：P.10~15 或 帶簽名">
+        <label class="form-label">頁數／備註</label>
+        <input type="text" id="modal-note" class="input-txt" placeholder="例：15-19 或 單元卷/標題">
       </div>
       <div class="modal-actions">
         <button class="btn-cancel" onclick="closeMetaModal()">取消</button>
@@ -1177,6 +1177,25 @@ async function fetchTodayData() {
   }
 }
 
+function formatUnitDisplay(subject, unit) {
+  if (!unit) return '';
+  const u = String(unit).trim();
+  if (!u) return '';
+  if (/^\d+$/.test(u)) {
+    return (subject === '國語') ? ('第' + u + '課') : ('第' + u + '單元');
+  }
+  return u;
+}
+
+function formatPageOrNoteDisplay(pageOrNote) {
+  if (!pageOrNote) return '';
+  const p = String(pageOrNote).trim();
+  if (!p) return '';
+  if (/^p\.?/i.test(p) || p.includes('頁')) return p;
+  if (/^[\d\s\-~～,，、]+$/.test(p) && /\d/.test(p)) return 'p.' + p;
+  return p;
+}
+
 function renderAssignDropdown() {
   const select = document.getElementById('assign-select');
   select.innerHTML = '';
@@ -1194,7 +1213,9 @@ function renderAssignDropdown() {
     const key = a.key || "".concat(a.subject, "_").concat(a.category);
     const opt = document.createElement('option');
     opt.value = key;
-    opt.textContent = "".concat(a.subject, " - ").concat(a.category, " (").concat(a.unit || '全班', ")");
+    const uStr = formatUnitDisplay(a.subject, a.unit);
+    const detail = uStr || '全班';
+    opt.textContent = "".concat(a.subject, " - ").concat(a.category, " (").concat(detail, ")");
     select.appendChild(opt);
   });
 
@@ -1255,7 +1276,9 @@ function renderSeatGrid() {
 
   const currAssignObj = (scanDataCache.assignments || []).find((a) => (a.key || "".concat(a.subject, "_").concat(a.category)) === currentAssignKey);
   if (currAssignObj) {
-    const detailStr = [currAssignObj.unit, currAssignObj.note].filter(Boolean).join(' | ');
+    const uStr = formatUnitDisplay(currAssignObj.subject, currAssignObj.unit);
+    const pStr = formatPageOrNoteDisplay(currAssignObj.note);
+    const detailStr = [uStr, pStr].filter(Boolean).join(' ｜ ');
     document.getElementById('assign-subnote').textContent = detailStr ? "📌 ".concat(detailStr) : '';
   } else {
     document.getElementById('assign-subnote').textContent = '';

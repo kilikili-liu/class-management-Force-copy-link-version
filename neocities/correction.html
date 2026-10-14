@@ -795,8 +795,8 @@ var safeStorage = window.safeStorage;
         <div id="custom-unit-box" style="display:none; flex-direction:column; gap:6px; background:#0f172a; padding:8px 10px; border-radius:8px; border:1px solid #334155; margin-top:4px;">
           <div style="font-size:0.75rem; color:#38bdf8; font-weight:700;">➕ 自訂新單元/頁數：</div>
           <div style="display:flex; gap:8px;">
-            <input type="text" id="custom-unit-input" class="form-control" placeholder="單元 (例如: 2)" style="flex:1; font-size:0.8rem; padding:5px 8px;">
-            <input type="text" id="custom-page-input" class="form-control" placeholder="頁數/備註 (例如: 15)" style="flex:1; font-size:0.8rem; padding:5px 8px;">
+            <input type="text" id="custom-unit-input" class="form-control" placeholder="例: 2 或 總複習" style="flex:1; font-size:0.8rem; padding:5px 8px;">
+            <input type="text" id="custom-page-input" class="form-control" placeholder="例: 15-19 或 單元卷/標題" style="flex:1; font-size:0.8rem; padding:5px 8px;">
           </div>
         </div>
       </div>
@@ -839,16 +839,16 @@ var safeStorage = window.safeStorage;
   <div id="meta-modal" class="prompt-modal-overlay hidden">
     <div class="prompt-modal-card" style="max-width:420px; text-align:left;">
       <div style="font-weight:700; font-size:1.1rem; color:#38bdf8; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;">
-        <span>📌 編輯作業單元與頁碼說明</span>
+        <span>📌 編輯作業單元與頁數備註</span>
         <button onclick="closeMetaModal()" style="background:none; border:none; color:#94a3b8; font-size:1.4rem; cursor:pointer;">&times;</button>
       </div>
       <div style="margin-bottom:12px;">
-        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px; font-weight:600;">📌 單元說明 (例如：L3 或 第三單元)：</label>
-        <input type="text" id="modal-unit" class="form-control" placeholder="例: L3" style="width:100%;">
+        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px; font-weight:600;">單元／課次：</label>
+        <input type="text" id="modal-unit" class="form-control" placeholder="例：2 (輸入數字自動轉第2課/單元)" style="width:100%;">
       </div>
       <div style="margin-bottom:16px;">
-        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px; font-weight:600;">📄 頁碼與備註 (例如：P.15~16)：</label>
-        <input type="text" id="modal-page" class="form-control" placeholder="例: P.15" style="width:100%;">
+        <label style="font-size:0.82rem; color:#94a3b8; display:block; margin-bottom:4px; font-weight:600;">頁數／備註：</label>
+        <input type="text" id="modal-page" class="form-control" placeholder="例：15-19 或 單元卷/標題" style="width:100%;">
       </div>
       <div style="display:flex; justify-content:flex-end; gap:8px;">
         <button onclick="closeMetaModal()" style="background:#334155; color:#cbd5e1; border:none; padding:8px 14px; border-radius:6px; font-weight:700; cursor:pointer;">取消</button>
@@ -1661,6 +1661,25 @@ function getCurrentTargetAssign(subject, category) {
   return sameSubCat.length > 0 ? sameSubCat[sameSubCat.length - 1] : null;
 }
 
+function formatUnitDisplay(subject, unit) {
+  if (!unit) return '';
+  const u = String(unit).trim();
+  if (!u) return '';
+  if (/^\d+$/.test(u)) {
+    return (subject === '國語') ? ('第' + u + '課') : ('第' + u + '單元');
+  }
+  return u;
+}
+
+function formatPageOrNoteDisplay(pageOrNote) {
+  if (!pageOrNote) return '';
+  const p = String(pageOrNote).trim();
+  if (!p) return '';
+  if (/^p\.?/i.test(p) || p.includes('頁')) return p;
+  if (/^[\d\s\-~～,，、]+$/.test(p) && /\d/.test(p)) return 'p.' + p;
+  return p;
+}
+
 // Helper: 更新目前選定作業的「單元/頁數」顯示文字
 function updateCurrentMetaText() {
   const metaTextEl = document.getElementById('current-meta-text');
@@ -1691,11 +1710,13 @@ function updateCurrentMetaText() {
   let displayDate = currentSelectedDate || (existingAssign ? existingAssign.date : '');
 
   const dateBadge = displayDate ? "[".concat(displayDate, "] ") : '';
-  const unitStr = displayUnit ? "單元: ".concat(displayUnit) : '無單元';
-  const pageStr = displayPage ? " (頁數: ".concat(displayPage, ")") : '';
+  const uStr = formatUnitDisplay(subject, displayUnit);
+  const pStr = formatPageOrNoteDisplay(displayPage);
+  const unitStr = uStr ? "單元: ".concat(uStr) : '';
+  const pageStr = pStr ? " ｜ 頁數: ".concat(pStr) : '';
 
-  if (displayUnit || displayPage) {
-    metaTextEl.innerHTML = "".concat(dateBadge).concat(unitStr).concat(pageStr);
+  if (uStr || pStr) {
+    metaTextEl.innerHTML = "".concat(dateBadge).concat(unitStr).concat(pageStr).trim();
   } else if (existingAssign) {
     metaTextEl.innerHTML = "".concat(dateBadge, "未命名單元");
   } else {
@@ -1795,17 +1816,13 @@ async function openOtherPageModal(isAutoPrompt = false) {
 
       const card = document.createElement('label');
       card.style.cssText = "display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:".concat(isCurrent ? '#172554' : '#0f172a', "; border:1px solid ").concat(isCurrent ? '#38bdf8' : '#334155', "; border-radius:8px; cursor:pointer; gap:8px; transition:all 0.15s;");
+      const uStr = formatUnitDisplay(item.subject || subject, item.unit);
+      const pStr = formatPageOrNoteDisplay(item.page);
       card.innerHTML = "\n            <div style=\"display:flex; align-items:center; gap:10px; min-width:0;\">\n              <input type=\"radio\" name=\"other_page_opt\" value=\"".concat(
-
         idx, "\" ").concat(isCurrent ? 'checked' : '', " style=\"accent-color:#38bdf8; transform:scale(1.15);\">\n              <div style=\"display:flex; flex-direction:column; gap:2px; min-width:0;\">\n                <div style=\"font-size:0.85rem; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:6px;\">\n                  <span style=\"color:#38bdf8; font-size:0.75rem;\">[").concat(
-
-
         item.date, "]</span>\n                  <span>").concat(
-        item.unit || '無單元', "</span>\n                  <span style=\"color:#94a3b8; font-size:0.78rem;\">").concat(
-        item.page ? '(' + item.page + ')' : '', "</span>\n                </div>\n              </div>\n            </div>\n            <div>").concat(
-
-
-
+        uStr || '無單元', "</span>\n                  <span style=\"color:#94a3b8; font-size:0.78rem;\">").concat(
+        pStr ? '(' + pStr + ')' : '', "</span>\n                </div>\n              </div>\n            </div>\n            <div>").concat(
         statusBadge, "</div>\n          ");
 
       card.onclick = () => {
@@ -2445,21 +2462,15 @@ function showUncorrectedModal(seatStr, records, studentName = '') {
     records.forEach((rec) => {
       const itemCard = document.createElement('div');
       itemCard.className = 'modal-item-card';
+      const uStr = formatUnitDisplay(rec.subject, rec.unit);
+      const pStr = formatPageOrNoteDisplay(rec.page);
+      const detail = [uStr, pStr].filter(Boolean).join(' ｜ ');
       itemCard.innerHTML = "\n            <div class=\"modal-item-info\">\n              <div class=\"modal-item-main\">\n                <span>".concat(
-
-
         rec.subject, "</span>\n                <span style=\"color:#38bdf8;\">").concat(
         rec.category, "</span>\n                <span>").concat(
-        rec.unit ? '· ' + rec.unit : '', " ").concat(rec.page ? ' (P.' + rec.page + ')' : '', "</span>\n              </div>\n              <div class=\"modal-item-sub\">\n                登記日期：").concat(
-
-
+        detail ? '· ' + detail : '', "</span>\n              </div>\n              <div class=\"modal-item-sub\">\n                登記日期：").concat(
         rec.date, "\n              </div>\n            </div>\n            <button class=\"btn-modal-cancel-item\" onclick=\"executeModalClear('").concat(
-
-
         rec.colIndex, "', '").concat(seatStr, "')\">\n              銷案\n            </button>\n          ");
-
-
-
       listContainer.appendChild(itemCard);
     });
   }
@@ -2511,7 +2522,10 @@ function renderAssignmentDropdown() {
   matrixData.assignments.forEach((a) => {
     const opt = document.createElement('option');
     opt.value = a.colIndex;
-    opt.textContent = "".concat(a.subject, " - ").concat(a.category, " ").concat(a.unit || '', " (P.").concat(a.page || '', ") [").concat(a.date, "]");
+    const uStr = formatUnitDisplay(a.subject, a.unit);
+    const pStr = formatPageOrNoteDisplay(a.page);
+    const detail = [uStr, pStr].filter(Boolean).join(' ｜ ');
+    opt.textContent = "".concat(a.subject, " - ").concat(a.category).concat(detail ? ' ' + detail : '', " [").concat(a.date, "]");
     select.appendChild(opt);
   });
 
@@ -2612,16 +2626,16 @@ function renderMatrixTable() {
     const isPending = r.status === 'X';
     const stName = r.name || matrixData.seatNames && matrixData.seatNames[r.seat] || '';
     const displayName = stName ? "".concat(r.seat).concat(stName) : "".concat(r.seat, "號");
+    const uStr = formatUnitDisplay(r.subject, r.unit);
+    const pStr = formatPageOrNoteDisplay(r.page);
+    const detail = [uStr, pStr].filter(Boolean).join(' ｜ ');
     tr.innerHTML = "\n          <td><strong>".concat(
       displayName, "</strong></td>\n          <td>").concat(
       r.subject, "</td>\n          <td>").concat(
       r.category, "</td>\n          <td>").concat(
-      r.unit || '-', " ").concat(r.page ? '(P.' + r.page + ')' : '', "</td>\n          <td><span class=\"").concat(
+      detail || '-', "</td>\n          <td><span class=\"").concat(
       isPending ? 'status-badge-x' : 'status-badge-o', "\">").concat(r.status, "</span></td>\n          <td style=\"text-align:center;\">\n            ").concat(
-
       isPending ? "<button class=\"btn-action-correct\" onclick=\"executeModalClear('".concat(r.colIndex, "', '").concat(r.seat, "')\">銷案</button>") : '<span style="color:#38bdf8; font-weight:700;">已銷案</span>', "\n          </td>\n        ");
-
-
     tbody.appendChild(tr);
   });
 }

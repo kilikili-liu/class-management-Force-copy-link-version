@@ -943,12 +943,12 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="hw-unit">單元</label>
-          <input type="text" id="hw-unit" class="form-control" placeholder="例: L3" onchange="saveHomeworkMeta()">
+          <label for="hw-unit">單元／課次</label>
+          <input type="text" id="hw-unit" class="form-control" placeholder="例: 2 或 總複習" onchange="saveHomeworkMeta()">
         </div>
         <div class="form-group">
-          <label for="hw-note">備註</label>
-          <input type="text" id="hw-note" class="form-control" placeholder="備註說明" onchange="saveHomeworkMeta()">
+          <label for="hw-note">頁數／備註</label>
+          <input type="text" id="hw-note" class="form-control" placeholder="例: 15-19 或 單元卷/標題" onchange="saveHomeworkMeta()">
         </div>
       </div>
 
@@ -2032,6 +2032,26 @@
       }
     }
 
+    // ── 智慧格式化：單元／課次與頁數／備註 ──
+    function formatUnitDisplay(subject, unit) {
+      if (!unit) return '';
+      const u = String(unit).trim();
+      if (!u) return '';
+      if (/^\d+$/.test(u)) {
+        return (subject === '國語') ? ('第' + u + '課') : ('第' + u + '單元');
+      }
+      return u;
+    }
+
+    function formatPageOrNoteDisplay(pageOrNote) {
+      if (!pageOrNote) return '';
+      const p = String(pageOrNote).trim();
+      if (!p) return '';
+      if (/^p\.?/i.test(p) || p.includes('頁')) return p;
+      if (/^[\d\s\-~～,，、]+$/.test(p) && /\d/.test(p)) return 'p.' + p;
+      return p;
+    }
+
     let cachedReminderRes = null;
     let currentReminderSubject = '全部';
 
@@ -2087,11 +2107,13 @@
 
       filteredRecords.forEach((r, idx) => {
         const tr = document.createElement('tr');
-        const unitNote = r.assignment.unit ? (' (' + r.assignment.unit + ')') : '';
-        const hwMain = r.assignment.subject + ' ' + r.assignment.type + unitNote;
-        const hwPage = r.assignment.note
-          ? ('<span style="color:#94a3b8; font-size:0.8em; margin-left:6px;">p.' + r.assignment.note + '</span>')
+        const uStr = formatUnitDisplay(r.assignment.subject, r.assignment.unit);
+        const pStr = formatPageOrNoteDisplay(r.assignment.note);
+        const unitBadge = uStr ? (' [' + uStr + ']') : '';
+        const pageBadge = pStr
+          ? ('<span style="color:#94a3b8; font-size:0.85em; margin-left:6px;">' + pStr + '</span>')
           : '';
+        const hwMain = r.assignment.subject + ' ' + r.assignment.type + unitBadge;
 
         // 每列用 data 屬性儲存 rowIndex/colIndex 供送出時讀取
         tr.dataset.rowIndex = r.rowIndex;
@@ -2106,7 +2128,7 @@
           '</td>' +
           '<td><strong>' + String(r.seatNo).padStart(2, '0') + '</strong></td>' +
           '<td>' + r.name + '</td>' +
-          '<td style="color:#fca5a5; font-weight:600;">' + hwMain + hwPage + '</td>';
+          '<td style="color:#fca5a5; font-weight:600;">' + hwMain + pageBadge + '</td>';
 
         // 點擊整列也切換 checkbox（方便手機操作）
         tr.style.cursor = 'pointer';

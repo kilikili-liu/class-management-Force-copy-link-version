@@ -1238,11 +1238,11 @@
         <label style="font-size:0.85rem; color:#94a3b8;">收繳日期：</label>
         <input type="date" id="new-date-input" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px;">
 
-        <label style="font-size:0.85rem; color:#94a3b8; margin-top:6px;">單元名稱／課次：</label>
-        <input type="text" id="new-unit-input" placeholder="例如：1 或 第三課" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px;">
+        <label style="font-size:0.85rem; color:#94a3b8; margin-top:6px;">單元／課次：</label>
+        <input type="text" id="new-unit-input" placeholder="例：2 (輸入數字自動轉第2課/單元)" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px;">
 
         <label style="font-size:0.85rem; color:#94a3b8; margin-top:6px;">頁數／備註：</label>
-        <input type="text" id="new-page-input" placeholder="例如：2-5 或 p.10" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px;">
+        <input type="text" id="new-page-input" placeholder="例：15-19 或 單元卷/標題" style="background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px;">
       </div>
       <div class="modal-footer">
         <button class="header-btn" onclick="closeNewAssignModal()">取消</button>
@@ -1575,12 +1575,34 @@
       }
     }
 
+    function formatUnitDisplay(subject, unit) {
+      if (!unit) return '';
+      const u = String(unit).trim();
+      if (!u) return '';
+      if (/^\d+$/.test(u)) {
+        return (subject === '國語') ? ('第' + u + '課') : ('第' + u + '單元');
+      }
+      return u;
+    }
+
+    function formatPageOrNoteDisplay(pageOrNote) {
+      if (!pageOrNote) return '';
+      const p = String(pageOrNote).trim();
+      if (!p) return '';
+      if (/^p\.?/i.test(p) || p.includes('頁')) return p;
+      if (/^[\d\s\-~～,，、]+$/.test(p) && /\d/.test(p)) return 'p.' + p;
+      return p;
+    }
+
     function renderHeaderMeta() {
       if (!gradingDataCache) return;
       const assign = gradingDataCache.currentAssignment;
+      const sub = currentSheetName ? currentSheetName.split('|')[0] : '';
+      const uStr = assign ? formatUnitDisplay(sub, assign.unit) : '';
+      const pStr = assign ? formatPageOrNoteDisplay(assign.page) : '';
       document.getElementById('meta-date').textContent = assign ? (assign.date || '未定') : '尚未開立作業';
-      document.getElementById('meta-unit').textContent = assign ? (assign.unit || '-') : '-';
-      document.getElementById('meta-page').textContent = assign ? (assign.page || '-') : '-';
+      document.getElementById('meta-unit').textContent = uStr || '-';
+      document.getElementById('meta-page').textContent = pStr || '-';
     }
 
     function isStudentVacant(st) {
@@ -1911,10 +1933,13 @@
           const isCurr = (gradingDataCache && gradingDataCache.currentAssignment && gradingDataCache.currentAssignment.unit === item.unit && gradingDataCache.currentAssignment.page === item.page);
           card.className = 'opt-card ' + (isCurr ? 'active' : '');
           card.onclick = () => selectCheckinAssignment(item);
+          const sub = currentSheetName ? currentSheetName.split('|')[0] : '';
+          const uStr = formatUnitDisplay(sub, item.unit);
+          const pStr = formatPageOrNoteDisplay(item.page);
+          const detail = [uStr, pStr].filter(Boolean).join(' ｜ ');
           card.innerHTML =
             '<div>' +
-              '<span style="font-weight:800; color:#38bdf8; font-size:0.95rem;">單元: ' + (item.unit || '(未填)') + '</span>' +
-              '<span style="color:#cbd5e1; font-size:0.85rem; margin-left:8px;">頁數: ' + (item.page || '(未填)') + '</span>' +
+              '<span style="font-weight:800; color:#38bdf8; font-size:0.95rem;">' + (detail || '(未填單元/頁數)') + '</span>' +
             '</div>' +
             '<div style="font-size:0.8rem; color:#facc15; font-weight:700;">' + (item.date || '') + '</div>';
           listEl.appendChild(card);

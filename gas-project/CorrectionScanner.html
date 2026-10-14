@@ -626,16 +626,16 @@
   <div id="meta-modal" class="modal-overlay hidden">
     <div class="modal-box">
       <div class="modal-header">
-        <span>📌 編輯作業單元與頁碼說明</span>
+        <span>📌 編輯作業單元與頁數備註</span>
       </div>
       <div class="modal-body">
         <div>
-          <label style="font-size:0.8rem; color:#94a3b8; display:block; margin-bottom:4px;">單元說明 (例如：L3 或 第三單元)：</label>
-          <input type="text" id="modal-unit" style="width:100%; background:#0f172a; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px; outline:none;">
+          <label style="font-size:0.8rem; color:#94a3b8; display:block; margin-bottom:4px;">單元／課次：</label>
+          <input type="text" id="modal-unit" style="width:100%; background:#0f172a; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px; outline:none;" placeholder="例：2 (輸入數字自動轉第2課/單元)">
         </div>
         <div>
-          <label style="font-size:0.8rem; color:#94a3b8; display:block; margin-bottom:4px;">頁碼與備註 (例如：P.15~16)：</label>
-          <input type="text" id="modal-note" style="width:100%; background:#0f172a; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px; outline:none;">
+          <label style="font-size:0.8rem; color:#94a3b8; display:block; margin-bottom:4px;">頁數／備註：</label>
+          <input type="text" id="modal-note" style="width:100%; background:#0f172a; border:1px solid #475569; color:#fff; padding:6px 10px; border-radius:6px; outline:none;" placeholder="例：15-19 或 單元卷/標題">
         </div>
       </div>
       <div class="modal-footer">
@@ -684,8 +684,8 @@
         <div id="custom-unit-box" style="display:none; flex-direction:column; gap:6px; background:#0f172a; padding:8px 10px; border-radius:8px; border:1px solid #334155; margin-top:4px;">
           <div style="font-size:0.75rem; color:#38bdf8; font-weight:700;">➕ 自訂新單元/頁數：</div>
           <div style="display:flex; gap:8px;">
-            <input type="text" id="custom-unit-input" style="flex:1; background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 8px; border-radius:6px; font-size:0.8rem; outline:none;" placeholder="單元 (例如: 2)">
-            <input type="text" id="custom-page-input" style="flex:1; background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 8px; border-radius:6px; font-size:0.8rem; outline:none;" placeholder="頁數/備註 (例如: 15)">
+            <input type="text" id="custom-unit-input" style="flex:1; background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 8px; border-radius:6px; font-size:0.8rem; outline:none;" placeholder="例: 2 或 總複習">
+            <input type="text" id="custom-page-input" style="flex:1; background:#1e293b; border:1px solid #475569; color:#fff; padding:6px 8px; border-radius:6px; font-size:0.8rem; outline:none;" placeholder="例: 15-19 或 單元卷/標題">
           </div>
         </div>
       </div>
@@ -1355,11 +1355,31 @@ async function fetchMatrixData(isSilentSync = false, isRetry = false) {
   }
 }
 
+function formatUnitDisplay(subject, unit) {
+  if (!unit) return '';
+  const u = String(unit).trim();
+  if (!u) return '';
+  if (/^\d+$/.test(u)) {
+    return (subject === '國語') ? ('第' + u + '課') : ('第' + u + '單元');
+  }
+  return u;
+}
+
+function formatPageOrNoteDisplay(pageOrNote) {
+  if (!pageOrNote) return '';
+  const p = String(pageOrNote).trim();
+  if (!p) return '';
+  if (/^p\.?/i.test(p) || p.includes('頁')) return p;
+  if (/^[\d\s\-~～,，、]+$/.test(p) && /\d/.test(p)) return 'p.' + p;
+  return p;
+}
+
 function renderAssignDropdown() {
   const select = document.getElementById('assign-select');
   select.innerHTML = '';
 
   const assignments = matrixDataCache.assignments || [];
+
   if (assignments.length === 0) {
     const opt = document.createElement('option');
     opt.value = "";
@@ -1373,8 +1393,10 @@ function renderAssignDropdown() {
     const key = a.key || "".concat(a.subject, "_").concat(a.category, "_").concat(a.colIndex);
     const opt = document.createElement('option');
     opt.value = key;
-    const detailStr = [a.unit, a.page].filter(Boolean).join(' ');
-    opt.textContent = "".concat(a.date ? '[' + a.date + '] ' : '').concat(a.subject, " - ").concat(a.category, " ").concat(detailStr ? '(' + detailStr + ')' : '');
+    const uStr = formatUnitDisplay(a.subject, a.unit);
+    const pStr = formatPageOrNoteDisplay(a.page);
+    const detailStr = [uStr, pStr].filter(Boolean).join(' ｜ ');
+    opt.textContent = "".concat(a.date ? '[' + a.date + '] ' : '').concat(a.subject, " - ").concat(a.category).concat(detailStr ? ' (' + detailStr + ')' : '');
     select.appendChild(opt);
   });
 
@@ -1451,14 +1473,10 @@ function renderSeatGrid() {
   document.getElementById('stat-clean').textContent = "無錯題 ".concat(statClean);
 
   if (currAssign) {
-    let noteParts = [];
-    if (currAssign.unit) {
-      noteParts.push("第".concat(currAssign.unit, "單元"));
-    }
-    if (currAssign.page) {
-      noteParts.push("".concat(currAssign.page, "頁"));
-    }
-    document.getElementById('assign-subnote').textContent = noteParts.join(' ');
+    const uStr = formatUnitDisplay(currAssign.subject, currAssign.unit);
+    const pStr = formatPageOrNoteDisplay(currAssign.page);
+    const detailStr = [uStr, pStr].filter(Boolean).join(' ｜ ');
+    document.getElementById('assign-subnote').textContent = detailStr;
   } else {
     document.getElementById('assign-subnote').textContent = '';
   }
@@ -1590,17 +1608,13 @@ async function openOtherPageModal(isAutoPrompt = false, targetSub = null, target
 
       const card = document.createElement('label');
       card.style.cssText = "display:flex; align-items:center; justify-content:space-between; padding:8px 10px; background:".concat(isCurrent ? '#172554' : '#0f172a', "; border:1px solid ").concat(isCurrent ? '#38bdf8' : '#334155', "; border-radius:8px; cursor:pointer; gap:8px; margin-bottom:4px;");
+      const uStr = formatUnitDisplay(item.subject || subject, item.unit);
+      const pStr = formatPageOrNoteDisplay(item.page);
       card.innerHTML = "\n            <div style=\"display:flex; align-items:center; gap:8px; min-width:0;\">\n              <input type=\"radio\" name=\"other_page_opt_scanner\" value=\"".concat(
-
         idx, "\" ").concat(isCurrent ? 'checked' : '', " style=\"accent-color:#38bdf8;\">\n              <div style=\"display:flex; flex-direction:column; gap:1px; min-width:0;\">\n                <div style=\"font-size:0.82rem; font-weight:700; color:#f8fafc; display:flex; align-items:center; gap:6px;\">\n                  <span style=\"color:#38bdf8; font-size:0.72rem;\">[").concat(
-
-
         item.date, "]</span>\n                  <span>").concat(
-        item.unit || '無單元', "</span>\n                  <span style=\"color:#94a3b8; font-size:0.75rem;\">").concat(
-        item.page ? '(' + item.page + ')' : '', "</span>\n                </div>\n              </div>\n            </div>\n            <div>").concat(
-
-
-
+        uStr || '無單元', "</span>\n                  <span style=\"color:#94a3b8; font-size:0.75rem;\">").concat(
+        pStr ? '(' + pStr + ')' : '', "</span>\n                </div>\n              </div>\n            </div>\n            <div>").concat(
         statusBadge, "</div>\n          ");
 
       card.onclick = () => {
@@ -2075,16 +2089,13 @@ function showUncorrectedSelectModal(seatStr, records) {
   records.forEach((rec) => {
     const itemCard = document.createElement('div');
     itemCard.className = 'modal-item-card';
-    const detailStr = [rec.unit, rec.page].filter(Boolean).join(' ');
+    const uStr = formatUnitDisplay(rec.subject, rec.unit);
+    const pStr = formatPageOrNoteDisplay(rec.page);
+    const detailStr = [uStr, pStr].filter(Boolean).join(' ｜ ');
     itemCard.innerHTML = "\n          <div>\n            <div style=\"font-weight:700; color:#fff;\">📚 ".concat(
-
       rec.subject, " ").concat(rec.category, "</div>\n            <div style=\"font-size:0.8rem; color:#38bdf8; margin-top:2px;\">📌 ").concat(
       detailStr || '一般登記', " (📅 ").concat(rec.date || '', ")</div>\n          </div>\n          <button class=\"btn-modal-clear\" onclick=\"executeModalClear('").concat(
-
       rec.colIndex, "', '").concat(seatStr, "')\">\n            ✅ 銷案 (標為O)\n          </button>\n        ");
-
-
-
     listContainer.appendChild(itemCard);
   });
 
