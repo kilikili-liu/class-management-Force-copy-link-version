@@ -584,6 +584,27 @@
     </div>
   </div>
 
+  <!-- 🔗 連線設定彈窗 -->
+  <div id="pair-modal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width: 400px;">
+      <div class="modal-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>🔗 班級試算表連線設定</span>
+        <button onclick="closePairModal()" style="background:none; border:none; color:#94a3b8; font-size:1.5rem; cursor:pointer; line-height:1;">&times;</button>
+      </div>
+      <p style="font-size:0.85rem; color:#cbd5e1; line-height:1.5; margin-bottom:10px;">請貼上您的 Google Apps Script 正式部署網址 (Web App URL) 或純部署 ID：</p>
+      <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec" style="background:#0f172a; border:1px solid #475569; color:#fff; padding:8px 10px; border-radius:6px; font-size:0.82rem; width:100%; box-sizing:border-box;">
+      
+      <button type="button" class="header-nav-btn nav-btn-pair" style="width:100%; margin-top:12px; height:34px;" onclick="clearPairGasUrl()">🗑️ 清空並解除目前綁定</button>
+      <button type="button" class="header-nav-btn" style="width:100%; margin-top:8px; height:34px; background:rgba(239, 68, 68, 0.12); border:1px solid #ef4444; color:#fca5a5; font-weight:700; cursor:pointer;" onclick="forceHardReload()">🔄 清除快取並強制刷新最新版</button>
+      <a href="StickerGenerator.html" class="header-nav-btn nav-btn-sticker" style="width:100%; margin-top:8px; height:34px; text-decoration:none; display:flex; align-items:center; justify-content:center; gap:6px; box-sizing:border-box;">🏷️ QRcode貼紙</a>
+      
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn-cancel" onclick="closePairModal()">取消</button>
+        <button class="btn-save" style="background:#0284c7; color:#fff;" onclick="savePairGasUrl()">儲存連線</button>
+      </div>
+    </div>
+  </div>
+
   <script>
 
 // ── 關鍵底層補丁：在任何 video 標籤建立時，強制注入 iOS Safari WebKit 必備屬性 ──
@@ -780,29 +801,34 @@ function getGasApiUrl() {
 
 let GAS_API_URL = getGasApiUrl();
 
-// 手動檢視或設定 GAS 網址
-function promptManualGasUrl() {
-  const current = GAS_API_URL || '尚未設定';
-  const entered = prompt("⚙️ 班級試算表連線設定\n目前綁定網址：\n".concat(current, "\n\n若需更改，請貼上 GAS Web App 網址或純部署 ID (AKfy...)：\n(輸入 reload 可強制清除快取更新最新版面)\n(清空並按確定可解除綁定)"), GAS_API_URL || '');
-  if (entered === null) return;
-  if (entered.trim().toLowerCase() === 'reload' || entered.trim() === '刷新') {
-    forcePwaUpdate();
+function openPairModal() {
+  const input = document.getElementById('gas-url-input');
+  if (input) input.value = GAS_API_URL || '';
+  const modal = document.getElementById('pair-modal');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closePairModal() {
+  const modal = document.getElementById('pair-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function savePairGasUrl() {
+  const input = document.getElementById('gas-url-input');
+  let entered = input ? input.value.trim() : '';
+  if (!entered) {
+    alert('請輸入網址或純部署 ID');
     return;
   }
-  if (entered.trim() === '') {
-    localStorage.removeItem('class_management_gas_api_url');
-    localStorage.removeItem('class_mgmt_gas_api_url');
-    GAS_API_URL = '';
-    showToast('⚠️ 已清除綁定，請重新掃碼綁定', 'error');
-    const banner = document.getElementById('unbound-banner');
-    if (banner) banner.style.display = 'flex';
-    return;
+  if (/^AKfy[A-Za-z0-9_-]{40,}$/.test(entered)) {
+    entered = "https://script.google.com/macros/s/" + entered + "/exec";
   }
-  const clean = cleanGasUrl(entered.trim());
+  const clean = cleanGasUrl(entered);
   if (clean.includes('script.google.com')) {
     localStorage.setItem('class_management_gas_api_url', clean);
     localStorage.setItem('class_mgmt_gas_api_url', clean);
     GAS_API_URL = clean;
+    closePairModal();
     showToast('🟢 試算表連線設定成功！', 'success');
     const banner = document.getElementById('unbound-banner');
     if (banner) banner.style.display = 'none';
@@ -810,6 +836,46 @@ function promptManualGasUrl() {
   } else {
     alert('❌ 格式不正確，請輸入完整 GAS 網址或純部署 ID (AKfy...)');
   }
+}
+
+function clearPairGasUrl() {
+  if (!confirm('確定要解除目前試算表連線綁定嗎？')) return;
+  localStorage.removeItem('class_management_gas_api_url');
+  localStorage.removeItem('class_mgmt_gas_api_url');
+  GAS_API_URL = '';
+  const input = document.getElementById('gas-url-input');
+  if (input) input.value = '';
+  closePairModal();
+  showToast('⚠️ 已清除綁定，請重新掃碼綁定', 'error');
+  const banner = document.getElementById('unbound-banner');
+  if (banner) banner.style.display = 'flex';
+}
+
+function forceHardReload() {
+  try {
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => caches.delete(name));
+      });
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        regs.forEach((reg) => reg.unregister());
+      });
+    }
+  } catch (e) {}
+
+  showToast('🔄 正在強制更新最新版面...', 'info');
+
+  setTimeout(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('_t', Date.now());
+    window.location.href = url.toString();
+  }, 400);
+}
+
+function promptManualGasUrl() {
+  openPairModal();
 }
 
 // 智能配對偵測：掃描到試算表配對 QR Code 自動綁定
