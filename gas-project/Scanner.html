@@ -187,20 +187,19 @@
     .app-container {
       flex: 1;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       overflow: hidden;
     }
 
     .camera-panel {
-      flex: none;
-      height: 38dvh;
-      width: 100%;
+      flex: 1.1;
       background: #000;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
+      height: 100%;
     }
 
     #reader {
@@ -229,13 +228,19 @@
     }
 
     .viewfinder-box {
-      width: min(210px, 62vw, 28vh);
-      height: min(210px, 62vw, 28vh);
+      width: min(300px, 75vw, 75vh);
+      height: min(300px, 75vw, 75vh);
       border: 3px solid var(--accent-blue);
       border-radius: 16px;
       box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.65);
       position: relative;
       transition: all 0.2s ease;
+    }
+    @media (min-width: 768px) {
+      .viewfinder-box {
+        width: min(380px, 75vw, 75vh);
+        height: min(380px, 75vw, 75vh);
+      }
     }
 
     .viewfinder-box::after {
@@ -263,26 +268,24 @@
     }
 
     .viewfinder-tip {
-      margin-top: 6px;
+      margin-top: 14px;
       background: rgba(15, 23, 42, 0.85);
       color: #fff;
-      padding: 3px 10px;
+      padding: 6px 14px;
       border-radius: 20px;
-      font-size: 0.72rem;
+      font-size: 0.8rem;
       font-weight: 600;
       border: 1px solid #334155;
     }
 
     .info-panel {
-      flex: 1;
-      width: 100%;
+      flex: 0.9;
       background: var(--card-bg);
-      border-top: 1px solid #334155;
-      padding: 6px 8px;
+      border-left: 1px solid #334155;
+      padding: 8px;
       display: flex;
       flex-direction: column;
       overflow-y: auto;
-      min-height: 0;
     }
 
     #section-hw-panel {
@@ -441,6 +444,66 @@
     }
     body.pure-button-mode .seat-pill:active {
       transform: scale(0.96);
+    }
+
+    /* 📱 直向模式 (Portrait) 自適應：相機在上、燈號在下，永不被黑屏阻擋 */
+    @media (orientation: portrait) {
+      .app-container {
+        flex-direction: column !important;
+      }
+      .camera-panel {
+        flex: none !important;
+        height: 38dvh !important;
+        width: 100% !important;
+      }
+      .viewfinder-box {
+        width: min(200px, 60vw, 28vh) !important;
+        height: min(200px, 60vw, 28vh) !important;
+      }
+      .viewfinder-tip {
+        margin-top: 6px !important;
+        padding: 3px 10px !important;
+        font-size: 0.72rem !important;
+      }
+      .info-panel {
+        flex: 1 !important;
+        width: 100% !important;
+        border-left: none !important;
+        border-top: 1px solid #334155 !important;
+        padding: 6px 8px !important;
+        overflow-y: auto !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      #section-hw-panel {
+        flex: 1 !important;
+        min-height: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .seat-grid-scroll-box {
+        flex: 1 !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+      }
+      .header-controls {
+        gap: 4px !important;
+      }
+      .header-nav-btn {
+        padding: 0 7px !important;
+        font-size: 0.78rem !important;
+      }
+      .header-title {
+        font-size: 0.88rem !important;
+      }
+      .seat-grid {
+        gap: 5px !important;
+      }
+      .seat-pill {
+        padding: 6px 2px !important;
+        font-size: 0.82rem !important;
+      }
     }
 
     .modal-overlay {
@@ -1077,11 +1140,6 @@ function adaptInternalLinks() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  try {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('portrait').catch(() => {});
-    }
-  } catch (e) {}
   adaptInternalLinks();
   checkIosPwaButton();
   initSeatGrid();

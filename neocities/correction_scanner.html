@@ -176,22 +176,22 @@
     .app-body {
       flex: 1;
       display: flex;
-      flex-direction: column;
+      flex-direction: row;
       overflow: hidden;
     }
 
-    /* 上半部：相機與模式控制 */
+    /* 左欄：相機與模式控制 */
     .left-panel {
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      height: 38dvh;
+      width: 42%;
+      max-width: 360px;
+      min-width: 260px;
       background: #0f172a;
-      border-bottom: 1px solid #334155;
-      padding: 6px 8px;
+      border-right: 1px solid #334155;
+      padding: 8px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
+      height: 100%;
     }
 
     .camera-wrapper {
@@ -225,8 +225,8 @@
     }
 
     .viewfinder-box {
-      width: min(210px, 62vw, 28vh);
-      height: min(210px, 62vw, 28vh);
+      width: min(290px, 88%, 70vh);
+      height: min(290px, 88%, 70vh);
       aspect-ratio: 1 / 1;
       border-radius: 16px;
       box-shadow: 0 0 0 4000px rgba(15, 23, 42, 0.4);
@@ -271,22 +271,22 @@
     }
 
     .viewfinder-tip {
-      margin-top: 6px;
+      margin-top: 10px;
       background: rgba(15, 23, 42, 0.85);
       color: #fff;
-      padding: 3px 10px;
+      padding: 4px 12px;
       border-radius: 16px;
-      font-size: 0.72rem;
+      font-size: 0.75rem;
       border: 1px solid #334155;
       white-space: nowrap;
     }
 
     /* 頂部模式切換按鈕 (登記 / 銷案) */
     .header-mode-btn {
-      height: 28px;
-      padding: 0 8px;
+      height: 30px;
+      padding: 0 10px;
       border-radius: 6px;
-      font-size: 0.78rem;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
@@ -320,17 +320,15 @@
       box-shadow: 0 0 8px rgba(2, 132, 199, 0.4);
     }
 
-    /* 下半部：燈號矩陣與作業控制 */
+    /* 右欄：燈號矩陣與作業控制 */
     .right-panel {
       flex: 1;
-      width: 100%;
       background: #0f172a;
       display: flex;
       flex-direction: column;
-      padding: 6px 10px;
-      overflow-y: auto;
+      padding: 8px 12px;
+      overflow: hidden;
       min-width: 0;
-      min-height: 0;
     }
 
     .assign-bar {
@@ -518,6 +516,65 @@
       border-radius: 6px;
       font-size: 0.8rem;
       cursor: pointer;
+    }
+
+    /* 📱 直向模式 (Portrait) 自適應：相機在上、燈號在下，永不被黑屏阻擋 */
+    @media (orientation: portrait) {
+      .app-body {
+        flex-direction: column !important;
+      }
+      .left-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        height: 38dvh !important;
+        border-right: none !important;
+        border-bottom: 1px solid #334155 !important;
+        padding: 6px 8px !important;
+        gap: 6px !important;
+      }
+      .viewfinder-box {
+        width: min(200px, 60vw, 28vh) !important;
+        height: min(200px, 60vw, 28vh) !important;
+      }
+      .viewfinder-tip {
+        margin-top: 6px !important;
+        padding: 3px 10px !important;
+        font-size: 0.72rem !important;
+      }
+      .right-panel {
+        flex: 1 !important;
+        width: 100% !important;
+        padding: 6px 10px !important;
+        overflow-y: auto !important;
+        min-height: 0 !important;
+      }
+      .header-title-box {
+        gap: 6px !important;
+      }
+      .header-title {
+        font-size: 0.88rem !important;
+      }
+      .header-mode-btn {
+        height: 28px !important;
+        padding: 0 8px !important;
+        font-size: 0.78rem !important;
+      }
+      .header-nav-box {
+        gap: 4px !important;
+      }
+      .header-nav-btn {
+        padding: 0 7px !important;
+        font-size: 0.78rem !important;
+      }
+      .seat-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+        gap: 5px !important;
+      }
+      .seat-pill {
+        padding: 6px 2px !important;
+        font-size: 0.82rem !important;
+      }
     }
   </style>
 </head>
@@ -1217,11 +1274,6 @@ function adaptInternalLinks() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  try {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('portrait').catch(() => {});
-    }
-  } catch (e) {}
   adaptInternalLinks();
   checkIosPwaButton();
   initSeatGrid();
