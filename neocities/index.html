@@ -1792,7 +1792,7 @@
       container.appendChild(img);
     }
 
-    const subjectCategoryMap = {
+    let subjectCategoryMap = {
       '國語': ['甲本', '乙本', '國習', '圈詞', '作文', '預習單', '學習單', '國練', '評量', '考卷', '作業本'],
       '數學': ['數習', '數課', '數練', '學習單', '評量', '考卷', '作業本'],
       '社會': ['社習', '預習單', '學習單', '評量', '考卷', '作業本'],
@@ -1803,6 +1803,43 @@
       '單據': ['同意書', '回條', '繳費單'],
       '其它': ['其它']
     };
+
+    async function fetchSubjectCategoryMap() {
+      try {
+        const res = await apiCall('getSubjectCategoryMap');
+        if (res && res.success && res.map) {
+          subjectCategoryMap = Object.assign({}, subjectCategoryMap, res.map);
+          updateSubjectDropdownOptions();
+        }
+      } catch (e) {}
+    }
+
+    function updateSubjectDropdownOptions() {
+      const subjectSelect = document.getElementById('hw-subject');
+      if (!subjectSelect) return;
+      const curVal = subjectSelect.value;
+      const allSubjects = Object.keys(subjectCategoryMap);
+
+      const existingOpts = Array.from(subjectSelect.options).map(function(o) { return o.value; });
+      allSubjects.forEach(function(sub) {
+        if (existingOpts.indexOf(sub) === -1) {
+          const opt = document.createElement('option');
+          opt.value = sub;
+          opt.textContent = sub;
+          const otherOpt = Array.from(subjectSelect.options).find(function(o) { return o.value === '其它'; });
+          if (otherOpt) {
+            subjectSelect.insertBefore(opt, otherOpt);
+          } else {
+            subjectSelect.appendChild(opt);
+          }
+        }
+      });
+
+      if (curVal) {
+        subjectSelect.value = curVal;
+        onSubjectChange();
+      }
+    }
 
     function initApp() {
       try {
@@ -1816,6 +1853,7 @@
       if (summaryEl) {
         summaryEl.textContent = '⚠️ 請先選擇上方【科目 | 種類】';
       }
+      fetchSubjectCategoryMap();
     }
 
     if (document.readyState === 'loading') {

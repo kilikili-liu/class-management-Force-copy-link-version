@@ -200,6 +200,9 @@ function handleScannerApiAction(action, params) {
     if (action === 'getRosterInfo') {
       return getRosterInfo();
     }
+    if (action === 'getSubjectCategoryMap') {
+      return getSubjectCategoryMap();
+    }
 
     return { success: false, message: '未知的 API 動作: ' + action };
   } catch (err) {
@@ -447,7 +450,8 @@ function getTodayScanData() {
     submissionMatrix: submissionMatrix,
     summary: summary,
     vacantSeats: vacantSeats,
-    activeTotal: activeTotal
+    activeTotal: activeTotal,
+    subjectCategoryMap: getSubjectCategoryMap().map
   };
 }
 
@@ -1021,7 +1025,8 @@ function getCorrectionMatrixData(params = {}) {
     records: records,
     vacantSeats: vacantSeatNums,
     seatNames: seatNames,
-    checkinAssignments: getCheckinAssignmentsList()
+    checkinAssignments: getCheckinAssignmentsList(),
+    subjectCategoryMap: getSubjectCategoryMap().map
   };
 }
 
@@ -1458,6 +1463,75 @@ function getScoreSheetNames() {
     return { success: true, sheetNames: SCORE_SHEET_NAMES };
   }
   return { success: true, sheetNames: combined };
+}
+
+/**
+ * 取得整合後的「科目 → 種類」對照表（結合設定精靈自訂科目與作業、試算表實體分頁與預設清單）
+ */
+function getSubjectCategoryMap() {
+  const map = {
+    '國語': ['甲本', '乙本', '國習', '圈詞', '作文', '預習單', '學習單', '國練', '評量', '考卷', '作業本'],
+    '數學': ['數習', '數課', '數練', '學習單', '評量', '考卷', '作業本'],
+    '社會': ['社習', '預習單', '學習單', '評量', '考卷', '作業本'],
+    '自然': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
+    '英語': ['習作', '預習單', '學習單', '評量', '考卷', '作業本'],
+    '聯絡簿': ['聯絡簿'],
+    '日記': ['日記'],
+    '單據': ['同意書', '回條', '繳費單'],
+    '其它': ['其它']
+  };
+
+  try {
+    // 1. 從設定精靈 (CLASS_ASSIGNMENT_CONFIG) 讀取老師自訂的科目與作業
+    const cfgRes = getClassConfig();
+    if (cfgRes && cfgRes.config && cfgRes.config.subjects) {
+      cfgRes.config.subjects.forEach(function(sub) {
+        if (!sub.name) return;
+        if (!map[sub.name]) {
+          map[sub.name] = [];
+        }
+        // 若科目被啟用，將其已選的作業優先置頂排在前面
+        if (sub.enabled !== false && sub.selected) {
+          for (let i = sub.selected.length - 1; i >= 0; i--) {
+            const item = sub.selected[i];
+            const idx = map[sub.name].indexOf(item);
+            if (idx > -1) {
+              map[sub.name].splice(idx, 1);
+            }
+            map[sub.name].unshift(item);
+          }
+        }
+        // 備選池中的項目也補在後面
+        if (sub.pool) {
+          sub.pool.forEach(function(item) {
+            if (map[sub.name].indexOf(item) === -1) {
+              map[sub.name].push(item);
+            }
+          });
+        }
+      });
+    }
+
+    // 2. 從試算表實際現存的所有「科目|種類」成績分頁中自動補充
+    const scoreSheets = getScoreSheetNames().sheetNames;
+    scoreSheets.forEach(function(sName) {
+      if (sName.indexOf('|') > -1) {
+        const parts = sName.split('|');
+        const sSub = parts[0].trim();
+        const sCat = parts[1].trim();
+        if (sSub && sCat) {
+          if (!map[sSub]) map[sSub] = [];
+          const idx = map[sSub].indexOf(sCat);
+          if (idx > -1) {
+            map[sSub].splice(idx, 1);
+          }
+          map[sSub].unshift(sCat); // 確保實體分頁項目排在最前面！
+        }
+      }
+    });
+  } catch (e) {}
+
+  return { success: true, map: map };
 }
 
 /**

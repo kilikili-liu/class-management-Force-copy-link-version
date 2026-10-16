@@ -2021,7 +2021,7 @@ function isSeatErrorInCurrentAssignment(seatStr) {
 }
 
 // 科目 → 種類 對照表（與清點系統一致）
-const subjectCategoryMap = {
+let subjectCategoryMap = {
   '國語': ['甲本', '乙本', '國習', '圈詞', '作文', '預習單', '學習單', '國練', '評量', '考卷', '作業本'],
   '數學': ['數習', '數課', '數練', '學習單', '評量', '考卷', '作業本'],
   '社會': ['社習', '預習單', '學習單', '評量', '考卷', '作業本'],
@@ -2031,6 +2031,33 @@ const subjectCategoryMap = {
   '日記': ['日記'],
   '其它': ['其它']
 };
+
+function updateCorrectionSubjectDropdownOptions() {
+  const subjectSelect = document.getElementById('reg-subject');
+  if (!subjectSelect) return;
+  const curVal = subjectSelect.value;
+  const allSubjects = Object.keys(subjectCategoryMap);
+
+  const existingOpts = Array.from(subjectSelect.options).map(function(o) { return o.value; });
+  allSubjects.forEach(function(sub) {
+    if (existingOpts.indexOf(sub) === -1) {
+      const opt = document.createElement('option');
+      opt.value = sub;
+      opt.textContent = sub;
+      const otherOpt = Array.from(subjectSelect.options).find(function(o) { return o.value === '其它'; });
+      if (otherOpt) {
+        subjectSelect.insertBefore(opt, otherOpt);
+      } else {
+        subjectSelect.appendChild(opt);
+      }
+    }
+  });
+
+  if (curVal) {
+    subjectSelect.value = curVal;
+    onSubjectChange();
+  }
+}
 
 function onSubjectChange() {
   const subjectSelect = document.getElementById('reg-subject');
@@ -2413,6 +2440,10 @@ async function fetchCorrectionMatrixData() {
     const res = await apiCallCorrection('getCorrectionMatrixData');
     if (res && res.success) {
       matrixData = res;
+      if (res.subjectCategoryMap) {
+        subjectCategoryMap = Object.assign({}, subjectCategoryMap, res.subjectCategoryMap);
+        updateCorrectionSubjectDropdownOptions();
+      }
       updateCurrentMetaText();
       renderSeatButtons();
       if (currentMainView === 'matrix') renderMatrixTable();
