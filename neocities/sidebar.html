@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>班級作業設定精靈</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg-page: #f8fafc;
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --accent-green: #16a34a;
+      --accent-red: #ef4444;
+      --accent-orange: #ea580c;
+      --border: #e2e8f0;
+      --border-focus: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      padding: 0;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.45;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* 頂部 Header */
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .header-title-box h1 {
+      font-size: 15px;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header-title-box p {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+
+    /* 滾動內容區 */
+    .content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px 90px 14px;
+    }
+
+    /* 學生名冊資訊卡片 */
+    .roster-card {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .roster-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .roster-title {
+      font-weight: 700;
+      color: #166534;
+      font-size: 12.5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .btn-roster-refresh {
+      background: #ffffff;
+      border: 1px solid #86efac;
+      color: #166534;
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+    .btn-roster-refresh:hover {
+      background: #dcfce7;
+    }
+    .roster-desc {
+      font-size: 11px;
+      color: #15803d;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+    .roster-detail-toggle {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #0284c7;
+      cursor: pointer;
+      font-weight: 600;
+      user-select: none;
+      display: inline-block;
+    }
+    .roster-detail-toggle:hover {
+      text-decoration: underline;
+    }
+    .roster-detail-list {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed #bbf7d0;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+      max-height: 160px;
+      overflow-y: auto;
+    }
+    .roster-item {
+      font-size: 11px;
+      color: #334155;
+      background: #ffffff;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid #dcfce7;
+    }
+    .roster-item.vacant {
+      color: #94a3b8;
+      text-decoration: line-through;
+      background: #f8fafc;
+    }
+
+    /* 說明提示條 */
+    .hint-banner {
+      background: #f0f9ff;
+      border: 1px solid #bae6fd;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      font-size: 11.5px;
+      color: #0369a1;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.4;
+    }
+    .hint-banner .hint-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    /* 科目卡片 */
+    .subject-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      transition: all 0.2s ease;
+    }
+    .subject-card.disabled {
+      opacity: 0.6;
+      background: #f8fafc;
+      border-style: dashed;
+    }
+
+    /* 科目卡片標題列 */
+    .card-header {
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+    .card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-header-left input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+    .subject-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+    .subject-badge {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .badge-active {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+    .badge-disabled {
+      background: #f1f5f9;
+      color: #94a3b8;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* 卡片內容區 */
+    .card-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* 區塊標題 */
+    .section-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-sub);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .section-title span.tip {
+      font-size: 10.5px;
+      font-weight: normal;
+      color: #0284c7;
+    }
+
+    /* 標籤容器 */
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 28px;
+      align-items: center;
+    }
+    .empty-tags-tip {
+      font-size: 11px;
+      color: #94a3b8;
+      font-style: italic;
+    }
+
+    /* ⭐ 已選作業標籤（帶退選 ✕ 按鈕） */
+    .pill-selected {
+      background: #0284c7;
+      color: #ffffff;
+      padding: 4px 6px 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(2, 132, 199, 0.25);
+      transition: all 0.15s ease;
+      cursor: default;
+    }
+    .pill-selected:hover {
+      background: #0369a1;
+    }
+    .pill-selected .btn-unselect {
+      background: rgba(255, 255, 255, 0.25);
+      border: none;
+      color: #ffffff;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.15s;
+    }
+    .pill-selected .btn-unselect:hover {
+      background: #ef4444;
+      color: #ffffff;
+      transform: scale(1.15);
+    }
+
+    /* ⚡ 快速加選池標籤 */
+    .pill-pool {
+      background: #f1f5f9;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 3px 9px;
+      border-radius: 14px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .pill-pool:hover {
+      background: #e0f2fe;
+      color: #0284c7;
+      border-color: #7dd3fc;
+      transform: translateY(-1px);
+    }
+    .pill-pool:active {
+      transform: translateY(0);
+    }
+
+    /* 自訂作業輸入列 */
+    .custom-input-group {
+      display: flex;
+      gap: 6px;
+      margin-top: 2px;
+    }
+    .custom-input {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      padding: 4px 8px;
+      border-radius: 5px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .custom-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+    }
+    .btn-add-custom {
+      background: #f8fafc;
+      border: 1px solid #94a3b8;
+      color: #334155;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .btn-add-custom:hover {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    /* 成績分頁開關 */
+    .sheet-switch-box {
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: #475569;
+    }
+    .sheet-switch-box input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: var(--primary);
+    }
+
+    /* 新增自訂科目區 */
+    .add-subject-box {
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      background: #ffffff;
+      text-align: center;
+    }
+    .btn-toggle-add-subject {
+      background: transparent;
+      border: none;
+      color: #0284c7;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+    }
+    .btn-toggle-add-subject:hover {
+      text-decoration: underline;
+    }
+    .add-subject-form {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+    }
+
+    /* 底部固定操作列 */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+      z-index: 50;
+    }
+    .btn-apply {
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      color: #ffffff;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(2, 132, 199, 0.35);
+      transition: all 0.15s;
+    }
+    .btn-apply:hover {
+      background: linear-gradient(135deg, #0369a1, #075985);
+      box-shadow: 0 3px 8px rgba(2, 132, 199, 0.45);
+    }
+    .btn-apply:active {
+      transform: scale(0.99);
+    }
+    .btn-apply:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    .bottom-secondary-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-reset-default {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      font-size: 11px;
+      cursor: pointer;
+      text-decoration: underline;
+      padding: 2px 4px;
+    }
+    .btn-reset-default:hover {
+      color: #ef4444;
+    }
+
+    /* 狀態提示 Toast */
+    .toast-banner {
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      text-align: center;
+      animation: fadeIn 0.2s ease-in;
+    }
+    .toast-success {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #86efac;
+    }
+    .toast-error {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fca5a5;
+    }
+    .toast-info {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部 Header -->
+  <header>
+    <div class="header-title-box">
+      <h1>🏫 班級作業設定精靈</h1>
+      <p>客製各科已選作業，一鍵建立記分分頁</p>
+    </div>
+  </header>
+
+  <!-- 滾動內容區 -->
+  <div class="content-scroll">
+
+    <!-- 🟢 本班學生名冊資訊卡片 -->
+    <div class="roster-card">
+      <div class="roster-top">
+        <div class="roster-title">
+          <span>🟢</span>
+          <span id="roster-summary-text">正在偵測學生名冊...</span>
+        </div>
+        <button class="btn-roster-refresh" onclick="fetchRosterInfo()" title="若剛剛在試算表 B 欄貼上新姓名，點此更新">🔄 整理</button>
+      </div>
+      <div class="roster-desc" id="roster-desc-text">
+        名冊將自動套用於所有新建的成績記分分頁中。
+      </div>
+      <div class="roster-detail-toggle" onclick="toggleRosterDetail()" id="roster-toggle-btn">
+        👁️ 查看 1~30 號座號姓名 ▼
+      </div>
+      <div class="roster-detail-list" id="roster-detail-list" style="display:none;"></div>
+    </div>
+
+    <!-- 💡 退選功能操作指引 -->
+    <div class="hint-banner">
+      <div class="hint-icon">💡</div>
+      <div>
+        <strong>退選技巧：</strong>點擊已選作業上的 <strong>[ ✕ ]</strong> 即可退選；退選項目會自動退回<strong>「快速加選池」</strong>，隨時可點擊加回，不怕誤刪！
+      </div>
+    </div>
+
+    <!-- 科目卡片動態渲染容器 -->
+    <div id="subject-cards-container">
+      <div style="text-align:center; padding: 20px; color: #94a3b8;">
+        載入設定中...
+      </div>
+    </div>
+
+    <!-- ➕ 新增自訂科目區 -->
+    <div class="add-subject-box">
+      <button class="btn-toggle-add-subject" id="btn-toggle-add-subject" onclick="toggleAddSubjectForm()">
+        <span>➕ 新增自訂任教科 (如: 藝文、生活、資訊...)</span>
+      </button>
+      <div class="add-subject-form" id="add-subject-form" style="display:none;">
+        <input type="text" class="custom-input" id="input-new-subject" placeholder="科目名稱 (例如: 綜合活動)..." onkeydown="if(event.key==='Enter') addNewSubject()">
+        <button class="btn-add-custom" onclick="addNewSubject()">確認建立</button>
+        <button class="btn-add-custom" style="background:#f1f5f9;" onclick="toggleAddSubjectForm()">取消</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 底部固定操作欄 -->
+  <div class="bottom-bar">
+    <div id="status-toast" class="toast-banner" style="display:none;"></div>
+    <button class="btn-apply" id="btn-apply" onclick="applySettings()">
+      <span>🚀 一鍵套用設定並建立成績分頁</span>
+    </button>
+    <div class="bottom-secondary-bar">
+      <button class="btn-reset-default" onclick="confirmResetDefault()">🔄 恢復系統預設值</button>
+      <span style="font-size:10.5px; color:#94a3b8;">試算表端設定精靈</span>
+    </div>
+  </div>
+
+  <script>
+    // 全域變數
+    var currentConfig = null;
+    var currentRoster = null;
+    var isSaving = false;
+
+    // 預設標準設定（若完全讀不到後端時之備援）
+    var FALLBACK_CONFIG = {
+      subjects: [
+        {
+          name: "國語",
+          enabled: true,
+          createScoreSheet: true,
+          selected: ["甲本", "乙本", "國習", "圈詞", "作文"],
+          pool: ["國練", "評量", "學習單", "考卷", "作業本", "預習單"]
+        },
+        {
+          name: "數學",
+          enabled: true,
+          createScoreSheet: true,
+          selected: ["數習"],
+          pool: ["數課", "數練", "學習單", "評量", "考卷", "作業本"]
+        },
+        {
+          name: "社會",
+          enabled: true,
+          createScoreSheet: true,
+          selected: ["社習"],
+          pool: ["習作", "學習單", "評量", "考卷", "預習單"]
+        },
+        {
+          name: "自然",
+          enabled: false,
+          createScoreSheet: true,
+          selected: ["習作"],
+          pool: ["學習單", "評量", "考卷", "預習單"]
+        },
+        {
+          name: "英語",
+          enabled: false,
+          createScoreSheet: true,
+          selected: ["習作"],
+          pool: ["學習單", "評量", "考卷", "作業本"]
+        },
+        {
+          name: "聯絡簿",
+          enabled: true,
+          createScoreSheet: false,
+          selected: ["聯絡簿"],
+          pool: []
+        },
+        {
+          name: "日記",
+          enabled: false,
+          createScoreSheet: true,
+          selected: ["日記"],
+          pool: ["小短文"]
+        },
+        {
+          name: "單據",
+          enabled: false,
+          createScoreSheet: false,
+          selected: ["回條", "同意書", "繳費單"],
+          pool: ["通知單"]
+        }
+      ]
+    };
+
+    /**
+     * 初始化載入
+     */
+    window.addEventListener('DOMContentLoaded', function() {
+      loadInitialData();
+    });
+
+    /**
+     * 載入初始設定與名冊
+     */
+    function loadInitialData() {
+      showToast('正在讀取班級設定與名冊...', 'info', 0);
+      
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        // GAS 試算表側邊欄原生 RPC 呼叫
+        google.script.run
+          .withSuccessHandler(function(res) {
+            hideToast();
+            if (res && res.success) {
+              currentConfig = res.config || FALLBACK_CONFIG;
+              currentRoster = res.roster || null;
+              renderRosterCard(currentRoster);
+              renderSubjectCards();
+            } else {
+              useFallback();
+            }
+          })
+          .withFailureHandler(function(err) {
+            console.warn('GAS RPC error:', err);
+            useFallback();
+          })
+          .getClassConfig();
+      } else {
+        // 獨立網頁端 (測試或外部呼叫)
+        useFallback();
+      }
+    }
+
+    function useFallback() {
+      hideToast();
+      currentConfig = JSON.parse(JSON.stringify(FALLBACK_CONFIG));
+      renderRosterCard(null);
+      renderSubjectCards();
+    }
+
+    /**
+     * 讀取並更新名冊資訊
+     */
+    function fetchRosterInfo() {
+      var summaryEl = document.getElementById('roster-summary-text');
+      if (summaryEl) summaryEl.textContent = '正在重新整理名冊...';
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            if (res && res.success) {
+              currentRoster = res;
+              renderRosterCard(currentRoster);
+              showToast('名冊已更新！', 'success', 2500);
+            }
+          })
+          .withFailureHandler(function(err) {
+            showToast('讀取名冊失敗: ' + err, 'error', 3000);
+          })
+          .getRosterInfo();
+      } else {
+        renderRosterCard(null);
+      }
+    }
+
+    /**
+     * 渲染名冊狀態卡片
+     */
+    function renderRosterCard(roster) {
+      var summaryEl = document.getElementById('roster-summary-text');
+      var descEl = document.getElementById('roster-desc-text');
+      var listEl = document.getElementById('roster-detail-list');
+
+      if (!roster) {
+        if (summaryEl) summaryEl.textContent = '本班學生名冊：預設 30 人';
+        if (descEl) descEl.textContent = '名冊將自動套用於所有新建的成績記分分頁中。';
+        return;
+      }
+
+      if (summaryEl) summaryEl.textContent = roster.summaryText || ('本班學生名冊：' + roster.validCount + ' 人');
+      if (descEl) {
+        if (roster.vacantCount > 0) {
+          descEl.textContent = '系統已自動辨識 ' + roster.vacantCount + ' 位空號，建立分頁時將自動同步名冊。';
+        } else {
+          descEl.textContent = '名冊已與「工作表1」對齊，建立分頁時將自動同步座號與姓名。';
+        }
+      }
+
+      if (listEl && roster.students) {
+        listEl.innerHTML = '';
+        roster.students.forEach(function(stu) {
+          var item = document.createElement('div');
+          item.className = 'roster-item' + (stu.isVacant ? ' vacant' : '');
+          item.textContent = stu.seatStr + ' ' + (stu.name || '(未填)');
+          listEl.appendChild(item);
+        });
+      }
+    }
+
+    function toggleRosterDetail() {
+      var listEl = document.getElementById('roster-detail-list');
+      var toggleBtn = document.getElementById('roster-toggle-btn');
+      if (!listEl) return;
+      if (listEl.style.display === 'none') {
+        listEl.style.display = 'grid';
+        if (toggleBtn) toggleBtn.textContent = '▲ 收合名冊清單';
+      } else {
+        listEl.style.display = 'none';
+        if (toggleBtn) toggleBtn.textContent = '👁️ 查看 1~30 號座號姓名 ▼';
+      }
+    }
+
+    /**
+     * 渲染所有科目卡片
+     */
+    function renderSubjectCards() {
+      var container = document.getElementById('subject-cards-container');
+      if (!container || !currentConfig || !currentConfig.subjects) return;
+
+      container.innerHTML = '';
+
+      currentConfig.subjects.forEach(function(sub, subIndex) {
+        var card = document.createElement('div');
+        card.className = 'subject-card' + (sub.enabled ? '' : ' disabled');
+        card.id = 'subject-card-' + subIndex;
+
+        // 標題列
+        var header = document.createElement('div');
+        header.className = 'card-header';
+        
+        var headerLeft = document.createElement('div');
+        headerLeft.className = 'card-header-left';
+
+        var chkEnable = document.createElement('input');
+        chkEnable.type = 'checkbox';
+        chkEnable.checked = !!sub.enabled;
+        chkEnable.title = '啟用或停用此科目';
+        chkEnable.onclick = function(e) {
+          e.stopPropagation();
+          toggleSubjectEnabled(subIndex, chkEnable.checked);
+        };
+
+        var titleSpan = document.createElement('span');
+        titleSpan.className = 'subject-title';
+        titleSpan.textContent = '【' + sub.name + '】';
+
+        headerLeft.appendChild(chkEnable);
+        headerLeft.appendChild(titleSpan);
+
+        var badge = document.createElement('span');
+        badge.className = 'subject-badge ' + (sub.enabled ? 'badge-active' : 'badge-disabled');
+        badge.textContent = sub.enabled ? ('已選 ' + (sub.selected ? sub.selected.length : 0) + ' 項') : '已停用';
+
+        header.appendChild(headerLeft);
+        header.appendChild(badge);
+
+        // 點擊標題列切換勾選
+        header.onclick = function(e) {
+          if (e.target !== chkEnable) {
+            chkEnable.checked = !chkEnable.checked;
+            toggleSubjectEnabled(subIndex, chkEnable.checked);
+          }
+        };
+
+        card.appendChild(header);
+
+        // 卡片主體（僅在啟用狀態下完整呈現內容）
+        if (sub.enabled) {
+          var body = document.createElement('div');
+          body.className = 'card-body';
+
+          // 1. 📌 已選作業區（核心【退選】功能）
+          var selSection = document.createElement('div');
+          
+          var selTitle = document.createElement('div');
+          selTitle.className = 'section-title';
+          selTitle.innerHTML = '<span>📌 已選作業：</span><span class="tip">點擊 ✕ 即可退選</span>';
+          selSection.appendChild(selTitle);
+
+          var selTagsBox = document.createElement('div');
+          selTagsBox.className = 'tags-container';
+
+          if (!sub.selected || sub.selected.length === 0) {
+            selTagsBox.innerHTML = '<span class="empty-tags-tip">（目前無已選作業，請自備選池加選或自訂）</span>';
+          } else {
+            sub.selected.forEach(function(item) {
+              var pill = document.createElement('div');
+              pill.className = 'pill-selected';
+
+              var label = document.createElement('span');
+              label.textContent = item;
+
+              // ⭐ 退選按鈕 ✕
+              var btnX = document.createElement('button');
+              btnX.className = 'btn-unselect';
+              btnX.textContent = '✕';
+              btnX.title = '退選「' + item + '」';
+              btnX.onclick = function(e) {
+                e.stopPropagation();
+                unselectItem(subIndex, item);
+              };
+
+              pill.appendChild(label);
+              pill.appendChild(btnX);
+              selTagsBox.appendChild(pill);
+            });
+          }
+          selSection.appendChild(selTagsBox);
+          body.appendChild(selSection);
+
+          // 2. ⚡ 快速加選池（被退選之項目自動移入此處）
+          var poolSection = document.createElement('div');
+          
+          var poolTitle = document.createElement('div');
+          poolTitle.className = 'section-title';
+          poolTitle.innerHTML = '<span>⚡ 快速加選池：</span><span class="tip">點擊 ➕ 立即加回</span>';
+          poolSection.appendChild(poolTitle);
+
+          var poolTagsBox = document.createElement('div');
+          poolTagsBox.className = 'tags-container';
+
+          if (!sub.pool || sub.pool.length === 0) {
+            poolTagsBox.innerHTML = '<span class="empty-tags-tip">（備選池目前全數已加選）</span>';
+          } else {
+            sub.pool.forEach(function(item) {
+              var btnAdd = document.createElement('button');
+              btnAdd.className = 'pill-pool';
+              btnAdd.innerHTML = '➕ ' + item;
+              btnAdd.title = '加選「' + item + '」';
+              btnAdd.onclick = function() {
+                selectItem(subIndex, item);
+              };
+              poolTagsBox.appendChild(btnAdd);
+            });
+          }
+          poolSection.appendChild(poolTagsBox);
+          body.appendChild(poolSection);
+
+          // 3. ➕ 自訂作業名稱
+          var customGroup = document.createElement('div');
+          customGroup.className = 'custom-input-group';
+
+          var customInput = document.createElement('input');
+          customInput.type = 'text';
+          customInput.className = 'custom-input';
+          customInput.placeholder = '自訂「' + sub.name + '」種類名稱...';
+          customInput.id = 'input-custom-' + subIndex;
+          customInput.onkeydown = function(e) {
+            if (e.key === 'Enter') {
+              addCustomItem(subIndex);
+            }
+          };
+
+          var btnAddCustom = document.createElement('button');
+          btnAddCustom.className = 'btn-add-custom';
+          btnAddCustom.textContent = '➕ 加入';
+          btnAddCustom.onclick = function() {
+            addCustomItem(subIndex);
+          };
+
+          customGroup.appendChild(customInput);
+          customGroup.appendChild(btnAddCustom);
+          body.appendChild(customGroup);
+
+          // 4. 成績記分開關
+          var switchBox = document.createElement('div');
+          switchBox.className = 'sheet-switch-box';
+
+          var chkScore = document.createElement('input');
+          chkScore.type = 'checkbox';
+          chkScore.id = 'chk-score-' + subIndex;
+          chkScore.checked = (sub.createScoreSheet !== false);
+          chkScore.onchange = function() {
+            sub.createScoreSheet = chkScore.checked;
+          };
+
+          var scoreLabel = document.createElement('label');
+          scoreLabel.htmlFor = 'chk-score-' + subIndex;
+          scoreLabel.textContent = '建立本科作業之成績記分分頁 (填打成績用)';
+          scoreLabel.style.cursor = 'pointer';
+
+          switchBox.appendChild(chkScore);
+          switchBox.appendChild(scoreLabel);
+          body.appendChild(switchBox);
+
+          card.appendChild(body);
+        }
+
+        container.appendChild(card);
+      });
+    }
+
+    /**
+     * ⭐ 退選功能：從已選作業中移除，並自動移入快速加選池中！
+     */
+    function unselectItem(subIndex, item) {
+      var sub = currentConfig.subjects[subIndex];
+      if (!sub) return;
+
+      // 1. 從已選中移除
+      var selIdx = sub.selected.indexOf(item);
+      if (selIdx > -1) {
+        sub.selected.splice(selIdx, 1);
+      }
+
+      // 2. 移入快速加選池中（若尚未在池中）
+      if (!sub.pool) sub.pool = [];
+      if (sub.pool.indexOf(item) === -1) {
+        sub.pool.unshift(item); // 放在加選池第一個，最方便反悔加回
+      }
+
+      // 重新渲染
+      renderSubjectCards();
+    }
+
+    /**
+     * ⚡ 加選功能：從備選池移回已選作業中
+     */
+    function selectItem(subIndex, item) {
+      var sub = currentConfig.subjects[subIndex];
+      if (!sub) return;
+
+      // 1. 從池中移除
+      if (sub.pool) {
+        var pIdx = sub.pool.indexOf(item);
+        if (pIdx > -1) {
+          sub.pool.splice(pIdx, 1);
+        }
+      }
+
+      // 2. 加回已選中
+      if (!sub.selected) sub.selected = [];
+      if (sub.selected.indexOf(item) === -1) {
+        sub.selected.push(item);
+      }
+
+      // 重新渲染
+      renderSubjectCards();
+    }
+
+    /**
+     * 自訂新增作業種類
+     */
+    function addCustomItem(subIndex) {
+      var input = document.getElementById('input-custom-' + subIndex);
+      if (!input) return;
+
+      var val = (input.value || '').trim();
+      if (!val) return;
+
+      var sub = currentConfig.subjects[subIndex];
+      if (!sub) return;
+
+      if (!sub.selected) sub.selected = [];
+      if (sub.selected.indexOf(val) > -1) {
+        showToast('「' + val + '」已在已選作業中！', 'info', 2000);
+        input.value = '';
+        return;
+      }
+
+      // 若在備選池中則從備選池移除
+      if (sub.pool) {
+        var pIdx = sub.pool.indexOf(val);
+        if (pIdx > -1) sub.pool.splice(pIdx, 1);
+      }
+
+      sub.selected.push(val);
+      input.value = '';
+      renderSubjectCards();
+    }
+
+    /**
+     * 切換科目啟用/停用
+     */
+    function toggleSubjectEnabled(subIndex, isEnabled) {
+      var sub = currentConfig.subjects[subIndex];
+      if (!sub) return;
+      sub.enabled = isEnabled;
+      renderSubjectCards();
+    }
+
+    /**
+     * 切換新增自訂科目表單
+     */
+    function toggleAddSubjectForm() {
+      var form = document.getElementById('add-subject-form');
+      var btn = document.getElementById('btn-toggle-add-subject');
+      if (!form) return;
+      if (form.style.display === 'none') {
+        form.style.display = 'flex';
+        if (btn) btn.style.display = 'none';
+        var inp = document.getElementById('input-new-subject');
+        if (inp) { inp.value = ''; inp.focus(); }
+      } else {
+        form.style.display = 'none';
+        if (btn) btn.style.display = 'inline-flex';
+      }
+    }
+
+    /**
+     * 新增自訂科目
+     */
+    function addNewSubject() {
+      var inp = document.getElementById('input-new-subject');
+      if (!inp) return;
+      var name = (inp.value || '').trim();
+      if (!name) return;
+
+      // 檢查是否重名
+      var exists = currentConfig.subjects.some(function(s) { return s.name === name; });
+      if (exists) {
+        showToast('科目【' + name + '】已存在！', 'error', 2500);
+        return;
+      }
+
+      currentConfig.subjects.push({
+        name: name,
+        enabled: true,
+        createScoreSheet: true,
+        selected: ["習作", "學習單"],
+        pool: ["評量", "考卷", "作業本"]
+      });
+
+      toggleAddSubjectForm();
+      renderSubjectCards();
+      showToast('已新增科目【' + name + '】！', 'success', 2000);
+    }
+
+    /**
+     * 恢復系統預設值
+     */
+    function confirmResetDefault() {
+      if (confirm('確定要恢復為系統預設值嗎？\n這將重設所有科目的已選與備選清單。')) {
+        currentConfig = JSON.parse(JSON.stringify(FALLBACK_CONFIG));
+        renderSubjectCards();
+        showToast('已恢復為預設設定，請點擊「一鍵套用」儲存！', 'info', 3000);
+      }
+    }
+
+    /**
+     * 🚀 一鍵套用設定並建立分頁
+     */
+    function applySettings() {
+      if (isSaving) return;
+      isSaving = true;
+
+      var btn = document.getElementById('btn-apply');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span>⏳ 正在同步建立成績分頁與名冊...</span>';
+      }
+
+      showToast('⏳ 正在同步套用設定與試算表分頁...', 'info', 0);
+
+      var payload = {
+        config: currentConfig,
+        createSheets: true
+      };
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(function(res) {
+            isSaving = false;
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = '<span>🚀 一鍵套用設定並建立成績分頁</span>';
+            }
+            if (res && res.success) {
+              var msg = '✅ ' + (res.sheetResult ? res.sheetResult.message : '設定已成功儲存！');
+              showToast(msg, 'success', 6000);
+            } else {
+              showToast('儲存失敗: ' + (res ? res.message : '未知錯誤'), 'error', 4000);
+            }
+          })
+          .withFailureHandler(function(err) {
+            isSaving = false;
+            if (btn) {
+              btn.disabled = false;
+              btn.innerHTML = '<span>🚀 一鍵套用設定並建立成績分頁</span>';
+            }
+            showToast('儲存執行失敗: ' + err, 'error', 4000);
+          })
+          .saveClassConfig(payload);
+      } else {
+        // 外部測試環境
+        setTimeout(function() {
+          isSaving = false;
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<span>🚀 一鍵套用設定並建立成績分頁</span>';
+          }
+          showToast('✅ 本地模擬套用成功！', 'success', 3000);
+        }, 800);
+      }
+    }
+
+    /**
+     * 顯示 Toast 訊息
+     */
+    var toastTimer = null;
+    function showToast(msg, type, duration) {
+      var toast = document.getElementById('status-toast');
+      if (!toast) return;
+      if (toastTimer) clearTimeout(toastTimer);
+
+      toast.className = 'toast-banner toast-' + (type || 'info');
+      toast.textContent = msg;
+      toast.style.display = 'block';
+
+      if (duration && duration > 0) {
+        toastTimer = setTimeout(function() {
+          toast.style.display = 'none';
+        }, duration);
+      }
+    }
+
+    function hideToast() {
+      var toast = document.getElementById('status-toast');
+      if (toast) toast.style.display = 'none';
+    }
+  </script>
+</body>
+</html>

@@ -25,9 +25,20 @@ function onOpen() {
   try {
     SpreadsheetApp.getUi()
       .createMenu('🎯 班級作業管理')
-      .addItem('📁 一鍵初始化 8 大成績分頁', 'initAllScoreSheets')
+      .addItem('⚙️ 班級作業設定精靈', 'showSetupWizardSidebar')
+      .addItem('📁 一鍵初始化成績分頁', 'initAllScoreSheets')
       .addToUi();
   } catch (e) {}
+}
+
+/**
+ * 開啟試算表側邊欄：班級作業設定精靈
+ */
+function showSetupWizardSidebar() {
+  const html = HtmlService.createHtmlOutputFromFile('Sidebar')
+    .setTitle('🏫 班級作業設定精靈')
+    .setWidth(350);
+  SpreadsheetApp.getUi().showSidebar(html);
 }
 
 function doGet(e) {
@@ -47,6 +58,10 @@ function doGet(e) {
   }
 
   // ── 2. GAS 原生 HTML 頁面路由 ──────────────────────────────────────────
+  if (params.page === 'sidebar' || params.page === 'wizard' || params.page === 'setup') {
+    return renderGasPage('Sidebar', '🏫 班級作業設定精靈');
+  }
+
   if (params.page === 'scanner') {
     return renderGasPage('Scanner', '📱 班級作業 QR碼 速掃工具');
   }
@@ -170,6 +185,20 @@ function handleScannerApiAction(action, params) {
     }
     if (action === 'initAllScoreSheets') {
       return initAllScoreSheets();
+    }
+
+    // ── 4. 班級作業設定精靈 API ──
+    if (action === 'getClassConfig') {
+      return getClassConfig();
+    }
+    if (action === 'saveClassConfig') {
+      return saveClassConfig(params);
+    }
+    if (action === 'getScoreSheetNames') {
+      return getScoreSheetNames();
+    }
+    if (action === 'getRosterInfo') {
+      return getRosterInfo();
     }
 
     return { success: false, message: '未知的 API 動作: ' + action };
@@ -1125,8 +1154,69 @@ function getGasWebAppUrl() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. 作業批改・成績登記與錯題訂正一體化系統 (Grading & Scores)
+// 3. 班級作業設定精靈、科目作業清單與成績登記一體化系統
 // ─────────────────────────────────────────────────────────────────────────────
+
+const DEFAULT_CLASS_CONFIG = {
+  subjects: [
+    {
+      name: "國語",
+      enabled: true,
+      createScoreSheet: true,
+      selected: ["甲本", "乙本", "國習", "圈詞", "作文"],
+      pool: ["國練", "評量", "學習單", "考卷", "作業本", "預習單"]
+    },
+    {
+      name: "數學",
+      enabled: true,
+      createScoreSheet: true,
+      selected: ["數習"],
+      pool: ["數課", "數練", "學習單", "評量", "考卷", "作業本"]
+    },
+    {
+      name: "社會",
+      enabled: true,
+      createScoreSheet: true,
+      selected: ["社習"],
+      pool: ["習作", "學習單", "評量", "考卷", "預習單"]
+    },
+    {
+      name: "自然",
+      enabled: false,
+      createScoreSheet: true,
+      selected: ["習作"],
+      pool: ["學習單", "評量", "考卷", "預習單"]
+    },
+    {
+      name: "英語",
+      enabled: false,
+      createScoreSheet: true,
+      selected: ["習作"],
+      pool: ["學習單", "評量", "考卷", "作業本"]
+    },
+    {
+      name: "聯絡簿",
+      enabled: true,
+      createScoreSheet: false,
+      selected: ["聯絡簿"],
+      pool: []
+    },
+    {
+      name: "日記",
+      enabled: false,
+      createScoreSheet: true,
+      selected: ["日記"],
+      pool: ["小短文"]
+    },
+    {
+      name: "單據",
+      enabled: false,
+      createScoreSheet: false,
+      selected: ["回條", "同意書", "繳費單"],
+      pool: ["通知單"]
+    }
+  ]
+};
 
 const SCORE_SHEET_NAMES = [
   "國語|甲本",
@@ -1148,6 +1238,207 @@ const DEFAULT_GRADE_PRESETS = {
   "乙": 75,
   "乙下": 70
 };
+
+/**
+ * 讀取當前試算表名冊資訊（供側邊欄設定精靈即時呈現）
+ */
+function getRosterInfo() {
+  const hwSheet = getHwSheet();
+  const studentRows = [];
+  let validCount = 0;
+  let vacantCount = 0;
+  let firstStudent = '';
+  let lastStudent = '';
+
+  const seatNameData = hwSheet.getRange(6, 1, CLASS_SIZE, 2).getDisplayValues();
+  for (let i = 0; i < CLASS_SIZE; i++) {
+    const seatNum = i + 1;
+    const seatStr = String(seatNum).padStart(2, '0');
+    const name = String(seatNameData[i][1] || '').trim();
+    const isVacant = isVacantSeat(name);
+    
+    if (isVacant) {
+      vacantCount++;
+      studentRows.push({ seat: seatNum, seatStr: seatStr, name: name, isVacant: true });
+    } else {
+      validCount++;
+      studentRows.push({ seat: seatNum, seatStr: seatStr, name: name || (seatNum + '號'), isVacant: false });
+      if (!firstStudent) firstStudent = seatStr + ' ' + (name || (seatNum + '號'));
+      lastStudent = seatStr + ' ' + (name || (seatNum + '號'));
+    }
+  }
+
+  let summaryText = '本班學生名冊：' + validCount + ' 人';
+  if (firstStudent && lastStudent) {
+    summaryText += ' (' + firstStudent + ' ~ ' + lastStudent + ')';
+  }
+  if (vacantCount > 0) {
+    summaryText += '，空號 ' + vacantCount + ' 人';
+  }
+
+  return {
+    success: true,
+    classSize: CLASS_SIZE,
+    validCount: validCount,
+    vacantCount: vacantCount,
+    summaryText: summaryText,
+    students: studentRows
+  };
+}
+
+/**
+ * 讀取班級作業設定（優先讀取 DocumentProperties，無則返回預設值）
+ */
+function getClassConfig() {
+  const roster = getRosterInfo();
+  let savedConfig = null;
+  try {
+    const docProps = PropertiesService.getDocumentProperties();
+    const raw = docProps ? docProps.getProperty('CLASS_ASSIGNMENT_CONFIG') : null;
+    if (raw) savedConfig = JSON.parse(raw);
+  } catch (e) {}
+
+  if (!savedConfig) {
+    try {
+      const scriptProps = PropertiesService.getScriptProperties();
+      const raw = scriptProps ? scriptProps.getProperty('CLASS_ASSIGNMENT_CONFIG') : null;
+      if (raw) savedConfig = JSON.parse(raw);
+    } catch (e) {}
+  }
+
+  const config = savedConfig || JSON.parse(JSON.stringify(DEFAULT_CLASS_CONFIG));
+
+  return {
+    success: true,
+    config: config,
+    roster: roster
+  };
+}
+
+/**
+ * 儲存班級作業設定（可選同時同步建立/更新成績分頁）
+ */
+function saveClassConfig(params) {
+  params = params || {};
+  const config = typeof params.config === 'string' ? JSON.parse(params.config) : (params.config || DEFAULT_CLASS_CONFIG);
+  const doCreateSheets = (params.createSheets === true || params.createSheets === 'true');
+
+  const configStr = JSON.stringify(config);
+  try {
+    const docProps = PropertiesService.getDocumentProperties();
+    if (docProps) docProps.setProperty('CLASS_ASSIGNMENT_CONFIG', configStr);
+  } catch (e) {}
+  try {
+    const scriptProps = PropertiesService.getScriptProperties();
+    if (scriptProps) scriptProps.setProperty('CLASS_ASSIGNMENT_CONFIG', configStr);
+  } catch (e) {}
+
+  let sheetResult = null;
+  if (doCreateSheets) {
+    sheetResult = applyScoreSheetsFromConfig(config);
+  }
+
+  return {
+    success: true,
+    message: '班級作業設定已成功儲存！' + (sheetResult ? ('\n' + sheetResult.message) : ''),
+    sheetResult: sheetResult
+  };
+}
+
+/**
+ * 依據設定批次建立或就緒成績分頁
+ */
+function applyScoreSheetsFromConfig(config) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // 1. 讀取學生名單
+    const hwSheet = getHwSheet();
+    let studentNames = [];
+    if (hwSheet.getLastRow() >= 6) {
+      const numRows = Math.min(CLASS_SIZE, hwSheet.getLastRow() - 5);
+      studentNames = hwSheet.getRange(6, 2, numRows, 1).getDisplayValues();
+    }
+    const studentRows = [];
+    for (let i = 1; i <= CLASS_SIZE; i++) {
+      const seatStr = String(i).padStart(2, '0');
+      const name = (studentNames[i - 1] && studentNames[i - 1][0]) ? studentNames[i - 1][0] : '';
+      studentRows.push([seatStr, name]);
+    }
+
+    // 2. 依據 config 算出欲建立的成績分頁清單
+    const targetSheetNames = [];
+    (config.subjects || []).forEach(function(sub) {
+      if (sub.enabled && sub.createScoreSheet !== false) {
+        (sub.selected || []).forEach(function(cat) {
+          const sheetName = sub.name + '|' + cat;
+          targetSheetNames.push(sheetName);
+        });
+      }
+    });
+
+    let createdCount = 0;
+    let existingCount = 0;
+
+    targetSheetNames.forEach(function(name) {
+      let sheet = ss.getSheetByName(name);
+      if (!sheet) {
+        sheet = ss.insertSheet(name);
+        createdCount++;
+      } else {
+        existingCount++;
+      }
+      if (sheet.getLastRow() < 3) {
+        sheet.getRange(1, 1, 3, 2).setValues([
+          ["", "日期"],
+          ["", "單元"],
+          ["", "頁數"]
+        ]).setFontWeight("bold").setBackground("#e2e8f0").setHorizontalAlignment("center");
+      }
+      if (sheet.getLastRow() < CLASS_SIZE + 3) {
+        sheet.getRange(4, 1, CLASS_SIZE, 2).setValues(studentRows).setHorizontalAlignment("center");
+        sheet.getRange(4, 1, CLASS_SIZE, 1).setFontWeight("bold").setBackground("#f8fafc");
+      }
+    });
+
+    // 確保訂正矩陣亦存在
+    getCorrectionMatrixSheet();
+
+    return {
+      success: true,
+      createdCount: createdCount,
+      existingCount: existingCount,
+      totalCount: targetSheetNames.length,
+      sheetNames: targetSheetNames,
+      message: '已同步建立/就緒 ' + targetSheetNames.length + ' 個成績分頁（新建 ' + createdCount + ' 個，既有 ' + existingCount + ' 個）及作業訂正矩陣！'
+    };
+  } catch (err) {
+    return { success: false, message: '分頁初始化失敗: ' + err.toString() };
+  } finally {
+    try { lock.releaseLock(); } catch(e){}
+  }
+}
+
+/**
+ * 取得目前有效的所有成績分頁名稱清單
+ */
+function getScoreSheetNames() {
+  const cfgRes = getClassConfig();
+  const list = [];
+  (cfgRes.config.subjects || []).forEach(function(sub) {
+    if (sub.enabled && sub.createScoreSheet !== false) {
+      (sub.selected || []).forEach(function(cat) {
+        list.push(sub.name + '|' + cat);
+      });
+    }
+  });
+  if (list.length === 0) {
+    return { success: true, sheetNames: SCORE_SHEET_NAMES };
+  }
+  return { success: true, sheetNames: list };
+}
 
 /**
  * 取得或建立指定的成績分頁
@@ -1172,7 +1463,7 @@ function getScoreSheet(sheetName) {
     } catch (e) {
       sheet = ss.getSheetByName(sheetName);
       if (!sheet) {
-        throw new Error(`無法建立成績分頁【${sheetName}】: ${e.message}`);
+        throw new Error('無法建立成績分頁【' + sheetName + '】: ' + e.message);
       }
     } finally {
       try { lock.releaseLock(); } catch(e){}
@@ -1217,53 +1508,8 @@ function initScoreSheetStructure(sheet) {
 }
 
 function initAllScoreSheets() {
-  const lock = LockService.getScriptLock();
-  try {
-    lock.waitLock(15000);
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    // 1. 預先讀取學生名單
-    const hwSheet = getHwSheet();
-    let studentNames = [];
-    if (hwSheet.getLastRow() >= 6) {
-      const numRows = Math.min(CLASS_SIZE, hwSheet.getLastRow() - 5);
-      studentNames = hwSheet.getRange(6, 2, numRows, 1).getDisplayValues();
-    }
-    const studentRows = [];
-    for (let i = 1; i <= CLASS_SIZE; i++) {
-      const seatStr = String(i).padStart(2, '0');
-      const name = (studentNames[i - 1] && studentNames[i - 1][0]) ? studentNames[i - 1][0] : '';
-      studentRows.push([seatStr, name]);
-    }
-
-    // 2. 批次初始化 8 大分頁
-    SCORE_SHEET_NAMES.forEach(name => {
-      let sheet = ss.getSheetByName(name);
-      if (!sheet) {
-        sheet = ss.insertSheet(name);
-      }
-      if (sheet.getLastRow() < 3) {
-        sheet.getRange(1, 1, 3, 2).setValues([
-          ["", "日期"],
-          ["", "單元"],
-          ["", "頁數"]
-        ]).setFontWeight("bold").setBackground("#e2e8f0").setHorizontalAlignment("center");
-      }
-      if (sheet.getLastRow() < CLASS_SIZE + 3) {
-        sheet.getRange(4, 1, CLASS_SIZE, 2).setValues(studentRows).setHorizontalAlignment("center");
-        sheet.getRange(4, 1, CLASS_SIZE, 1).setFontWeight("bold").setBackground("#f8fafc");
-      }
-    });
-
-    // 3. 確保作業訂正矩陣分頁亦就緒
-    getCorrectionMatrixSheet();
-
-    return { success: true, message: `已成功初始化 8 大成績分頁與訂正矩陣！` };
-  } catch (err) {
-    return { success: false, message: '初始化失敗: ' + err.toString() };
-  } finally {
-    try { lock.releaseLock(); } catch(e){}
-  }
+  const cfgRes = getClassConfig();
+  return applyScoreSheetsFromConfig(cfgRes.config);
 }
 
 function findOrCreateScoreAssignmentColumn(sheet, date, unit, page) {
@@ -1306,9 +1552,10 @@ function findOrCreateScoreAssignmentColumn(sheet, date, unit, page) {
 
 function getGradingData(params) {
   params = params || {};
-  let sheetName = String(params.sheetName || '國語|甲本').trim();
-  if (!SCORE_SHEET_NAMES.includes(sheetName)) {
-    sheetName = SCORE_SHEET_NAMES[0];
+  const activeSheetNames = getScoreSheetNames().sheetNames;
+  let sheetName = String(params.sheetName || activeSheetNames[0] || '國語|甲本').trim();
+  if (!activeSheetNames.includes(sheetName)) {
+    sheetName = activeSheetNames[0] || '國語|甲本';
   }
 
   const parts = sheetName.split('|');
@@ -1429,14 +1676,15 @@ function getGradingData(params) {
 
   const presetsRes = getScorePresets();
 
-  // 檢查 8 大成績分頁是否都已建立（供前端決定是否顯示「初始化分頁」按鈕）
+  // 檢查成績分頁是否都已建立（供前端決定是否顯示「初始化分頁」按鈕）
   const ssAll = SpreadsheetApp.getActiveSpreadsheet();
-  const allScoreSheetsReady = SCORE_SHEET_NAMES.every(n => !!ssAll.getSheetByName(n));
+  const allScoreSheetsReady = activeSheetNames.every(n => !!ssAll.getSheetByName(n));
 
   return {
     success: true,
     allScoreSheetsReady: allScoreSheetsReady,
     sheetName: sheetName,
+    availableSheets: activeSheetNames,
     subject: subject,
     category: category,
     assignments: assignments,

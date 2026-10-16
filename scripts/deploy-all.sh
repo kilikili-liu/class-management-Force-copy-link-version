@@ -20,6 +20,7 @@ cp "$PROJECT_DIR/Grading.html" "$NEO_DIR/grading.html"
 cp "$PROJECT_DIR/Scanner.html" "$NEO_DIR/scanner.html"
 cp "$PROJECT_DIR/CorrectionScanner.html" "$NEO_DIR/correction_scanner.html"
 cp "$PROJECT_DIR/StickerGenerator.html" "$NEO_DIR/StickerGenerator.html"
+cp "$PROJECT_DIR/Sidebar.html" "$NEO_DIR/sidebar.html"
 echo "✅ 本地 neocities 檔案同步完畢！"
 
 echo ""
@@ -42,6 +43,7 @@ else
     -F "scanner/scanner.html=@$NEO_DIR/scanner.html" \
     -F "scanner/correction_scanner.html=@$NEO_DIR/correction_scanner.html" \
     -F "scanner/StickerGenerator.html=@$NEO_DIR/StickerGenerator.html" \
+    -F "scanner/sidebar.html=@$NEO_DIR/sidebar.html" \
     https://neocities.org/api/upload)
   echo "Neocities 回應: $RES"
   echo "✅ Neocities 靜態網頁已全部更新覆蓋完畢！"
