@@ -3,7 +3,7 @@
  * 適用於「建立副本」給其他老師使用，自動綁定當前試算表 ID
  */
 
-const HOMEWORK_TAB_NAME       = "工作表1";
+const HOMEWORK_TAB_NAME       = "作業清點矩陣";
 const CORRECTION_MATRIX_TAB   = "作業訂正矩陣";
 
 // ── 班級人數設定（轉學/空號請在試算表姓名欄填「空號」或「轉出」）──
@@ -26,7 +26,6 @@ function onOpen() {
     SpreadsheetApp.getUi()
       .createMenu('🎯 班級作業管理')
       .addItem('⚙️ 班級作業設定精靈', 'showSetupWizardSidebar')
-      .addItem('📁 一鍵初始化成績分頁', 'initAllScoreSheets')
       .addToUi();
   } catch (e) {}
 }
@@ -219,18 +218,18 @@ function getHwSheet() {
   let sheet = ss.getSheetByName(HOMEWORK_TAB_NAME);
   if (sheet) return sheet;
 
-  // 嘗試常見分頁名稱（避免使用者修改分頁名稱導致找不到）
-  const candidates = ["作業清點", "清點", "作業點收", "點收", "Sheet1", "作業收繳", "收繳"];
+  // 嘗試常見分頁名稱（包含舊版「工作表1」以保持 100% 向下相容）
+  const candidates = ["工作表1", "作業清點", "清點", "作業點收", "點收", "Sheet1", "作業收繳", "收繳"];
   for (let i = 0; i < candidates.length; i++) {
     sheet = ss.getSheetByName(candidates[i]);
     if (sheet) return sheet;
   }
 
-  // 自動尋找第一個非「訂正」的分頁作為清點分頁
+  // 自動尋找第一個非「訂正」且非成績記分的分頁作為清點分頁
   const allSheets = ss.getSheets();
   for (let i = 0; i < allSheets.length; i++) {
     const name = allSheets[i].getName();
-    if (name !== CORRECTION_MATRIX_TAB && !name.includes("訂正")) {
+    if (name !== CORRECTION_MATRIX_TAB && !name.includes("訂正") && name.indexOf("|") === -1) {
       return allSheets[i];
     }
   }
@@ -639,6 +638,12 @@ function getCorrectionMatrixSheet() {
     sheet.getRange(1, 1, 5, 2).setValues([
       ["日期", ""], ["科目", ""], ["種類", ""], ["單元", ""], ["頁數", "姓名"]
     ]).setFontWeight("bold").setBackground("#e2e8f0").setHorizontalAlignment("center");
+    try {
+      sheet.setColumnWidth(1, 60);
+      sheet.setColumnWidth(2, 95);
+      sheet.setFrozenRows(5);
+      sheet.setFrozenColumns(2);
+    } catch(e) {}
   }
 
   if (sheet.getLastRow() < CLASS_SIZE + 5) {
@@ -655,7 +660,7 @@ function getCorrectionMatrixSheet() {
       studentRows.push([seatStr, name]);
     }
     sheet.getRange(6, 1, CLASS_SIZE, 2).setValues(studentRows).setHorizontalAlignment("center");
-    sheet.getRange(6, 1, CLASS_SIZE, 1).setFontWeight("bold");
+    sheet.getRange(6, 1, CLASS_SIZE, 1).setFontWeight("bold").setBackground("#f8fafc");
   }
 
   return sheet;
@@ -1401,15 +1406,22 @@ function applyScoreSheetsFromConfig(config) {
           ["", "單元"],
           ["", "頁數"]
         ]).setFontWeight("bold").setBackground("#e2e8f0").setHorizontalAlignment("center");
+        try {
+          sheet.setColumnWidth(1, 60);
+          sheet.setColumnWidth(2, 95);
+          sheet.setFrozenRows(3);
+          sheet.setFrozenColumns(2);
+        } catch(e) {}
       }
-      if (sheet.getLastRow() < CLASS_SIZE + 3) {
-        sheet.getRange(4, 1, CLASS_SIZE, 2).setValues(studentRows).setHorizontalAlignment("center");
-        sheet.getRange(4, 1, CLASS_SIZE, 1).setFontWeight("bold").setBackground("#f8fafc");
-      }
+      // 強制同步座號與最新學生名冊
+      sheet.getRange(4, 1, CLASS_SIZE, 2).setValues(studentRows).setHorizontalAlignment("center");
+      sheet.getRange(4, 1, CLASS_SIZE, 1).setFontWeight("bold").setBackground("#f8fafc");
     });
 
-    // 確保訂正矩陣亦存在
-    getCorrectionMatrixSheet();
+    // 確保訂正矩陣亦存在，並強制同步最新座號與學生名冊
+    const corrSheet = getCorrectionMatrixSheet();
+    corrSheet.getRange(6, 1, CLASS_SIZE, 2).setValues(studentRows).setHorizontalAlignment("center");
+    corrSheet.getRange(6, 1, CLASS_SIZE, 1).setFontWeight("bold").setBackground("#f8fafc");
 
     return {
       success: true,
