@@ -1422,22 +1422,42 @@ function applyScoreSheetsFromConfig(config) {
 }
 
 /**
- * 取得目前有效的所有成績分頁名稱清單
+ * 取得目前有效的所有成績分頁名稱清單（整合試算表實際現存分頁與設定精靈設定）
  */
 function getScoreSheetNames() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const allSheets = ss.getSheets();
+  const existingSheetNames = allSheets.map(function(s) { return s.getName(); });
+
+  // 1. 抓取試算表中現存的所有「科目|種類」成績分頁 (排除清點表與訂正矩陣)
+  const sheetNamesInDoc = existingSheetNames.filter(function(name) {
+    return name.indexOf('|') > -1 && name.indexOf('訂正') === -1 && name !== CORRECTION_MATRIX_TAB && name !== HOMEWORK_TAB_NAME;
+  });
+
+  // 2. 抓取設定精靈中的設定清單
   const cfgRes = getClassConfig();
-  const list = [];
+  const configList = [];
   (cfgRes.config.subjects || []).forEach(function(sub) {
     if (sub.enabled && sub.createScoreSheet !== false) {
       (sub.selected || []).forEach(function(cat) {
-        list.push(sub.name + '|' + cat);
+        configList.push(sub.name + '|' + cat);
       });
     }
   });
-  if (list.length === 0) {
+
+  // 3. 雙向合併（以設定精靈順序優先，並補上試算表中現存的其他分頁）
+  const combined = [];
+  configList.forEach(function(n) {
+    if (combined.indexOf(n) === -1) combined.push(n);
+  });
+  sheetNamesInDoc.forEach(function(n) {
+    if (combined.indexOf(n) === -1) combined.push(n);
+  });
+
+  if (combined.length === 0) {
     return { success: true, sheetNames: SCORE_SHEET_NAMES };
   }
-  return { success: true, sheetNames: list };
+  return { success: true, sheetNames: combined };
 }
 
 /**

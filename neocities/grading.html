@@ -1554,6 +1554,9 @@
         const res = await gasApi('getGradingData', params);
         if (res && res.success) {
           gradingDataCache = res;
+          if (res.availableSheets && res.availableSheets.length > 0) {
+            updateSubjectSelectOptions(res.availableSheets, res.sheetName || currentSheetName);
+          }
           updateInitButtonsVisibility(res.allScoreSheetsReady === false);
           if (res.presets) {
             gradePresets = { ...DEFAULT_PRESETS, ...res.presets };
@@ -1572,6 +1575,31 @@
         }
       } catch (err) {
         showToast('❌ 連線異常: ' + err.message, 'error');
+      }
+    }
+
+    /**
+     * 動態更新頂部成績分頁下拉選單（自動偵測試算表所有現存分頁與設定精靈之自訂分頁）
+     */
+    function updateSubjectSelectOptions(availableSheets, targetSheet) {
+      const select = document.getElementById('subject-select');
+      if (!select || !availableSheets || !availableSheets.length) return;
+
+      const currentVal = targetSheet || select.value || currentSheetName;
+      select.innerHTML = '';
+      availableSheets.forEach(function(sheetName) {
+        const opt = document.createElement('option');
+        opt.value = sheetName;
+        opt.textContent = sheetName.replace('|', ' ');
+        select.appendChild(opt);
+      });
+
+      if (availableSheets.indexOf(currentVal) > -1) {
+        select.value = currentVal;
+        currentSheetName = currentVal;
+      } else if (availableSheets.length > 0) {
+        select.value = availableSheets[0];
+        currentSheetName = availableSheets[0];
       }
     }
 
